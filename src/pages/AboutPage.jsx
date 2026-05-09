@@ -15,15 +15,15 @@ export default function AboutPage() {
         <div className="about-text">
           <p>
             Scott and Alan have been friends since before GPS tracks and Instagram posts — back
-            when you navigated by topo map and trusted that the weather would hold. They've been
-            hiking the Pacific Northwest together for three decades, through every season the
-            Cascades can throw at you: the crystal mornings of July, the larches of October,
+            when you navigated by topo map and trusted that the weather would hold. Home base is
+            the Pacific Northwest, and they've logged three decades in the Cascades through every
+            season the range can throw at you: the crystal mornings of July, the larches of October,
             the shoulder-season snow that turns back most parties.
           </p>
           <p>
-            The Lost Trailhead is their shared archive — a place to collect the photos, remember the
-            trails, and hold onto what it feels like to stand above treeline with someone who's
-            been there from the beginning.
+            But a good trail is a good trail wherever it leads. The Lost Trailhead is their shared
+            archive — a place to collect the photos, remember the trails, and hold onto what it
+            feels like to stand somewhere remarkable with someone who's been there from the beginning.
           </p>
         </div>
       </section>
@@ -50,12 +50,13 @@ export default function AboutPage() {
       <section className="about-regions-section">
         <h2>The Range</h2>
         <p>
-          From the granite towers of the Teanaway to the volcanic meadows of Mount Rainier,
-          these are the places we keep returning to.
+          Home is the Cascades, but the list keeps growing. From Washington's granite ridgelines
+          to the red rock canyons of the Southwest — these are the places we keep coming back to.
         </p>
         <div className="about-regions">
           {['Alpine Lakes Wilderness', 'North Cascades National Park',
-            'Mount Rainier National Park', 'Okanogan-Wenatchee National Forest'].map((r) => (
+            'Mount Rainier National Park', 'Okanogan-Wenatchee National Forest',
+            'Red Rock-Secret Mountain Wilderness'].map((r) => (
             <span key={r} className="about-region-tag">{r}</span>
           ))}
         </div>

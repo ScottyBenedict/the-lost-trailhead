@@ -40,8 +40,11 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'Tucked below the craggy granite face of Mount Stuart, Lake Ingalls is the jewel of the Teanaway country. The trail winds through subalpine meadows carpeted in lupine and paintbrush before cresting Ingalls Pass and revealing the steel-blue lake framed by larchwood. In late September the Western larches ignite with gold — one of the finest fall color displays in the Cascades.',
-    cover: null,
-    photos: [],
+    cover: '/photos/IMG_8823.jpeg',
+    photos: [
+      '/photos/IMG_8823.jpeg',
+      '/photos/IMG_8824.jpeg',
+    ],
   },
   {
     id: 'melakwa-lake',
@@ -68,8 +71,11 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'The Hidden Lake Lookout sits perched above a glacially carved cirque at 6,890 feet, offering what many consider the finest panorama in the North Cascades. The route climbs through wildflower-soaked Sibley Creek Basin before a final scramble to the historic fire lookout. On a clear day the view stretches from Glacier Peak to the Canadian border.',
-    cover: null,
-    photos: [],
+    cover: '/photos/IMG_9270.jpeg',
+    photos: [
+      '/photos/IMG_9270.jpeg',
+      '/photos/IMG_9271.jpeg',
+    ],
   },
   {
     id: 'dirty-harrys-balcony',
@@ -153,11 +159,21 @@ export const hikes = [
     photos: [
       '/photos/IMG_5009.jpeg',
       '/photos/IMG_6227.jpeg',
+    ],
+  },
+  {
+    id: 'subway-cave',
+    name: 'Subway Cave',
+    region: 'Red Rock-Secret Mountain Wilderness · Sedona',
+    distance: '3.8 mi',
+    gain: '350 ft',
+    difficulty: 'Easy–Moderate',
+    season: 'Year-round',
+    description:
+      'Hidden at the end of Fay Canyon, the Subway Cave is one of Sedona\'s best-kept secrets — a cathedral of layered sandstone where the walls pinch together overhead and the canyon floor drops away beneath you. Getting there requires a bit of scrambling and a nose for routes that aren\'t marked on most maps, which keeps the crowds thin. Inside, the red rock glows warm even in shade, and the view back through the cave mouth frames the canyon like a painting.',
+    cover: '/photos/IMG_7510.jpeg',
+    photos: [
       '/photos/IMG_7510.jpeg',
-      '/photos/IMG_8823.jpeg',
-      '/photos/IMG_8824.jpeg',
-      '/photos/IMG_9270.jpeg',
-      '/photos/IMG_9271.jpeg',
     ],
   },
 ]

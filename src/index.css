@@ -168,8 +168,8 @@ a   { color: inherit; text-decoration: none; }
 .hero-inner {
   position: relative;
   z-index: 1;
-  max-width: var(--max-w);
-  margin: 0 auto;
+  max-width: 520px;
+  margin: 0;
   padding: 4rem var(--pad) 5rem;
   width: 100%;
 }
@@ -186,30 +186,31 @@ a   { color: inherit; text-decoration: none; }
 
 .hero-title {
   font-family: var(--font-serif);
-  font-size: clamp(3rem, 8vw, 5.75rem);
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
   font-weight: 400;
   color: var(--white);
-  line-height: 1.06;
-  margin-bottom: 1.75rem;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
 }
 
 .hero-sub {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 300;
-  color: rgba(255, 255, 255, 0.78);
-  max-width: 420px;
+  color: rgba(255, 255, 255, 0.72);
+  max-width: 380px;
   line-height: 1.7;
 }
 
 /* ── Hike Grid Section ───────────────────────────────── */
 .hikes-section {
   width: 100%;
+  padding: 24px var(--pad);
 }
 
 .hike-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
+  gap: 12px;
 }
 
 @media (max-width: 700px) {
@@ -225,13 +226,10 @@ a   { color: inherit; text-decoration: none; }
   position: relative;
   overflow: hidden;
   aspect-ratio: 3 / 4;
+  border-radius: 16px;
   cursor: pointer;
 }
 
-.hike-grid > .hike-card:first-child {
-  grid-column: span 2;
-  aspect-ratio: 3 / 2;
-}
 
 .hike-card::after {
   content: '';
@@ -239,9 +237,9 @@ a   { color: inherit; text-decoration: none; }
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(15, 25, 15, 0.92) 0%,
-    rgba(15, 25, 15, 0.5) 40%,
-    rgba(15, 25, 15, 0.08) 75%,
+    rgba(15, 25, 15, 0.55) 0%,
+    rgba(15, 25, 15, 0.3) 30%,
+    rgba(15, 25, 15, 0.06) 65%,
     transparent 100%
   );
   transition: opacity 0.4s;
@@ -275,12 +273,15 @@ a   { color: inherit; text-decoration: none; }
   left: 0;
   right: 0;
   z-index: 1;
-  padding: 1.5rem 1.75rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(5px) saturate(1.4);
+  -webkit-backdrop-filter: blur(5px) saturate(1.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-radius: 0 0 16px 16px;
 }
 
-.hike-grid > .hike-card:first-child .hike-card-body {
-  padding: 2rem 2.25rem;
-}
 
 .hike-card-region {
   font-size: 0.68rem;
@@ -300,9 +301,6 @@ a   { color: inherit; text-decoration: none; }
   margin-bottom: 0.6rem;
 }
 
-.hike-grid > .hike-card:first-child .hike-card-name {
-  font-size: 2rem;
-}
 
 .hike-card-stats {
   display: flex;

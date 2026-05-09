@@ -6,11 +6,11 @@ export default function HomePage() {
     <>
       <section className="hero">
         <div className="hero-inner">
-          <p className="hero-eyebrow">Pacific Northwest</p>
+          <p className="hero-eyebrow">Based in the Pacific Northwest</p>
           <h1 className="hero-title">
             Two friends,<br />
             thirty years,<br />
-            one range.
+            always another trail.
           </h1>
           <p className="hero-sub">
             A record of the trails, the views, and the conversations in between.
