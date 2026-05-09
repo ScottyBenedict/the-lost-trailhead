@@ -42,6 +42,7 @@ export const hikes = [
       'Tucked below the craggy granite face of Mount Stuart, Lake Ingalls is the jewel of the Teanaway country. The trail winds through subalpine meadows carpeted in lupine and paintbrush before cresting Ingalls Pass and revealing the steel-blue lake framed by larchwood. In late September the Western larches ignite with gold — one of the finest fall color displays in the Cascades.',
     cover: '/photos/IMG_8823.jpeg',
     photos: [
+      '/photos/IMG_2633.jpeg',
       '/photos/IMG_8823.jpeg',
       '/photos/IMG_8824.jpeg',
     ],
