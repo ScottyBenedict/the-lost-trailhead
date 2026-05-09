@@ -215,9 +215,18 @@ a   { color: inherit; text-decoration: none; }
 
 @media (max-width: 700px) {
   .hike-grid { grid-template-columns: repeat(2, 1fr); }
+  .nav-inner { padding: 1.25rem var(--pad); }
+  .nav-logo {
+    font-size: clamp(1.1rem, 5vw, 2rem);
+    letter-spacing: 0.14em;
+  }
 }
 @media (max-width: 440px) {
   .hike-grid { grid-template-columns: 1fr; }
+  .nav-logo {
+    font-size: clamp(0.95rem, 4.5vw, 1.4rem);
+    letter-spacing: 0.1em;
+  }
 }
 
 /* ── Hike Card ───────────────────────────────────────── */

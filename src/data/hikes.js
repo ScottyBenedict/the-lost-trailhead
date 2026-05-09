@@ -90,7 +90,9 @@ export const hikes = [
     cover: '/photos/IMG_4994.jpeg',
     photos: [
       '/photos/IMG_4994.jpeg',
-      '/photos/IMG_5008.jpeg',
+      '/photos/IMG_5003.jpeg',
+      '/photos/IMG_5021.jpeg',
+      '/photos/IMG_5022.jpeg',
     ],
   },
   {
@@ -103,31 +105,10 @@ export const hikes = [
     season: 'Jul – Sep',
     description:
       'Starting from Sunrise — the highest point in the park reachable by road — Sourdough Ridge delivers outsized rewards with minimal effort. The trail rolls across the crest of the ridge with unobstructed views of Rainier\'s Emmons Glacier to the south and the volcanic Cascades stretching north to the horizon. Wildflowers peak in late July, painting the tundra-like meadows in waves of pink and yellow.',
-    cover: '/photos/IMG_4997.jpeg',
+    cover: '/photos/IMG_2343.jpeg',
     photos: [
       '/photos/IMG_2343.jpeg',
       '/photos/IMG_2345.jpeg',
-      '/photos/IMG_4997.jpeg',
-      '/photos/IMG_5003.jpeg',
-      '/photos/IMG_5021.jpeg',
-    ],
-  },
-  {
-    id: 'gem-lake',
-    name: 'Gem Lake',
-    region: 'Alpine Lakes Wilderness',
-    distance: '9.4 mi',
-    gain: '2,900 ft',
-    difficulty: 'Moderate–Strenuous',
-    season: 'Jun – Oct',
-    description:
-      'Gem Lake earns its name. Accessed via the Upper Pratt River drainage from the Granite Mountain trailhead, this quiet alpine lake sits in a granite bowl above the Alpental valley. The crowds that flock to nearby Snow Lake rarely venture this far, leaving Gem Lake with an uncommon sense of solitude. The rocky shore and surrounding peaks make for excellent exploration.',
-    cover: '/photos/IMG_5022.jpeg',
-    photos: [
-      '/photos/IMG_5022.jpeg',
-      '/photos/IMG_5397.jpeg',
-      '/photos/IMG_5621.jpeg',
-      '/photos/IMG_6015.jpeg',
     ],
   },
   {
@@ -158,7 +139,6 @@ export const hikes = [
     cover: '/photos/IMG_5009.jpeg',
     photos: [
       '/photos/IMG_5009.jpeg',
-      '/photos/IMG_6227.jpeg',
     ],
   },
   {
@@ -174,6 +154,51 @@ export const hikes = [
     cover: '/photos/IMG_7510.jpeg',
     photos: [
       '/photos/IMG_7510.jpeg',
+    ],
+  },
+  {
+    id: 'lake-22',
+    name: 'Lake Twenty-Two',
+    region: 'Wild Sky Wilderness · Granite Falls',
+    distance: '5.4 mi',
+    gain: '1,400 ft',
+    difficulty: 'Moderate',
+    season: 'Year-round',
+    description:
+      'Lake Twenty-Two sits in a tight cirque beneath the cliffs of Ashland Lakes Ridge, fed by snowmelt and ringed by old-growth forest. The trail climbs through one of the few remaining old-growth stands on the west slope of the Cascades — massive hemlocks and cedars draped in moss — before the trees give way and the lake appears. In winter the approach ices over and the surrounding walls run with frozen waterfalls, making it a different kind of trip entirely.',
+    cover: '/photos/IMG_6227.jpeg',
+    photos: [
+      '/photos/IMG_6227.jpeg',
+    ],
+  },
+  {
+    id: 'rattlesnake-ledge',
+    name: 'Rattlesnake Ledge',
+    region: 'Rattlesnake Mountain Scenic Area · North Bend',
+    distance: '4.0 mi',
+    gain: '1,100 ft',
+    difficulty: 'Moderate',
+    season: 'Year-round',
+    description:
+      'One of the most accessible summit views in the I-90 corridor, Rattlesnake Ledge sits above Rattlesnake Lake with a sweeping look across the Cedar River watershed toward the Cascades. The trail climbs steadily through second-growth forest before breaking out onto the rocky ledge — a wide, exposed perch that rewards the short effort with a genuinely outsized view. A classic year-round trail when most of the range is buried in snow.',
+    cover: '/photos/IMG_6015.jpeg',
+    photos: [
+      '/photos/IMG_6015.jpeg',
+    ],
+  },
+  {
+    id: 'cascade-pass-sahale-arm',
+    name: 'Cascade Pass & Sahale Arm',
+    region: 'North Cascades National Park',
+    distance: '12.0 mi',
+    gain: '3,700 ft',
+    difficulty: 'Strenuous',
+    season: 'Jul – Oct',
+    description:
+      'One of the great hikes in the North Cascades, Cascade Pass delivers a sweeping alpine panorama from its saddle — and that\'s just the beginning. The Sahale Arm continues upward through open heather slopes and past Doubtful Lake before reaching the moraine above Sahale Glacier. The fall color here is extraordinary: crimson and gold blueberry fields spreading across the high ridges, with glaciated peaks in every direction.',
+    cover: '/photos/IMG_5621.jpeg',
+    photos: [
+      '/photos/IMG_5621.jpeg',
     ],
   },
 ]
