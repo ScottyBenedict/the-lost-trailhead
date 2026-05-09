@@ -57,6 +57,9 @@ export default function Nav() {
                   <NavLink to="/about" onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
                     About
                   </NavLink>
+                  <NavLink to="/gear" onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
+                    Gear
+                  </NavLink>
                 </nav>
               )}
             </div>
