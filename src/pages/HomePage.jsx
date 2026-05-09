@@ -16,6 +16,11 @@ export default function HomePage() {
             A record of the trails, the views, and the conversations in between.
           </p>
         </div>
+        <div className="hero-scroll-hint" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
       </section>
 
       <section className="hikes-section">

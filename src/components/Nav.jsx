@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { hikes } from '../data/hikes'
 
 export default function Nav() {
   const [open, setOpen] = useState(false)
@@ -39,30 +38,28 @@ export default function Nav() {
               </svg>
               <span className="nav-logo-text">The Lost Trailhead</span>
             </Link>
-            <button
-              className={`nav-menu-btn${open ? ' is-open' : ''}`}
-              onClick={() => setOpen(o => !o)}
-              aria-label="Open hike menu"
-              aria-expanded={open}
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-            {open && (
-              <nav className="nav-dropdown">
-                {hikes.map(hike => (
-                  <NavLink
-                    key={hike.id}
-                    to={`/hikes/${hike.id}`}
-                    onClick={() => setOpen(false)}
-                    className={({ isActive }) => isActive ? 'active' : ''}
-                  >
-                    {hike.name}
+            <div className="nav-menu-wrap">
+              <button
+                className={`nav-menu-btn${open ? ' is-open' : ''}`}
+                onClick={() => setOpen(o => !o)}
+                aria-label="Open hike menu"
+                aria-expanded={open}
+              >
+                <span />
+                <span />
+                <span />
+              </button>
+              {open && (
+                <nav className="nav-dropdown">
+                  <NavLink to="/" end onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
+                    Hikes
                   </NavLink>
-                ))}
-              </nav>
-            )}
+                  <NavLink to="/about" onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
+                    About
+                  </NavLink>
+                </nav>
+              )}
+            </div>
           </div>
         </div>
       </header>
