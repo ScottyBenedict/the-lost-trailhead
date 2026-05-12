@@ -10,6 +10,7 @@ export const hikes = [
     description:
       'The most dramatic stretch of the PCT in Washington, Kendall Katwalk is a trail blasted into the sheer granite face of Kendall Peak, with nothing but air between you and the valley floor. The approach climbs steadily through old-growth forest and subalpine meadows before the ridge suddenly drops away and the Katwalk comes into view — a narrow ledge with the entire Snoqualmie Pass corridor spread below.',
     cover: '/photos/IMG_1870.jpeg',
+    coverPosition: 'center 40%',
     photos: [
       '/photos/IMG_1870.jpeg',
       '/photos/IMG_1871.jpeg',
@@ -26,6 +27,7 @@ export const hikes = [
     description:
       'Few lakes in Washington stop hikers in their tracks the way Blanca does. Fed by the Columbia Glacier, the water holds an impossible milky turquoise that shifts with the light throughout the day. The trail earns every bit of that view — a relentless climb through dense forest that gives little hint of what\'s waiting at the top until the trees break and the lake opens up below.',
     cover: '/photos/IMG_2283.jpeg',
+    coverPosition: 'center 50%',
     photos: [
       '/photos/IMG_2283.jpeg',
     ],
@@ -41,6 +43,7 @@ export const hikes = [
     description:
       'Tucked below the craggy granite face of Mount Stuart, Lake Ingalls is the jewel of the Teanaway country. The trail winds through subalpine meadows carpeted in lupine and paintbrush before cresting Ingalls Pass and revealing the steel-blue lake framed by larchwood. In late September the Western larches ignite with gold — one of the finest fall color displays in the Cascades.',
     cover: '/photos/IMG_8823.jpeg',
+    coverPosition: 'center 35%',
     photos: [
       '/photos/IMG_2633.jpeg',
       '/photos/IMG_8823.jpeg',
@@ -58,6 +61,7 @@ export const hikes = [
     description:
       'Melakwa Lake sits in a quiet granite basin above Denny Creek, ringed by talus slopes and patches of late-season color. The trail follows the creek through old-growth hemlock before a steep push over Melakwa Pass and the first glimpse of the lake below. Less trafficked than Snow Lake despite sharing the same general corridor, it rewards the extra miles with genuine stillness.',
     cover: '/photos/IMG_2964.jpeg',
+    coverPosition: 'center 50%',
     photos: [
       '/photos/IMG_2964.jpeg',
     ],
@@ -73,6 +77,7 @@ export const hikes = [
     description:
       'The Hidden Lake Lookout sits perched above a glacially carved cirque at 6,890 feet, offering what many consider the finest panorama in the North Cascades. The route climbs through wildflower-soaked Sibley Creek Basin before a final scramble to the historic fire lookout. On a clear day the view stretches from Glacier Peak to the Canadian border.',
     cover: '/photos/IMG_9270.jpeg',
+    coverPosition: 'center 30%',
     photos: [
       '/photos/IMG_9270.jpeg',
       '/photos/IMG_9271.jpeg',
@@ -89,6 +94,7 @@ export const hikes = [
     description:
       "Named for a logger who once worked these slopes, Dirty Harry's Balcony delivers one of the most dramatic viewpoints in the I-90 corridor — a cliffside perch looking straight down the Snoqualmie Valley as the highway threads between fog-wrapped ridgelines below. The trail climbs relentlessly through second-growth forest before the trees open up and the full sweep of the valley appears.",
     cover: '/photos/IMG_4994.jpeg',
+    coverPosition: 'center 25%',
     photos: [
       '/photos/IMG_4994.jpeg',
       '/photos/IMG_5003.jpeg',
@@ -107,6 +113,7 @@ export const hikes = [
     description:
       'Starting from Sunrise — the highest point in the park reachable by road — Sourdough Ridge delivers outsized rewards with minimal effort. The trail rolls across the crest of the ridge with unobstructed views of Rainier\'s Emmons Glacier to the south and the volcanic Cascades stretching north to the horizon. Wildflowers peak in late July, painting the tundra-like meadows in waves of pink and yellow.',
     cover: '/photos/IMG_2343.jpeg',
+    coverPosition: 'center 40%',
     photos: [
       '/photos/IMG_2343.jpeg',
       '/photos/IMG_2345.jpeg',
@@ -123,6 +130,7 @@ export const hikes = [
     description:
       'Lake Serene sits in one of the most dramatic cirques in the Cascades, walled in on three sides by the sheer granite faces of Mount Index. The trail is unrelenting — nearly 4,000 feet of gain packed into four miles — but the payoff is a lake that feels genuinely remote despite its proximity to the highway. In early season the shoreline holds ice and snow well into July.',
     cover: '/photos/IMG_6076.jpeg',
+    coverPosition: 'center 45%',
     photos: [
       '/photos/IMG_6076.jpeg',
     ],
@@ -138,6 +146,7 @@ export const hikes = [
     description:
       'The most beloved trail in the Alpine Lakes Wilderness, Snow Lake rewards with a classic Cascades experience — granite slabs, old-growth forest, and a shimmering lake ringed with peaks. The trail climbs steadily through the Source Creek valley before the final descent to the lakeshore, where Rock Creek drains westward toward the Middle Fork Snoqualmie. A perfect introduction to the Enchantments region.',
     cover: '/photos/IMG_5009.jpeg',
+    coverPosition: 'center 50%',
     photos: [
       '/photos/IMG_5009.jpeg',
     ],
@@ -153,6 +162,7 @@ export const hikes = [
     description:
       'Hidden at the end of Fay Canyon, the Subway Cave is one of Sedona\'s best-kept secrets — a cathedral of layered sandstone where the walls pinch together overhead and the canyon floor drops away beneath you. Getting there requires a bit of scrambling and a nose for routes that aren\'t marked on most maps, which keeps the crowds thin. Inside, the red rock glows warm even in shade, and the view back through the cave mouth frames the canyon like a painting.',
     cover: '/photos/IMG_7510.jpeg',
+    coverPosition: 'center 55%',
     photos: [
       '/photos/IMG_7510.jpeg',
     ],
@@ -168,6 +178,7 @@ export const hikes = [
     description:
       'Lake Twenty-Two sits in a tight cirque beneath the cliffs of Ashland Lakes Ridge, fed by snowmelt and ringed by old-growth forest. The trail climbs through one of the few remaining old-growth stands on the west slope of the Cascades — massive hemlocks and cedars draped in moss — before the trees give way and the lake appears. In winter the approach ices over and the surrounding walls run with frozen waterfalls, making it a different kind of trip entirely.',
     cover: '/photos/IMG_6227.jpeg',
+    coverPosition: 'center 45%',
     photos: [
       '/photos/IMG_6227.jpeg',
     ],
@@ -183,6 +194,7 @@ export const hikes = [
     description:
       'One of the most accessible summit views in the I-90 corridor, Rattlesnake Ledge sits above Rattlesnake Lake with a sweeping look across the Cedar River watershed toward the Cascades. The trail climbs steadily through second-growth forest before breaking out onto the rocky ledge — a wide, exposed perch that rewards the short effort with a genuinely outsized view. A classic year-round trail when most of the range is buried in snow.',
     cover: '/photos/IMG_6015.jpeg',
+    coverPosition: 'center 35%',
     photos: [
       '/photos/IMG_6015.jpeg',
     ],
@@ -198,6 +210,7 @@ export const hikes = [
     description:
       'One of the great hikes in the North Cascades, Cascade Pass delivers a sweeping alpine panorama from its saddle — and that\'s just the beginning. The Sahale Arm continues upward through open heather slopes and past Doubtful Lake before reaching the moraine above Sahale Glacier. The fall color here is extraordinary: crimson and gold blueberry fields spreading across the high ridges, with glaciated peaks in every direction.',
     cover: '/photos/IMG_5621.jpeg',
+    coverPosition: 'center 35%',
     photos: [
       '/photos/IMG_5621.jpeg',
     ],

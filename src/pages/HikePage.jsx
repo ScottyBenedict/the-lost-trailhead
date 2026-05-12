@@ -18,7 +18,7 @@ export default function HikePage() {
     <div className="hike-page">
       <div
         className="hike-hero"
-        style={{ backgroundImage: `url(${hike.cover})` }}
+        style={{ backgroundImage: `url(${hike.cover})`, backgroundPosition: hike.coverPosition || 'center' }}
         role="img"
         aria-label={`${hike.name} cover photo`}
       >
