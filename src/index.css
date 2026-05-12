@@ -406,9 +406,8 @@ a   { color: inherit; text-decoration: none; }
 /* ── Hike Page ───────────────────────────────────────── */
 .hike-hero {
   position: relative;
-  height: 58vh;
-  min-height: 380px;
-  max-height: 620px;
+  height: 75vh;
+  min-height: 480px;
   background-size: cover;
   background-position: center;
 }
@@ -427,8 +426,6 @@ a   { color: inherit; text-decoration: none; }
 }
 
 .hike-hero-content {
-  max-width: var(--max-w);
-  margin: 0 auto;
   padding: 3rem var(--pad);
   width: 100%;
 }
