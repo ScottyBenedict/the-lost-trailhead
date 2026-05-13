@@ -30,10 +30,12 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'Few lakes in Washington stop hikers in their tracks the way Blanca does. Fed by the Columbia Glacier, the water holds an impossible milky turquoise that shifts with the light throughout the day. The trail earns every bit of that view — a relentless climb through dense forest that gives little hint of what\'s waiting at the top until the trees break and the lake opens up below.',
-    cover: '/photos/IMG_2283.jpeg',
-    coverPosition: 'center 50%',
+    cover: '/photos/IMG_5347.jpeg',
+    coverPosition: 'center 45%',
     photos: [
-      '/photos/IMG_2283.jpeg',
+      '/photos/IMG_5347.jpeg',
+      '/photos/IMG_5337.jpeg',
+      '/photos/IMG_2283b.jpeg',
     ],
   },
   {
