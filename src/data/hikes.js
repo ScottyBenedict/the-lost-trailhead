@@ -48,10 +48,20 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'One of the great hikes in the North Cascades, Cascade Pass delivers a sweeping alpine panorama from its saddle — and that\'s just the beginning. The Sahale Arm continues upward through open heather slopes and past Doubtful Lake before reaching the moraine above Sahale Glacier. The fall color here is extraordinary: crimson and gold blueberry fields spreading across the high ridges, with glaciated peaks in every direction.',
-    cover: '/photos/IMG_5621.jpeg',
-    coverPosition: 'center 35%',
+    cover: '/photos/IMG_2427.jpeg',
+    coverPosition: 'center 40%',
     photos: [
+      '/photos/IMG_2427.jpeg',
       '/photos/IMG_5621.jpeg',
+      '/photos/IMG_5586.jpeg',
+      '/photos/IMG_5594.jpeg',
+      '/photos/IMG_5595.jpeg',
+      '/photos/IMG_5598.jpeg',
+      '/photos/IMG_5605.jpeg',
+      '/photos/IMG_5608.jpeg',
+      '/photos/IMG_5616.jpeg',
+      '/photos/IMG_5625.jpeg',
+      '/photos/IMG_5628.jpeg',
     ],
   },
   {
