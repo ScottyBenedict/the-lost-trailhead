@@ -65,6 +65,27 @@ export const hikes = [
     ],
   },
   {
+    id: 'colchuck-lake',
+    name: 'Colchuck Lake',
+    region: 'Alpine Lakes Wilderness · Leavenworth',
+    distance: '8.0 mi',
+    gain: '2,300 ft',
+    difficulty: 'Strenuous',
+    season: 'Jun – Oct',
+    description:
+      'Colchuck Lake sits at 5,570 feet beneath the sheer north faces of Dragontail Peak and Colchuck Peak — two of the most dramatic walls in the Alpine Lakes Wilderness. The trail climbs steadily through dense forest before breaking out onto the boulder-strewn lakeshore, a granite and ice world that holds its winter coat well into summer. In early season the lake freezes hard enough to walk on, and the silence is complete: just the creak of ice, the wind off the couloir, and the ridge reflected in whatever open water the thaw has left.',
+    cover: '/photos/IMG_4742.jpeg',
+    coverPosition: 'center 55%',
+    photos: [
+      '/photos/IMG_1771.jpeg',
+      '/photos/IMG_4735.jpeg',
+      '/photos/IMG_4740.jpeg',
+      '/photos/IMG_4742.jpeg',
+      '/photos/IMG_4745.jpeg',
+      '/photos/IMG_4748.jpeg',
+    ],
+  },
+  {
     id: 'dirty-harrys-balcony',
     name: "Dirty Harry's Balcony",
     region: 'Olallie State Park · North Bend',
