@@ -314,33 +314,8 @@ a   { color: inherit; text-decoration: none; }
   cursor: pointer;
 }
 
-.hike-card-flippable {
-  overflow: visible;
-  perspective: 1200px;
-}
 
-.hike-card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hike-card-flippable:hover .hike-card-inner {
-  transform: rotateY(180deg);
-}
-
-.hike-card-front {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.hike-card-front::after {
+.hike-card::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -354,41 +329,7 @@ a   { color: inherit; text-decoration: none; }
   transition: opacity 0.4s;
 }
 
-.hike-card:hover .hike-card-front::after { opacity: 0.8; }
-
-.hike-card-back {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: rotateY(180deg);
-  background: var(--forest);
-  display: flex;
-  flex-direction: column;
-}
-
-.hike-card-map {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  object-fit: contain;
-  padding: 1.5rem 1.5rem 0.75rem;
-}
-
-.hike-card-back-body {
-  padding: 1.25rem 1.5rem 1.5rem;
-  min-height: 9rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  background: rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(5px) saturate(1.4);
-  -webkit-backdrop-filter: blur(5px) saturate(1.4);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
+.hike-card:hover::after { opacity: 0.8; }
 
 .hike-card-img {
   position: absolute;
@@ -402,7 +343,7 @@ a   { color: inherit; text-decoration: none; }
   transition: transform 0.6s ease;
 }
 
-.hike-card:not(.hike-card-flippable):hover .hike-card-img img { transform: scale(1.07); }
+.hike-card:hover .hike-card-img img { transform: scale(1.07); }
 
 .hike-card-img-placeholder {
   width: 100%;
