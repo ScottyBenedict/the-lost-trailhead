@@ -95,11 +95,16 @@ export const hikes = [
     season: 'Apr – Nov',
     description:
       "Named for a logger who once worked these slopes, Dirty Harry's Balcony delivers one of the most dramatic viewpoints in the I-90 corridor — a cliffside perch looking straight down the Snoqualmie Valley as the highway threads between fog-wrapped ridgelines below. The trail climbs relentlessly through second-growth forest before the trees open up and the full sweep of the valley appears.",
-    cover: '/photos/IMG_4994.jpeg',
-    coverPosition: 'center 25%',
+    cover: '/photos/IMG_5012.jpeg',
+    coverPosition: 'center 55%',
     photos: [
       '/photos/IMG_4994.jpeg',
+      '/photos/IMG_4992.jpeg',
       '/photos/IMG_5003.jpeg',
+      '/photos/IMG_5005.jpeg',
+      '/photos/IMG_5008.jpeg',
+      '/photos/IMG_5012.jpeg',
+      '/photos/IMG_5015.jpeg',
       '/photos/IMG_5021.jpeg',
       '/photos/IMG_5022.jpeg',
     ],
