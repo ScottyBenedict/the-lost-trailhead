@@ -192,14 +192,7 @@ export default function AdminPage() {
 
       <main className="admin-main">
         <section className="admin-section">
-          <label className="admin-label">SELECT HIKE</label>
-          <select className="admin-input" value={hikeId} onChange={handleHikeSelect}>
-            <option value="">— choose a hike —</option>
-            {hikes.map(h => (
-              <option key={h.id} value={h.id}>{h.name}</option>
-            ))}
-          </select>
-          <p className="admin-or">or type a new hike name</p>
+          <label className="admin-label">NEW HIKE</label>
           <input
             className="admin-input"
             type="text"
@@ -212,6 +205,13 @@ export default function AdminPage() {
               ⚠️ This hike doesn't have a page yet — flagged for development.
             </div>
           )}
+          <p className="admin-or">or add photos and reports to a previous hike</p>
+          <select className="admin-input" value={hikeId} onChange={handleHikeSelect}>
+            <option value="">— choose a hike —</option>
+            {hikes.map(h => (
+              <option key={h.id} value={h.id}>{h.name}</option>
+            ))}
+          </select>
         </section>
 
         <section className="admin-section">
