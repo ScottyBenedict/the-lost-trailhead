@@ -11,15 +11,15 @@ export default function AdminPage() {
   const [isNewHike, setIsNewHike] = useState(false)
   const [reportText, setReportText] = useState('')
   const [hotTake, setHotTake] = useState('')
-  const [photos, setPhotos] = useState([]) // { file, previewUrl, rotated }
+  const [photos, setPhotos] = useState([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
+  const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef()
 
   const selectedHikeId = hikeId || customHike
 
-  // Load existing report when hike changes
   useEffect(() => {
     if (!selectedHikeId || isNewHike || !session) return
     async function loadReport() {
@@ -57,13 +57,34 @@ export default function AdminPage() {
     setIsNewHike(val.length > 0 && !exists)
   }
 
-  async function handlePhotoSelect(e) {
-    const files = Array.from(e.target.files)
-    const processed = await Promise.all(files.map(async file => {
+  async function processFiles(files) {
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
+    const processed = await Promise.all(imageFiles.map(async file => {
       const url = await rotateImage(file)
       return { file, previewUrl: url }
     }))
     setPhotos(prev => [...prev, ...processed])
+  }
+
+  async function handlePhotoSelect(e) {
+    await processFiles(e.target.files)
+    e.target.value = ''
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  async function handleDrop(e) {
+    e.preventDefault()
+    setIsDragOver(false)
+    await processFiles(e.dataTransfer.files)
   }
 
   async function rotateImage(file) {
@@ -94,6 +115,27 @@ export default function AdminPage() {
     return canvas.toDataURL('image/jpeg', 0.92)
   }
 
+  async function rotatePhoto(idx, direction) {
+    const photo = photos[idx]
+    const img = new Image()
+    img.src = photo.previewUrl
+    await new Promise(resolve => { img.onload = resolve })
+    const canvas = document.createElement('canvas')
+    canvas.width = img.height
+    canvas.height = img.width
+    const ctx = canvas.getContext('2d')
+    if (direction === 'cw') {
+      ctx.translate(canvas.width, 0)
+      ctx.rotate(Math.PI / 2)
+    } else {
+      ctx.translate(0, canvas.height)
+      ctx.rotate(-Math.PI / 2)
+    }
+    ctx.drawImage(img, 0, 0)
+    const newUrl = canvas.toDataURL('image/jpeg', 0.92)
+    setPhotos(prev => prev.map((p, i) => i === idx ? { ...p, previewUrl: newUrl } : p))
+  }
+
   function removePhoto(idx) {
     setPhotos(prev => prev.filter((_, i) => i !== idx))
   }
@@ -104,7 +146,6 @@ export default function AdminPage() {
     setError(null)
     setSaved(false)
     try {
-      // Upsert report
       const { error: reportError } = await supabase
         .from('hike_reports')
         .upsert({
@@ -116,7 +157,6 @@ export default function AdminPage() {
         }, { onConflict: 'hike_id,user_id' })
       if (reportError) throw reportError
 
-      // Upload photos
       for (let i = 0; i < photos.length; i++) {
         const { previewUrl } = photos[i]
         const blob = await fetch(previewUrl).then(r => r.blob())
@@ -152,7 +192,7 @@ export default function AdminPage() {
 
       <main className="admin-main">
         <section className="admin-section">
-          <label className="admin-label">Select hike</label>
+          <label className="admin-label">SELECT HIKE</label>
           <select className="admin-input" value={hikeId} onChange={handleHikeSelect}>
             <option value="">— choose a hike —</option>
             {hikes.map(h => (
@@ -175,7 +215,7 @@ export default function AdminPage() {
         </section>
 
         <section className="admin-section">
-          <label className="admin-label">Trip report</label>
+          <label className="admin-label">TRIP REPORT</label>
           <textarea
             className="admin-textarea"
             rows={6}
@@ -186,7 +226,7 @@ export default function AdminPage() {
         </section>
 
         <section className="admin-section">
-          <label className="admin-label">Hot take</label>
+          <label className="admin-label">HOT TAKE</label>
           <input
             className="admin-input"
             type="text"
@@ -197,24 +237,35 @@ export default function AdminPage() {
         </section>
 
         <section className="admin-section">
-          <label className="admin-label">Photos</label>
-          <button className="admin-btn-secondary" onClick={() => fileInputRef.current.click()}>
-            Add photos
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            style={{ display: 'none' }}
-            onChange={handlePhotoSelect}
-          />
+          <label className="admin-label">PHOTOS</label>
+          <div
+            className={`admin-drop-zone${isDragOver ? ' admin-drop-zone-active' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current.click()}
+          >
+            <span className="admin-drop-icon">↑</span>
+            <p className="admin-drop-text">Drag photos here or <span className="admin-drop-link">click to browse</span></p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={handlePhotoSelect}
+            />
+          </div>
           {photos.length > 0 && (
             <div className="admin-photo-grid">
               {photos.map((p, i) => (
                 <div key={i} className="admin-photo-thumb">
                   <img src={p.previewUrl} alt="" />
-                  <button className="admin-photo-remove" onClick={() => removePhoto(i)}>×</button>
+                  <div className="admin-photo-controls">
+                    <button className="admin-photo-ctrl" onClick={(e) => { e.stopPropagation(); rotatePhoto(i, 'ccw') }} title="Rotate left">↺</button>
+                    <button className="admin-photo-ctrl" onClick={(e) => { e.stopPropagation(); rotatePhoto(i, 'cw') }} title="Rotate right">↻</button>
+                    <button className="admin-photo-ctrl admin-photo-ctrl-remove" onClick={(e) => { e.stopPropagation(); removePhoto(i) }} title="Remove">×</button>
+                  </div>
                 </div>
               ))}
             </div>
