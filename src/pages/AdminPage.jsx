@@ -175,7 +175,11 @@ export default function AdminPage() {
       }
 
       setPhotos([])
+      setHikeId('')
+      setReportText('')
+      setHotTake('')
       setSaved(true)
+      setTimeout(() => setSaved(false), 4000)
     } catch (err) {
       setError(err.message)
     } finally {
