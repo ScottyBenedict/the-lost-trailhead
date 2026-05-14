@@ -934,11 +934,48 @@ a   { color: inherit; text-decoration: none; }
   color: #7a5c00;
 }
 
+.admin-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: transparent;
+  user-select: none;
+}
+
+.admin-drop-zone:hover,
+.admin-drop-zone-active {
+  border-color: var(--forest);
+  background: rgba(74, 95, 78, 0.05);
+}
+
+.admin-drop-icon {
+  font-size: 1.75rem;
+  color: var(--stone);
+  line-height: 1;
+}
+
+.admin-drop-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--stone);
+}
+
+.admin-drop-link {
+  color: var(--forest);
+  text-decoration: underline;
+}
+
 .admin-photo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 0.75rem;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .admin-photo-thumb {
@@ -955,22 +992,47 @@ a   { color: inherit; text-decoration: none; }
   object-fit: cover;
 }
 
-.admin-photo-remove {
+.admin-photo-controls {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0,0,0,0.6);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.65));
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.admin-photo-thumb:hover .admin-photo-controls {
+  opacity: 1;
+}
+
+.admin-photo-ctrl {
+  background: rgba(255,255,255,0.2);
   color: white;
-  border: none;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.admin-photo-ctrl:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+.admin-photo-ctrl-remove {
+  background: rgba(180, 40, 40, 0.5);
+  border-color: rgba(255,120,120,0.4);
 }
 
 .admin-btn-primary {
