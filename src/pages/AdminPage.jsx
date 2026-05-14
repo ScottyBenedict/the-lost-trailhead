@@ -239,14 +239,12 @@ export default function AdminPage() {
         <section className="admin-section">
           <label className="admin-label">PHOTOS</label>
           <div
-            className={`admin-drop-zone${isDragOver ? ' admin-drop-zone-active' : ''}`}
+            className={`admin-drop-zone${isDragOver ? ' admin-drop-zone-active' : ''}${photos.length > 0 ? ' admin-drop-zone-has-photos' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current.click()}
           >
-            <span className="admin-drop-icon">↑</span>
-            <p className="admin-drop-text">Drag photos here or <span className="admin-drop-link">click to browse</span></p>
             <input
               ref={fileInputRef}
               type="file"
@@ -255,21 +253,29 @@ export default function AdminPage() {
               style={{ display: 'none' }}
               onChange={handlePhotoSelect}
             />
-          </div>
-          {photos.length > 0 && (
-            <div className="admin-photo-grid">
-              {photos.map((p, i) => (
-                <div key={i} className="admin-photo-thumb">
-                  <img src={p.previewUrl} alt="" />
-                  <div className="admin-photo-controls">
-                    <button className="admin-photo-ctrl" onClick={(e) => { e.stopPropagation(); rotatePhoto(i, 'ccw') }} title="Rotate left">↺</button>
-                    <button className="admin-photo-ctrl" onClick={(e) => { e.stopPropagation(); rotatePhoto(i, 'cw') }} title="Rotate right">↻</button>
-                    <button className="admin-photo-ctrl admin-photo-ctrl-remove" onClick={(e) => { e.stopPropagation(); removePhoto(i) }} title="Remove">×</button>
-                  </div>
+            {photos.length === 0 ? (
+              <>
+                <span className="admin-drop-icon">↑</span>
+                <p className="admin-drop-text">Drag photos here or <span className="admin-drop-link">click to browse</span></p>
+              </>
+            ) : (
+              <>
+                <div className="admin-photo-grid" onClick={e => e.stopPropagation()}>
+                  {photos.map((p, i) => (
+                    <div key={i} className="admin-photo-thumb">
+                      <img src={p.previewUrl} alt="" />
+                      <div className="admin-photo-controls">
+                        <button className="admin-photo-ctrl" onClick={(e) => { e.stopPropagation(); rotatePhoto(i, 'ccw') }} title="Rotate left">↺</button>
+                        <button className="admin-photo-ctrl" onClick={(e) => { e.stopPropagation(); rotatePhoto(i, 'cw') }} title="Rotate right">↻</button>
+                        <button className="admin-photo-ctrl admin-photo-ctrl-remove" onClick={(e) => { e.stopPropagation(); removePhoto(i) }} title="Remove">×</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+                <p className="admin-drop-add-more">Drop more or <span className="admin-drop-link">click to browse</span></p>
+              </>
+            )}
+          </div>
         </section>
 
         {error && <p className="admin-error">{error}</p>}
