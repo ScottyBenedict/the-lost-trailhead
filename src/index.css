@@ -840,6 +840,29 @@ a   { color: inherit; text-decoration: none; }
   gap: 0.75rem;
 }
 
+.admin-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-input-wrap .admin-input {
+  width: 100%;
+  padding-right: 4rem;
+}
+
+.admin-input-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--stone);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+
 .admin-wrap {
   min-height: 100vh;
   background: var(--cream);
