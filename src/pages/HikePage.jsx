@@ -1,9 +1,38 @@
 import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { hikes } from '../data/hikes'
+import { supabase } from '../lib/supabase'
 
 export default function HikePage() {
   const { slug } = useParams()
   const hike = hikes.find((h) => h.id === slug)
+  const [reports, setReports] = useState([])
+  const [uploadedPhotos, setUploadedPhotos] = useState([])
+
+  useEffect(() => {
+    if (!hike) return
+    async function fetchContent() {
+      const [{ data: reportData }, { data: photoData }] = await Promise.all([
+        supabase
+          .from('hike_reports')
+          .select('report_text, hot_take, profiles(display_name)')
+          .eq('hike_id', hike.id),
+        supabase
+          .from('hike_photos')
+          .select('storage_path, display_order')
+          .eq('hike_id', hike.id)
+          .order('display_order'),
+      ])
+      if (reportData) setReports(reportData)
+      if (photoData) {
+        const urls = photoData.map(p =>
+          supabase.storage.from('hike-photos').getPublicUrl(p.storage_path).data.publicUrl
+        )
+        setUploadedPhotos(urls)
+      }
+    }
+    fetchContent()
+  }, [hike])
 
   if (!hike) {
     return (
@@ -13,6 +42,8 @@ export default function HikePage() {
       </div>
     )
   }
+
+  const allPhotos = [...hike.photos, ...uploadedPhotos]
 
   return (
     <div className="hike-page">
@@ -49,8 +80,23 @@ export default function HikePage() {
         <p className="hike-description">{hike.description}</p>
       </div>
 
+      {reports.length > 0 && (
+        <div className="hike-reports">
+          <h2 className="hike-reports-heading">From the Trail</h2>
+          {reports.map((r, i) => (
+            <div key={i} className="hike-report-card">
+              <p className="hike-report-author">{r.profiles?.display_name}</p>
+              {r.report_text && <p className="hike-report-text">{r.report_text}</p>}
+              {r.hot_take && (
+                <blockquote className="hike-hot-take">"{r.hot_take}"</blockquote>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="hike-gallery">
-        {hike.photos.map((photo, i) => (
+        {allPhotos.map((photo, i) => (
           <div
             key={photo}
             className={`gallery-item${i === 0 ? ' gallery-item-large' : ''}`}
