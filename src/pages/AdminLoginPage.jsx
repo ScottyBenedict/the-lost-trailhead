@@ -8,7 +8,9 @@ export default function AdminLoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [newPassword, setNewPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [isSettingPassword, setIsSettingPassword] = useState(false)
@@ -59,15 +61,20 @@ export default function AdminLoginPage() {
           <h1 className="admin-login-title">The Lost Trailhead</h1>
           <p className="admin-login-sub">Set your password</p>
           <form onSubmit={handleSetPassword} className="admin-login-form">
-            <input
-              type="password"
-              placeholder="Choose a password"
-              value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
-              required
-              minLength={8}
-              className="admin-input"
-            />
+            <div className="admin-input-wrap">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                placeholder="Choose a password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+                className="admin-input"
+              />
+              <button type="button" className="admin-input-toggle" onClick={() => setShowNewPassword(p => !p)}>
+                {showNewPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
             {error && <p className="admin-error">{error}</p>}
             <button type="submit" className="admin-btn-primary" disabled={loading}>
               {loading ? 'Saving…' : 'Set password & sign in'}
@@ -92,14 +99,19 @@ export default function AdminLoginPage() {
             required
             className="admin-input"
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            className="admin-input"
-          />
+          <div className="admin-input-wrap">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="admin-input"
+            />
+            <button type="button" className="admin-input-toggle" onClick={() => setShowPassword(p => !p)}>
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
           {error && <p className="admin-error">{error}</p>}
           <button type="submit" className="admin-btn-primary" disabled={loading}>
             {loading ? 'Signing in…' : 'Sign in'}
