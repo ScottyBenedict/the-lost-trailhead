@@ -982,6 +982,30 @@ a   { color: inherit; text-decoration: none; }
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid var(--border);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.admin-existing-thumb:hover {
+  opacity: 0.8;
+}
+
+.admin-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.admin-lightbox-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 .admin-label-optional {

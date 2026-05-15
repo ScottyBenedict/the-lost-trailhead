@@ -13,6 +13,7 @@ export default function AdminPage() {
   const [hotTake, setHotTake] = useState('')
   const [photos, setPhotos] = useState([])
   const [existingPhotos, setExistingPhotos] = useState([])
+  const [lightboxUrl, setLightboxUrl] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
@@ -254,9 +255,15 @@ export default function AdminPage() {
               <p className="admin-existing-label">{existingPhotos.length} photo{existingPhotos.length !== 1 ? 's' : ''} already on this hike</p>
               <div className="admin-existing-thumbs">
                 {existingPhotos.map((url, i) => (
-                  <img key={i} src={url} alt="" className="admin-existing-thumb" />
+                  <img key={i} src={url} alt="" className="admin-existing-thumb" onClick={() => setLightboxUrl(url)} />
                 ))}
               </div>
+            </div>
+          )}
+
+          {lightboxUrl && (
+            <div className="admin-lightbox" onClick={() => setLightboxUrl(null)}>
+              <img src={lightboxUrl} alt="" className="admin-lightbox-img" />
             </div>
           )}
 
