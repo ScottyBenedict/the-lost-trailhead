@@ -26,10 +26,10 @@ export default function AdminLoginPage() {
   }, [])
 
   useEffect(() => {
-    if (!authLoading && session) {
+    if (!authLoading && session && !isSettingPassword) {
       navigate('/admin')
     }
-  }, [session, authLoading, navigate])
+  }, [session, authLoading, navigate, isSettingPassword])
 
   async function handleLogin(e) {
     e.preventDefault()
