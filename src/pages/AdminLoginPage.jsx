@@ -14,6 +14,9 @@ export default function AdminLoginPage() {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [isSettingPassword, setIsSettingPassword] = useState(false)
+  const [isForgotPassword, setIsForgotPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetSent, setResetSent] = useState(false)
 
   useEffect(() => {
     const hash = window.location.hash
@@ -54,6 +57,22 @@ export default function AdminLoginPage() {
     }
   }
 
+  async function handleForgotPassword(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/admin/login`,
+    })
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    } else {
+      setResetSent(true)
+      setLoading(false)
+    }
+  }
+
   if (isSettingPassword) {
     return (
       <div className="admin-login-wrap">
@@ -80,6 +99,38 @@ export default function AdminLoginPage() {
               {loading ? 'Saving…' : 'Set password & sign in'}
             </button>
           </form>
+        </div>
+      </div>
+    )
+  }
+
+  if (isForgotPassword) {
+    return (
+      <div className="admin-login-wrap">
+        <div className="admin-login-card">
+          <h1 className="admin-login-title">The Lost Trailhead</h1>
+          <p className="admin-login-sub">Reset your password</p>
+          {resetSent ? (
+            <p className="admin-success">Check your email for a reset link.</p>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="admin-login-form">
+              <input
+                type="email"
+                placeholder="Your email"
+                value={resetEmail}
+                onChange={e => setResetEmail(e.target.value)}
+                required
+                className="admin-input"
+              />
+              {error && <p className="admin-error">{error}</p>}
+              <button type="submit" className="admin-btn-primary" disabled={loading}>
+                {loading ? 'Sending…' : 'Send reset link'}
+              </button>
+            </form>
+          )}
+          <button className="admin-btn-ghost admin-forgot-back" onClick={() => setIsForgotPassword(false)}>
+            Back to sign in
+          </button>
         </div>
       </div>
     )
@@ -117,6 +168,9 @@ export default function AdminLoginPage() {
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <button className="admin-btn-ghost admin-forgot-link" onClick={() => setIsForgotPassword(true)}>
+          Forgot password?
+        </button>
       </div>
     </div>
   )
