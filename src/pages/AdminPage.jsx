@@ -13,7 +13,7 @@ export default function AdminPage() {
   const [hotTake, setHotTake] = useState('')
   const [photos, setPhotos] = useState([])
   const [existingPhotos, setExistingPhotos] = useState([])
-  const [lightboxUrl, setLightboxUrl] = useState(null)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
@@ -255,15 +255,22 @@ export default function AdminPage() {
               <p className="admin-existing-label">{existingPhotos.length} photo{existingPhotos.length !== 1 ? 's' : ''} already on this hike</p>
               <div className="admin-existing-thumbs">
                 {existingPhotos.map((url, i) => (
-                  <img key={i} src={url} alt="" className="admin-existing-thumb" onClick={() => setLightboxUrl(url)} />
+                  <img key={i} src={url} alt="" className="admin-existing-thumb" onClick={() => setLightboxIndex(i)} />
                 ))}
               </div>
             </div>
           )}
 
-          {lightboxUrl && (
-            <div className="admin-lightbox" onClick={() => setLightboxUrl(null)}>
-              <img src={lightboxUrl} alt="" className="admin-lightbox-img" />
+          {lightboxIndex !== null && (
+            <div className="admin-lightbox" onClick={() => setLightboxIndex(null)}>
+              <img src={existingPhotos[lightboxIndex]} alt="" className="admin-lightbox-img" onClick={e => e.stopPropagation()} />
+              {existingPhotos.length > 1 && (
+                <>
+                  <button className="admin-lightbox-arrow admin-lightbox-prev" onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + existingPhotos.length) % existingPhotos.length) }}>‹</button>
+                  <button className="admin-lightbox-arrow admin-lightbox-next" onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % existingPhotos.length) }}>›</button>
+                </>
+              )}
+              <span className="admin-lightbox-count">{lightboxIndex + 1} / {existingPhotos.length}</span>
             </div>
           )}
 
