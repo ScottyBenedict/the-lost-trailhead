@@ -50,7 +50,7 @@ export default function AdminPage() {
         setReportText('')
         setHotTake('')
       }
-      if (photosRes.data) {
+      if (photosRes.data && photosRes.data.length > 0) {
         const urls = photosRes.data.map(p =>
           supabase.storage.from('hike-photos').getPublicUrl(p.storage_path).data.publicUrl
         )
