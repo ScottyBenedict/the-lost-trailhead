@@ -83,7 +83,7 @@ export default function HikePage() {
             <h2 className="hike-section-heading">Description</h2>
             <p className="hike-description">{hike.description}</p>
           </div>
-          <TLTLogo size={110} color="var(--border)" className="hike-body-logo" />
+          <TLTLogo size={110} color="var(--forest)" className="hike-body-logo" />
         </div>
       </div>
 

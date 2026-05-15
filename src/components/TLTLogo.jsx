@@ -18,11 +18,13 @@ export default function TLTLogo({ size = 120, color = '#1a2a1c', className = '' 
         </filter>
       </defs>
       <g filter="url(#tlt-distress)" fill={color}>
-        <circle cx="100" cy="100" r="65" fill="none" stroke={color} strokeWidth="14"/>
-        <polygon points="100,4 87,35 113,35"/>
-        <polygon points="100,196 87,165 113,165"/>
-        <polygon points="196,100 165,87 165,113"/>
-        <polygon points="4,100 35,87 35,113"/>
+        <g transform="rotate(5, 100, 100)">
+          <circle cx="100" cy="100" r="65" fill="none" stroke={color} strokeWidth="14"/>
+          <polygon points="100,4 87,35 113,35"/>
+          <polygon points="100,196 87,165 113,165"/>
+          <polygon points="196,100 165,87 165,113"/>
+          <polygon points="4,100 35,87 35,113"/>
+        </g>
         <text
           x="100" y="118"
           textAnchor="middle"

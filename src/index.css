@@ -603,12 +603,23 @@ a   { color: inherit; text-decoration: none; }
 
 .hike-body-text {
   flex: 1;
+  min-width: 0;
 }
 
 .hike-body-logo {
   flex-shrink: 0;
-  opacity: 0.25;
   margin-top: 1.5rem;
+  align-self: flex-start;
+}
+
+@media (max-width: 680px) {
+  .hike-body-inner {
+    flex-direction: column;
+  }
+  .hike-body-logo {
+    align-self: flex-end;
+    margin-top: 1rem;
+  }
 }
 
 .hike-section-heading {
