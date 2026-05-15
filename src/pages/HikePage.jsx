@@ -77,6 +77,7 @@ export default function HikePage() {
       </div>
 
       <div className="hike-body">
+        <h2 className="hike-section-heading">Description</h2>
         <p className="hike-description">{hike.description}</p>
       </div>
 
