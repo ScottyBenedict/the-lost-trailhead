@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
@@ -9,6 +9,7 @@ export default function HikePage() {
   const hike = hikes.find((h) => h.id === slug)
   const [reports, setReports] = useState([])
   const [uploadedPhotos, setUploadedPhotos] = useState([])
+  const [lightboxIndex, setLightboxIndex] = useState(null)
 
   useEffect(() => {
     if (!hike) return
@@ -45,6 +46,18 @@ export default function HikePage() {
   }
 
   const allPhotos = [...hike.photos, ...uploadedPhotos]
+
+  const handleKeyDown = useCallback((e) => {
+    if (lightboxIndex === null) return
+    if (e.key === 'ArrowRight') setLightboxIndex(i => (i + 1) % allPhotos.length)
+    if (e.key === 'ArrowLeft')  setLightboxIndex(i => (i - 1 + allPhotos.length) % allPhotos.length)
+    if (e.key === 'Escape')     setLightboxIndex(null)
+  }, [lightboxIndex, allPhotos.length])
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
 
   return (
     <div className="hike-page">
@@ -109,6 +122,7 @@ export default function HikePage() {
           <div
             key={photo}
             className={`gallery-item${i === 0 ? ' gallery-item-large' : ''}`}
+            onClick={() => setLightboxIndex(i)}
           >
             <img
               src={photo}
@@ -118,6 +132,40 @@ export default function HikePage() {
           </div>
         ))}
       </div>
+
+      {lightboxIndex !== null && (
+        <div className="gallery-lightbox" onClick={() => setLightboxIndex(null)}>
+          <img
+            src={allPhotos[lightboxIndex]}
+            alt={`${hike.name} — photo ${lightboxIndex + 1}`}
+            className="gallery-lightbox-img"
+            onClick={e => e.stopPropagation()}
+          />
+          {allPhotos.length > 1 && (
+            <>
+              <button
+                className="gallery-lightbox-arrow gallery-lightbox-prev"
+                onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + allPhotos.length) % allPhotos.length) }}
+                aria-label="Previous photo"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 6 9 12 15 18" />
+                </svg>
+              </button>
+              <button
+                className="gallery-lightbox-arrow gallery-lightbox-next"
+                onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % allPhotos.length) }}
+                aria-label="Next photo"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 6 15 12 9 18" />
+                </svg>
+              </button>
+            </>
+          )}
+          <span className="gallery-lightbox-count">{lightboxIndex + 1} / {allPhotos.length}</span>
+        </div>
+      )}
     </div>
   )
 }
