@@ -210,6 +210,20 @@ export const hikes = [
     ],
   },
   {
+    id: 'rachel-rampart-lakes',
+    name: 'Rachel & Rampart Lakes',
+    region: 'Alpine Lakes Wilderness · Salmon La Sac',
+    distance: '10.5 mi',
+    gain: '2,700 ft',
+    difficulty: 'Strenuous',
+    season: 'Jul – Oct',
+    description:
+      'Rachel Lake sits in a deep glacial cirque at the end of Box Canyon Creek, its dark water reflecting the cliffs that rise steeply from the shoreline. The trail climbs steadily through dense old-growth before the trees fall away and the lake opens up — one of the more dramatic arrivals in the Cascades. Above Rachel, a short but serious scramble leads into the Rampart Lakes basin: a scattered collection of alpine pools set across open rock and heather at nearly 6,000 feet. The views from the upper basin stretch across the Alpine Lakes Wilderness in every direction, and the snowfields here linger well into August.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/Rachel%20Lake/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1778872844587_0.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+  },
+  {
     id: 'rattlesnake-ledge',
     name: 'Rattlesnake Ledge',
     region: 'Rattlesnake Mountain Scenic Area · North Bend',

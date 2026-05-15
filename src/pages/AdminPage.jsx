@@ -4,6 +4,14 @@ import { supabase } from '../lib/supabase'
 import { hikes } from '../data/hikes'
 import exifr from 'exifr'
 
+function slugify(str) {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+}
+
 export default function AdminPage() {
   const { session, signOut } = useAuth()
   const [hikeId, setHikeId] = useState('')
@@ -20,7 +28,7 @@ export default function AdminPage() {
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef()
 
-  const selectedHikeId = hikeId || customHike
+  const selectedHikeId = hikeId || slugify(customHike)
 
   useEffect(() => {
     if (!selectedHikeId || isNewHike || !session) {
@@ -76,9 +84,8 @@ export default function AdminPage() {
     setCustomHike(val)
     setHikeId('')
     setPhotos([])
-    const exists = hikes.some(
-      h => h.name.toLowerCase() === val.toLowerCase() || h.id === val.toLowerCase().replace(/\s+/g, '-')
-    )
+    const slug = slugify(val)
+    const exists = hikes.some(h => h.id === slug || h.name.toLowerCase() === val.toLowerCase())
     setIsNewHike(val.length > 0 && !exists)
   }
 
