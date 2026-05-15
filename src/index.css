@@ -112,8 +112,8 @@ a   { color: inherit; text-decoration: none; }
   transition: opacity 0.35s ease;
 }
 
-.nav-logo:focus { outline: none; }
-.nav-logo:focus-visible { outline: 2px solid rgba(255,255,255,0.6); outline-offset: 6px; border-radius: 2px; }
+.nav-logo:focus,
+.nav-logo:focus-visible { outline: none; }
 
 
 .nav-logo-text {
