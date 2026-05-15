@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
@@ -9,6 +9,12 @@ import AdminLoginPage from './pages/AdminLoginPage'
 import AdminPage from './pages/AdminPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
 
 function AuthRedirect() {
   const navigate = useNavigate()
@@ -24,6 +30,7 @@ function AuthRedirect() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthRedirect />
       <Routes>
         <Route path="/admin/login" element={<AdminLoginPage />} />
