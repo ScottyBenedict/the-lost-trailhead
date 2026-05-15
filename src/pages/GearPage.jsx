@@ -16,7 +16,7 @@ export default function GearPage() {
           <p className="hero-eyebrow">What we carry</p>
           <h1 className="gear-title">The Kit</h1>
           <p className="gear-sub">
-            Thirty years of trial and error distilled into what actually makes it into the pack.
+            Our time in the mountains started strapped to a board, going down. Now we go up too. Either direction, the obsession with getting the gear right has never changed.
           </p>
         </div>
       </section>

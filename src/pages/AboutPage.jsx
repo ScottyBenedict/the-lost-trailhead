@@ -5,7 +5,8 @@ export default function AboutPage() {
   return (
     <div className="about">
       <section className="about-hero">
-        <h1>About The Lost Trailhead</h1>
+        <p className="hero-eyebrow">Who we are</p>
+        <h1>The Lost Trailhead</h1>
         <p className="about-tagline">
           Thirty years of friendship, measured in elevation gain.
         </p>

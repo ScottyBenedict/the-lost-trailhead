@@ -15,6 +15,7 @@ export default function Nav() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
+
   return (
     <>
       <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
