@@ -96,13 +96,18 @@ export default function AdminPage() {
     e.target.value = ''
   }
 
+  function handleDragEnter(e) {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
   function handleDragOver(e) {
     e.preventDefault()
     setIsDragOver(true)
   }
 
   function handleDragLeave(e) {
-    e.preventDefault()
+    if (e.currentTarget.contains(e.relatedTarget)) return
     setIsDragOver(false)
   }
 
@@ -276,6 +281,7 @@ export default function AdminPage() {
 
           <div
             className={`admin-drop-zone${isDragOver ? ' admin-drop-zone-active' : ''}${photos.length > 0 ? ' admin-drop-zone-has-photos' : ''}`}
+            onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
