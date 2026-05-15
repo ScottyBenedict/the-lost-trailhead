@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
+import TLTLogo from '../components/TLTLogo'
 
 export default function HikePage() {
   const { slug } = useParams()
@@ -77,8 +78,13 @@ export default function HikePage() {
       </div>
 
       <div className="hike-body">
-        <h2 className="hike-section-heading">Description</h2>
-        <p className="hike-description">{hike.description}</p>
+        <div className="hike-body-inner">
+          <div className="hike-body-text">
+            <h2 className="hike-section-heading">Description</h2>
+            <p className="hike-description">{hike.description}</p>
+          </div>
+          <TLTLogo size={110} color="var(--border)" className="hike-body-logo" />
+        </div>
       </div>
 
       {reports.length > 0 && (
