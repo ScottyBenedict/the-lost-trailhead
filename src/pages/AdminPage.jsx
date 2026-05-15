@@ -12,6 +12,7 @@ export default function AdminPage() {
   const [reportText, setReportText] = useState('')
   const [hotTake, setHotTake] = useState('')
   const [photos, setPhotos] = useState([])
+  const [existingPhotos, setExistingPhotos] = useState([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
@@ -21,23 +22,44 @@ export default function AdminPage() {
   const selectedHikeId = hikeId || customHike
 
   useEffect(() => {
-    if (!selectedHikeId || isNewHike || !session) return
-    async function loadReport() {
-      const { data } = await supabase
-        .from('hike_reports')
-        .select('report_text, hot_take')
-        .eq('hike_id', selectedHikeId)
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-      if (data) {
-        setReportText(data.report_text || '')
-        setHotTake(data.hot_take || '')
+    if (!selectedHikeId || isNewHike || !session) {
+      setReportText('')
+      setHotTake('')
+      setExistingPhotos([])
+      return
+    }
+    async function loadHikeData() {
+      const [reportRes, photosRes] = await Promise.all([
+        supabase
+          .from('hike_reports')
+          .select('report_text, hot_take')
+          .eq('hike_id', selectedHikeId)
+          .eq('user_id', session.user.id)
+          .maybeSingle(),
+        supabase
+          .from('hike_photos')
+          .select('storage_path, display_order')
+          .eq('hike_id', selectedHikeId)
+          .eq('user_id', session.user.id)
+          .order('display_order', { ascending: true }),
+      ])
+      if (reportRes.data) {
+        setReportText(reportRes.data.report_text || '')
+        setHotTake(reportRes.data.hot_take || '')
       } else {
         setReportText('')
         setHotTake('')
       }
+      if (photosRes.data) {
+        const urls = photosRes.data.map(p =>
+          supabase.storage.from('hike-photos').getPublicUrl(p.storage_path).data.publicUrl
+        )
+        setExistingPhotos(urls)
+      } else {
+        setExistingPhotos([])
+      }
     }
-    loadReport()
+    loadHikeData()
   }, [selectedHikeId, isNewHike, session])
 
   function handleHikeSelect(e) {
@@ -45,12 +67,14 @@ export default function AdminPage() {
     setHikeId(val)
     setCustomHike('')
     setIsNewHike(false)
+    setPhotos([])
   }
 
   function handleCustomHike(e) {
     const val = e.target.value
     setCustomHike(val)
     setHikeId('')
+    setPhotos([])
     const exists = hikes.some(
       h => h.name.toLowerCase() === val.toLowerCase() || h.id === val.toLowerCase().replace(/\s+/g, '-')
     )
@@ -146,17 +170,20 @@ export default function AdminPage() {
     setError(null)
     setSaved(false)
     try {
-      const { error: reportError } = await supabase
-        .from('hike_reports')
-        .upsert({
-          hike_id: selectedHikeId,
-          user_id: session.user.id,
-          report_text: reportText,
-          hot_take: hotTake,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'hike_id,user_id' })
-      if (reportError) throw reportError
+      if (reportText.trim() || hotTake.trim()) {
+        const { error: reportError } = await supabase
+          .from('hike_reports')
+          .upsert({
+            hike_id: selectedHikeId,
+            user_id: session.user.id,
+            report_text: reportText,
+            hot_take: hotTake,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'hike_id,user_id' })
+        if (reportError) throw reportError
+      }
 
+      const newlyUploaded = []
       for (let i = 0; i < photos.length; i++) {
         const { previewUrl } = photos[i]
         const blob = await fetch(previewUrl).then(r => r.blob())
@@ -170,14 +197,15 @@ export default function AdminPage() {
           hike_id: selectedHikeId,
           user_id: session.user.id,
           storage_path: storagePath,
-          display_order: i,
+          display_order: existingPhotos.length + i,
         })
+        newlyUploaded.push(
+          supabase.storage.from('hike-photos').getPublicUrl(storagePath).data.publicUrl
+        )
       }
 
+      setExistingPhotos(prev => [...prev, ...newlyUploaded])
       setPhotos([])
-      setHikeId('')
-      setReportText('')
-      setHotTake('')
       setSaved(true)
       setTimeout(() => setSaved(false), 4000)
     } catch (err) {
@@ -219,29 +247,19 @@ export default function AdminPage() {
         </section>
 
         <section className="admin-section">
-          <label className="admin-label">TRIP REPORT</label>
-          <textarea
-            className="admin-textarea"
-            rows={6}
-            placeholder="Write your trip report…"
-            value={reportText}
-            onChange={e => setReportText(e.target.value)}
-          />
-        </section>
-
-        <section className="admin-section">
-          <label className="admin-label">HOT TAKE</label>
-          <input
-            className="admin-input"
-            type="text"
-            placeholder="e.g. First Subaru to the trailhead, 15 there when we left!"
-            value={hotTake}
-            onChange={e => setHotTake(e.target.value)}
-          />
-        </section>
-
-        <section className="admin-section">
           <label className="admin-label">PHOTOS</label>
+
+          {existingPhotos.length > 0 && (
+            <div className="admin-existing-strip">
+              <p className="admin-existing-label">{existingPhotos.length} photo{existingPhotos.length !== 1 ? 's' : ''} already on this hike</p>
+              <div className="admin-existing-thumbs">
+                {existingPhotos.map((url, i) => (
+                  <img key={i} src={url} alt="" className="admin-existing-thumb" />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div
             className={`admin-drop-zone${isDragOver ? ' admin-drop-zone-active' : ''}${photos.length > 0 ? ' admin-drop-zone-has-photos' : ''}`}
             onDragOver={handleDragOver}
@@ -280,6 +298,28 @@ export default function AdminPage() {
               </>
             )}
           </div>
+        </section>
+
+        <section className="admin-section">
+          <label className="admin-label">TRIP REPORT <span className="admin-label-optional">optional</span></label>
+          <textarea
+            className="admin-textarea"
+            rows={6}
+            placeholder="Write your trip report…"
+            value={reportText}
+            onChange={e => setReportText(e.target.value)}
+          />
+        </section>
+
+        <section className="admin-section">
+          <label className="admin-label">HOT TAKE <span className="admin-label-optional">optional</span></label>
+          <input
+            className="admin-input"
+            type="text"
+            placeholder="e.g. First Subaru to the trailhead, 15 there when we left!"
+            value={hotTake}
+            onChange={e => setHotTake(e.target.value)}
+          />
         </section>
 
         {error && <p className="admin-error">{error}</p>}
