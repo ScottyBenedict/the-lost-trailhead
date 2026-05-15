@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@700&display=swap');</style>
+    <filter id="distress" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="4" seed="2" stitchTiles="stitch" result="edge-noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="edge-noise" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.055" numOctaves="3" seed="12" stitchTiles="stitch" result="speckle-noise"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  25 0 0 0 -19" in="speckle-noise" result="speckle-mask"/>
+      <feComposite in="displaced" in2="speckle-mask" operator="out"/>
+    </filter>
+  </defs>
+  <g filter="url(#distress)" fill="#1a2a1c">
+    <!-- Ring -->
+    <circle cx="100" cy="100" r="65" fill="none" stroke="#1a2a1c" stroke-width="14"/>
+    <!-- North point -->
+    <polygon points="100,4 87,35 113,35"/>
+    <!-- South point -->
+    <polygon points="100,196 87,165 113,165"/>
+    <!-- East point -->
+    <polygon points="196,100 165,87 165,113"/>
+    <!-- West point -->
+    <polygon points="4,100 35,87 35,113"/>
+    <!-- TLT -->
+    <text x="100" y="118"
+          text-anchor="middle"
+          font-family="'Josefin Sans', 'Arial Narrow', sans-serif"
+          font-weight="700"
+          font-size="44"
+          letter-spacing="5"
+          fill="#1a2a1c">TLT</text>
+  </g>
+</svg>
