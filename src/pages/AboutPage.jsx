@@ -14,22 +14,26 @@ export default function AboutPage() {
       <section className="about-story">
         <div className="about-text">
           <p>
-            Scott and Alan have been friends since before GPS tracks and Instagram posts — back
-            when you navigated by topo map and trusted that the weather would hold. Home base is
-            the Pacific Northwest, and they've logged three decades in the Cascades through every
-            season the range can throw at you: the crystal mornings of July, the larches of October,
-            the shoulder-season snow that turns back most parties.
+            The Lost Trailhead started the way most good ideas do — somewhere between a summit
+            and a parking lot, probably during a discussion about whether those clouds on the
+            horizon were "building" or "just passing through."
           </p>
           <p>
-            But a good trail is a good trail wherever it leads. The Lost Trailhead is their shared
-            archive — a place to collect the photos, remember the trails, and hold onto what it
-            feels like to stand somewhere remarkable with someone who's been there from the beginning.
+            We're Scott and Alan. We've been hiking together long enough to know that "oh it's
+            just right over there" almost always means another hour. Most of these trails are in the Cascades — our
+            backyard, the range we keep coming back to through every season it can throw at you.
+          </p>
+          <p>
+            This is our shared archive. The photos, the trip reports, the honest takes on what's
+            worth the drive and what isn't — collected here so we don't forget what it felt like
+            to be somewhere worth remembering.
           </p>
         </div>
       </section>
 
       <section className="about-people">
         <div className="about-person">
+          <img src="/photos/scott-profile.jpeg" alt="Scott" className="about-person-avatar" />
           <h2>Scott</h2>
           <p>
             I'm Scott — a Pacific Northwest hiker, average photographer, lifelong snowboarder,
