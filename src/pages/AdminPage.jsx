@@ -152,7 +152,7 @@ export default function AdminPage() {
     if (!val.length) { setIsNewHike(false); return }
     const slug = slugify(val)
     const exactKnown = hikes.find(h => h.id === slug || h.name.toLowerCase() === val.toLowerCase())
-    if (exactKnown) { setIsNewHike(false); return }
+    if (exactKnown) { setKnownMatch(exactKnown); setIsNewHike(false); return }
     const wordKnownMatches = hikes.filter(h => wordsMatch(slug, h.id))
     if (wordKnownMatches.length === 1) { setKnownMatch(wordKnownMatches[0]); setIsNewHike(false); return }
     if (wordKnownMatches.length > 1) { setIsNewHike(false); return } // ambiguous, keep typing
