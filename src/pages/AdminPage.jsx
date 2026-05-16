@@ -43,6 +43,7 @@ export default function AdminPage() {
   const [pendingHikes, setPendingHikes] = useState([])
   const [pendingHikeIds, setPendingHikeIds] = useState([])
   const [pendingMatch, setPendingMatch] = useState(null)
+  const [knownMatch, setKnownMatch] = useState(null)
   const [loadingPending, setLoadingPending] = useState(false)
   const fileInputRef = useRef()
 
@@ -147,12 +148,13 @@ export default function AdminPage() {
     setHikeId('')
     setPhotos([])
     setPendingMatch(null)
+    setKnownMatch(null)
     if (!val.length) { setIsNewHike(false); return }
     const slug = slugify(val)
-    const existsInKnown = hikes.some(h =>
-      h.id === slug || h.name.toLowerCase() === val.toLowerCase() || wordsMatch(slug, h.id)
-    )
-    if (existsInKnown) { setIsNewHike(false); return }
+    const exactKnown = hikes.find(h => h.id === slug || h.name.toLowerCase() === val.toLowerCase())
+    if (exactKnown) { setIsNewHike(false); return }
+    const wordKnown = hikes.find(h => wordsMatch(slug, h.id))
+    if (wordKnown) { setKnownMatch(wordKnown); setIsNewHike(false); return }
     const matched = pendingHikeIds.find(id => id === slug || wordsMatch(slug, id))
     if (matched) { setPendingMatch(matched); setIsNewHike(false); return }
     setIsNewHike(true)
@@ -356,6 +358,11 @@ export default function AdminPage() {
             value={customHike}
             onChange={handleCustomHike}
           />
+          {knownMatch && (
+            <div className="admin-flag admin-flag-block">
+              This hike exists as "{knownMatch.name}" — select it from the dropdown below.
+            </div>
+          )}
           {pendingMatch && (
             <div className="admin-flag admin-flag-block">
               Already logged as "{unslugify(pendingMatch)}" — select it from the dropdown below to add more photos.
@@ -480,7 +487,7 @@ export default function AdminPage() {
         <button
           className="admin-btn-primary"
           onClick={handleSave}
-          disabled={saving || !selectedHikeId || !!pendingMatch}
+          disabled={saving || !selectedHikeId || !!pendingMatch || !!knownMatch}
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
