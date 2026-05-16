@@ -810,7 +810,10 @@ a   { color: inherit; text-decoration: none; }
 .about-person p {
   font-size: 0.96rem;
   line-height: 1.78;
+  margin-bottom: 1.1rem;
 }
+
+.about-person p:last-child { margin-bottom: 0; }
 
 .about-regions-section {
   background: var(--stone-pale);

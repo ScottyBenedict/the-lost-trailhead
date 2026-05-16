@@ -32,9 +32,28 @@ export default function AboutPage() {
         <div className="about-person">
           <h2>Scott</h2>
           <p>
-            Scott grew up in the Pacific Northwest and has spent decades exploring Washington's
-            backcountry. Equal parts photographer and trail scout, he has a talent for finding
-            the frame that makes a familiar scene feel entirely new.
+            I'm Scott — a Pacific Northwest hiker, average photographer, lifelong snowboarder,
+            and former skateboard kid who still occasionally forgets he's too old to be trying kickflips.
+          </p>
+          <p>
+            Between work, time with my two kids, and trying to be the first Subaru at the trailhead
+            on hike days, I spend as much time outside as I can — usually somewhere in the Cascades
+            chasing alpine lakes, mountain light, and trails that looked like they had a lot less
+            elevation gain online the night before. I also have a well-documented weakness for
+            technical outdoor gear, which is how I've somehow convinced myself that owning "just
+            one more layer" is always a reasonable decision.
+          </p>
+          <p>
+            Most of these hikes started as a way for my buddy Alan and me to escape cell service
+            for a few hours, clear our heads, catch up on life, and convince ourselves the weather
+            forecast was wrong. Somewhere along the way — between the views, the conversations,
+            and a growing collection of photos on our phones — the idea for The Lost Trailhead
+            was born.
+          </p>
+          <p>
+            I can't claim to be a professional photographer or elite mountaineer — just a guy who
+            loves wild places, early trailhead starts, and documenting the moments that make sore
+            legs and occasional wet gear worth it.
           </p>
         </div>
         <div className="about-person">
