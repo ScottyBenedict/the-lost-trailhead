@@ -8,9 +8,9 @@ export default function HomePage() {
         <div className="hero-inner">
           <p className="hero-eyebrow">Based in the Pacific Northwest</p>
           <h1 className="hero-title">
-            Two friends,<br />
-            thirty years,<br />
-            always another trail.
+            Two good friends.<br />
+            We've done the miles together,<br />
+            here's what we found.
           </h1>
           <p className="hero-sub">
             A record of the trails, the views, and the conversations in between.

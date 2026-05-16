@@ -264,7 +264,7 @@ a   { color: inherit; text-decoration: none; }
 
 .hero-title {
   font-family: var(--font-serif);
-  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  font-size: clamp(1.5rem, 3.25vw, 2.5rem);
   font-weight: 400;
   color: var(--white);
   line-height: 1.1;
