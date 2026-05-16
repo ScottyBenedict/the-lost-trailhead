@@ -491,10 +491,14 @@ export default function AdminPage() {
           <textarea
             className="admin-textarea"
             rows={6}
+            maxLength={350}
             placeholder="Write your trip report…"
             value={reportText}
             onChange={e => setReportText(e.target.value)}
           />
+          <p className={`admin-char-count${reportText.length >= 330 ? ' admin-char-count-warn' : ''}`}>
+            {reportText.length} / 350
+          </p>
         </section>
 
         <section className="admin-section">

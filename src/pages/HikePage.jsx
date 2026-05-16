@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
@@ -47,6 +47,22 @@ export default function HikePage() {
   }
 
   const allPhotos = [...hike.photos, ...uploadedPhotos]
+
+  const galleryItems = useMemo(() => {
+    const items = []
+    const insertAfter = new Set([2, 5])
+    let reportIdx = 0
+    allPhotos.forEach((src, photoIdx) => {
+      items.push({ type: 'photo', src, photoIdx })
+      if (insertAfter.has(photoIdx) && reportIdx < reports.length) {
+        items.push({ type: 'report', data: reports[reportIdx++] })
+      }
+    })
+    while (reportIdx < reports.length) {
+      items.push({ type: 'report', data: reports[reportIdx++] })
+    }
+    return items
+  }, [allPhotos, reports])
 
   const handleKeyDown = useCallback((e) => {
     if (lightboxIndex === null) return
@@ -103,37 +119,40 @@ export default function HikePage() {
         </div>
       </div>
 
-      {reports.length > 0 && (
-        <div className="hike-reports">
-          <div className="hike-reports-inner">
-            <h2 className="hike-reports-heading">From the Trail</h2>
-            {reports.map((r, i) => (
-              <div key={i} className="hike-report-card">
-                <p className="hike-report-author">{r.profiles?.display_name}</p>
-                {r.report_text && <p className="hike-report-text">{r.report_text}</p>}
-                {r.hot_take && (
-                  <blockquote className="hike-hot-take">"{r.hot_take}"</blockquote>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="hike-gallery">
-        {allPhotos.map((photo, i) => (
-          <div
-            key={photo}
-            className={`gallery-item${i === 0 ? ' gallery-item-large' : ''}`}
-            onClick={() => setLightboxIndex(i)}
-          >
-            <img
-              src={photo}
-              alt={`${hike.name} — photo ${i + 1}`}
-              loading={i < 2 ? 'eager' : 'lazy'}
-            />
-          </div>
-        ))}
+        {galleryItems.map((item, i) => {
+          if (item.type === 'report') {
+            return (
+              <div key={`report-${i}`} className="gallery-report-card">
+                <p className="gallery-report-label">
+                  From the Trail{item.data.profiles?.display_name ? ` — ${item.data.profiles.display_name}` : ''}
+                </p>
+                {item.data.report_text && (
+                  <p className="gallery-report-text">{item.data.report_text}</p>
+                )}
+                {item.data.hot_take && (
+                  <blockquote className="gallery-report-hot-take">"{item.data.hot_take}"</blockquote>
+                )}
+                <div className="gallery-report-logo">
+                  <TLTLogo size={44} color="white" />
+                </div>
+              </div>
+            )
+          }
+          return (
+            <div
+              key={item.src}
+              className={`gallery-item${item.photoIdx === 0 ? ' gallery-item-large' : ''}`}
+              onClick={() => setLightboxIndex(item.photoIdx)}
+            >
+              <img
+                src={item.src}
+                alt={`${hike.name} — photo ${item.photoIdx + 1}`}
+                loading={item.photoIdx < 2 ? 'eager' : 'lazy'}
+              />
+            </div>
+          )
+        })}
       </div>
 
       {lightboxIndex !== null && (

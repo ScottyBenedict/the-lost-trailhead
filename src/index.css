@@ -546,6 +546,7 @@ a   { color: inherit; text-decoration: none; }
   background: var(--dark);
   display: flex;
   overflow-x: auto;
+  border-bottom: 14px solid var(--stone-pale);
 }
 
 .hike-stat {
@@ -576,7 +577,7 @@ a   { color: inherit; text-decoration: none; }
 
 .hike-body {
   width: 100%;
-  padding: 4.5rem var(--pad) 3.5rem;
+  padding: 3rem var(--pad) 2.5rem;
 }
 
 .hike-body-inner {
@@ -626,12 +627,63 @@ a   { color: inherit; text-decoration: none; }
   color: var(--body);
 }
 
+/* ── Gallery Report Cards ────────────────────────────── */
+.gallery-report-card {
+  background: rgba(42, 58, 44, 0.75);
+  border-radius: 16px;
+  aspect-ratio: 4 / 3;
+  padding: 1.75rem 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.gallery-report-logo {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  opacity: 0.65;
+}
+
+.gallery-report-hot-take {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--white);
+  border: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.gallery-report-text {
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0;
+}
+
+.gallery-report-label {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+
 /* ── Photo Gallery ───────────────────────────────────── */
 .hike-gallery {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 6px;
-  padding-bottom: 7rem;
+  gap: 10px;
+  padding: 0 10px 7rem;
 }
 
 .gallery-item {
@@ -1171,6 +1223,17 @@ a   { color: inherit; text-decoration: none; }
   color: #92400e;
 }
 
+.admin-char-count {
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+}
+.admin-char-count-warn {
+  color: #c0392b;
+  font-weight: 600;
+}
+
 .admin-existing-strip {
   margin-bottom: 1rem;
 }
@@ -1460,50 +1523,62 @@ a   { color: inherit; text-decoration: none; }
 
 /* ── From the Trail (public hike page) ───────────────── */
 .hike-reports {
-  background: var(--stone-pale);
-  padding: 4rem var(--pad);
+  padding: 0 var(--pad) 4rem;
+}
+
+.hike-section-divider {
+  border: none;
+  border-top: 2px solid rgba(42, 58, 44, 0.35);
+  margin: 0 var(--pad);
 }
 
 .hike-reports-inner {
-  max-width: 720px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .hike-reports-heading {
-  font-family: var(--font-serif);
-  font-size: 1.5rem;
-  font-weight: 500;
-  color: var(--dark);
-  margin: 0 0 1.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 3rem 0 1.5rem;
+}
+
+.hike-reports-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 3rem;
 }
 
 .hike-report-card {
-  border-left: 3px solid var(--sage);
-  padding: 1rem 0 1rem 1.25rem;
-  margin-bottom: 1.5rem;
+  padding: 0;
 }
 
 .hike-report-author {
-  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--muted);
-  margin: 0 0 0.5rem;
+  margin: 0 0 1rem;
 }
 
 .hike-report-text {
   font-size: 0.975rem;
-  color: var(--body);
-  line-height: 1.7;
-  margin: 0 0 0.75rem;
+  color: var(--forest);
+  line-height: 1.85;
+  margin: 0 0 1.25rem;
 }
 
 .hike-hot-take {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   color: var(--forest);
+  opacity: 0.8;
   margin: 0;
   padding: 0;
   border: none;
