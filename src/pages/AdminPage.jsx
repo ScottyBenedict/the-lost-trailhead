@@ -19,8 +19,8 @@ function unslugify(slug) {
 const STOP_WORDS = new Set(['and', 'the', 'a', 'an', 'of', 'at', 'in'])
 
 function wordsMatch(inputSlug, candidateId) {
-  const inputWords = inputSlug.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
-  const candidateWords = candidateId.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
+  const inputWords = inputSlug.split('-').filter(w => w.length > 1 && !STOP_WORDS.has(w))
+  const candidateWords = candidateId.split('-').filter(w => w.length > 1 && !STOP_WORDS.has(w))
   if (inputWords.length === 0) return false
   return inputWords.every(w => candidateWords.some(cw => cw.startsWith(w) || w.startsWith(cw)))
 }
