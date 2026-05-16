@@ -1165,6 +1165,12 @@ a   { color: inherit; text-decoration: none; }
   color: #991b1b;
 }
 
+.admin-flag-info {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
 .admin-existing-strip {
   margin-bottom: 1rem;
 }
@@ -1454,9 +1460,13 @@ a   { color: inherit; text-decoration: none; }
 
 /* ── From the Trail (public hike page) ───────────────── */
 .hike-reports {
+  background: var(--stone-pale);
+  padding: 4rem var(--pad);
+}
+
+.hike-reports-inner {
   max-width: 720px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem;
 }
 
 .hike-reports-heading {

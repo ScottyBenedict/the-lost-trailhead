@@ -14,7 +14,7 @@ export default function HikePage() {
   useEffect(() => {
     if (!hike) return
     async function fetchContent() {
-      const [{ data: reportData }, { data: photoData }] = await Promise.all([
+      const [reportRes, { data: photoData }] = await Promise.all([
         supabase
           .from('hike_reports')
           .select('report_text, hot_take, profiles(display_name)')
@@ -25,7 +25,8 @@ export default function HikePage() {
           .eq('hike_id', hike.id)
           .order('display_order'),
       ])
-      if (reportData) setReports(reportData)
+      const data = reportRes.error ? (await supabase.from('hike_reports').select('report_text, hot_take').eq('hike_id', hike.id)).data : reportRes.data
+      if (data) setReports(data.filter(r => r.report_text || r.hot_take))
       if (photoData) {
         const urls = photoData.map(p =>
           supabase.storage.from('hike-photos').getPublicUrl(p.storage_path).data.publicUrl
@@ -104,16 +105,18 @@ export default function HikePage() {
 
       {reports.length > 0 && (
         <div className="hike-reports">
-          <h2 className="hike-reports-heading">From the Trail</h2>
-          {reports.map((r, i) => (
-            <div key={i} className="hike-report-card">
-              <p className="hike-report-author">{r.profiles?.display_name}</p>
-              {r.report_text && <p className="hike-report-text">{r.report_text}</p>}
-              {r.hot_take && (
-                <blockquote className="hike-hot-take">"{r.hot_take}"</blockquote>
-              )}
-            </div>
-          ))}
+          <div className="hike-reports-inner">
+            <h2 className="hike-reports-heading">From the Trail</h2>
+            {reports.map((r, i) => (
+              <div key={i} className="hike-report-card">
+                <p className="hike-report-author">{r.profiles?.display_name}</p>
+                {r.report_text && <p className="hike-report-text">{r.report_text}</p>}
+                {r.hot_take && (
+                  <blockquote className="hike-hot-take">"{r.hot_take}"</blockquote>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

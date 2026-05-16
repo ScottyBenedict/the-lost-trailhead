@@ -50,6 +50,7 @@ export default function AdminPage() {
   const [pendingHikes, setPendingHikes] = useState([])
   const [pendingHikeIds, setPendingHikeIds] = useState([])
   const [existingHashes, setExistingHashes] = useState(new Set())
+  const [hasExistingReport, setHasExistingReport] = useState(false)
   const [pendingMatch, setPendingMatch] = useState(null)
   const [knownMatch, setKnownMatch] = useState(null)
   const [loadingPending, setLoadingPending] = useState(false)
@@ -63,6 +64,7 @@ export default function AdminPage() {
       setHotTake('')
       setExistingPhotos([])
       setExistingHashes(new Set())
+      setHasExistingReport(false)
       return
     }
     async function loadHikeData() {
@@ -77,15 +79,16 @@ export default function AdminPage() {
           .from('hike_photos')
           .select('storage_path, display_order, file_hash')
           .eq('hike_id', selectedHikeId)
-          .eq('user_id', session.user.id)
           .order('display_order', { ascending: true }),
       ])
-      if (reportRes.data) {
+      if (reportRes.data && (reportRes.data.report_text || reportRes.data.hot_take)) {
         setReportText(reportRes.data.report_text || '')
         setHotTake(reportRes.data.hot_take || '')
+        setHasExistingReport(true)
       } else {
         setReportText('')
         setHotTake('')
+        setHasExistingReport(false)
       }
       if (photosRes.data && photosRes.data.length > 0) {
         const urls = photosRes.data.map(p =>
@@ -317,6 +320,7 @@ export default function AdminPage() {
       setPhotos([])
       setExistingPhotos([])
       setExistingHashes(new Set())
+      setHasExistingReport(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 4000)
     } catch (err) {
@@ -479,6 +483,11 @@ export default function AdminPage() {
 
         <section className="admin-section">
           <label className="admin-label">TRIP REPORT <span className="admin-label-optional">optional</span></label>
+          {hasExistingReport && (
+            <div className="admin-flag admin-flag-info">
+              You've already submitted a report for this hike — saving will overwrite it.
+            </div>
+          )}
           <textarea
             className="admin-textarea"
             rows={6}
