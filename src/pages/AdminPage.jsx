@@ -21,7 +21,7 @@ const STOP_WORDS = new Set(['and', 'the', 'a', 'an', 'of', 'at', 'in'])
 function wordsMatch(inputSlug, candidateId) {
   const inputWords = inputSlug.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
   const candidateWords = candidateId.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
-  if (inputWords.length === 0) return false
+  if (inputWords.length < 2) return false
   return inputWords.some(w => candidateWords.includes(w))
 }
 
