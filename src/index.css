@@ -906,8 +906,8 @@ a   { color: inherit; text-decoration: none; }
 .about-person p:last-child { margin-bottom: 0; }
 
 .about-regions-section {
-  background: var(--stone-pale);
-  padding: 6rem var(--pad);
+  background: rgba(194, 210, 192, 0.68);
+  padding: 3rem var(--pad) 4rem;
   text-align: center;
 }
 
