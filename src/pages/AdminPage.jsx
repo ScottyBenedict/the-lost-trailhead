@@ -4,6 +4,12 @@ import { supabase } from '../lib/supabase'
 import { hikes } from '../data/hikes'
 import exifr from 'exifr'
 
+async function computeHash(file) {
+  const buffer = await file.arrayBuffer()
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 function slugify(str) {
   return str
     .toLowerCase()
@@ -42,6 +48,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('log')
   const [pendingHikes, setPendingHikes] = useState([])
   const [pendingHikeIds, setPendingHikeIds] = useState([])
+  const [existingHashes, setExistingHashes] = useState(new Set())
   const [pendingMatch, setPendingMatch] = useState(null)
   const [knownMatch, setKnownMatch] = useState(null)
   const [loadingPending, setLoadingPending] = useState(false)
@@ -54,6 +61,7 @@ export default function AdminPage() {
       setReportText('')
       setHotTake('')
       setExistingPhotos([])
+      setExistingHashes(new Set())
       return
     }
     async function loadHikeData() {
@@ -66,7 +74,7 @@ export default function AdminPage() {
           .maybeSingle(),
         supabase
           .from('hike_photos')
-          .select('storage_path, display_order')
+          .select('storage_path, display_order, file_hash')
           .eq('hike_id', selectedHikeId)
           .eq('user_id', session.user.id)
           .order('display_order', { ascending: true }),
@@ -83,8 +91,10 @@ export default function AdminPage() {
           supabase.storage.from('hike-photos').getPublicUrl(p.storage_path).data.publicUrl
         )
         setExistingPhotos(urls)
+        setExistingHashes(new Set(photosRes.data.filter(p => p.file_hash).map(p => p.file_hash)))
       } else {
         setExistingPhotos([])
+        setExistingHashes(new Set())
       }
     }
     loadHikeData()
@@ -164,8 +174,8 @@ export default function AdminPage() {
   async function processFiles(files) {
     const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
     const processed = await Promise.all(imageFiles.map(async file => {
-      const url = await rotateImage(file)
-      return { file, previewUrl: url }
+      const [url, hash] = await Promise.all([rotateImage(file), computeHash(file)])
+      return { file, previewUrl: url, hash, isDuplicate: existingHashes.has(hash) }
     }))
     setPhotos(prev => [...prev, ...processed])
   }
@@ -283,6 +293,7 @@ export default function AdminPage() {
           user_id: session.user.id,
           storage_path: storagePath,
           display_order: existingPhotos.length + i,
+          file_hash: photos[i].hash,
         })
         newlyUploaded.push(
           supabase.storage.from('hike-photos').getPublicUrl(storagePath).data.publicUrl
@@ -297,6 +308,7 @@ export default function AdminPage() {
         setHotTake('')
         setPhotos([])
         setExistingPhotos([])
+        setExistingHashes(new Set())
       } else {
         setExistingPhotos(prev => [...prev, ...newlyUploaded])
         setPhotos([])
@@ -444,8 +456,9 @@ export default function AdminPage() {
               <>
                 <div className="admin-photo-grid" onClick={e => e.stopPropagation()}>
                   {photos.map((p, i) => (
-                    <div key={i} className="admin-photo-thumb">
+                    <div key={i} className={`admin-photo-thumb${p.isDuplicate ? ' admin-photo-thumb-duplicate' : ''}`}>
                       <img src={p.previewUrl} alt="" />
+                      {p.isDuplicate && <span className="admin-photo-duplicate-badge">Duplicate</span>}
                       <div className="admin-photo-controls">
                         <button className="admin-photo-ctrl" onClick={(e) => { e.stopPropagation(); rotatePhoto(i, 'ccw') }} title="Rotate left">↺</button>
                         <button className="admin-photo-ctrl" onClick={(e) => { e.stopPropagation(); rotatePhoto(i, 'cw') }} title="Rotate right">↻</button>
