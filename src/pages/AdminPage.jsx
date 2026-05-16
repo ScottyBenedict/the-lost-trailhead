@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { hikes } from '../data/hikes'
 import exifr from 'exifr'
+import heic2any from 'heic2any'
 
 async function computeHash(file) {
   const buffer = await file.arrayBuffer()
@@ -174,10 +175,16 @@ export default function AdminPage() {
   }
 
   async function processFiles(files) {
-    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif'))
     const processed = await Promise.all(imageFiles.map(async file => {
-      const [url, hash] = await Promise.all([rotateImage(file), computeHash(file)])
-      return { file, previewUrl: url, hash, isDuplicate: existingHashes.has(hash) }
+      let workingFile = file
+      if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+        const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 })
+        workingFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' })
+      }
+      const hash = await computeHash(file)
+      const url = await rotateImage(workingFile)
+      return { file: workingFile, previewUrl: url, hash, isDuplicate: existingHashes.has(hash) }
     }))
     setPhotos(prev => [...prev, ...processed])
   }
@@ -439,7 +446,7 @@ export default function AdminPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               multiple
               style={{ display: 'none' }}
               onChange={handlePhotoSelect}
