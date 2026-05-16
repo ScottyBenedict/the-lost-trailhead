@@ -33,6 +33,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('log')
   const [pendingHikes, setPendingHikes] = useState([])
   const [pendingHikeIds, setPendingHikeIds] = useState([])
+  const [pendingMatch, setPendingMatch] = useState(null)
   const [loadingPending, setLoadingPending] = useState(false)
   const fileInputRef = useRef()
 
@@ -136,9 +137,14 @@ export default function AdminPage() {
     setCustomHike(val)
     setHikeId('')
     setPhotos([])
+    setPendingMatch(null)
+    if (!val.length) { setIsNewHike(false); return }
     const slug = slugify(val)
-    const exists = hikes.some(h => h.id === slug || h.name.toLowerCase() === val.toLowerCase())
-    setIsNewHike(val.length > 0 && !exists)
+    const existsInKnown = hikes.some(h => h.id === slug || h.name.toLowerCase() === val.toLowerCase())
+    if (existsInKnown) { setIsNewHike(false); return }
+    const matched = pendingHikeIds.find(id => id === slug || id.includes(slug) || slug.includes(id))
+    if (matched) { setPendingMatch(matched); setIsNewHike(false); return }
+    setIsNewHike(true)
   }
 
   async function processFiles(files) {
@@ -339,6 +345,11 @@ export default function AdminPage() {
             value={customHike}
             onChange={handleCustomHike}
           />
+          {pendingMatch && (
+            <div className="admin-flag admin-flag-block">
+              Already logged as "{unslugify(pendingMatch)}" — select it from the dropdown below to add more photos.
+            </div>
+          )}
           {isNewHike && (
             <div className="admin-flag">
               ⚠️ This hike doesn't have a page yet — flagged for development.
@@ -458,7 +469,7 @@ export default function AdminPage() {
         <button
           className="admin-btn-primary"
           onClick={handleSave}
-          disabled={saving || !selectedHikeId}
+          disabled={saving || !selectedHikeId || !!pendingMatch}
         >
           {saving ? 'Saving…' : 'Save'}
         </button>

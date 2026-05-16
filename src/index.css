@@ -1152,6 +1152,12 @@ a   { color: inherit; text-decoration: none; }
   color: #7a5c00;
 }
 
+.admin-flag-block {
+  background: #fef2f2;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
 .admin-existing-strip {
   margin-bottom: 1rem;
 }
