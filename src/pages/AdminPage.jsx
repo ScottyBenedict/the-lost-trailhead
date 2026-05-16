@@ -16,6 +16,15 @@ function unslugify(slug) {
   return slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
+const STOP_WORDS = new Set(['and', 'the', 'a', 'an', 'of', 'at', 'in'])
+
+function wordsMatch(inputSlug, candidateId) {
+  const inputWords = inputSlug.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
+  const candidateWords = candidateId.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
+  if (inputWords.length === 0) return false
+  return inputWords.some(w => candidateWords.includes(w))
+}
+
 export default function AdminPage() {
   const { session, signOut } = useAuth()
   const [hikeId, setHikeId] = useState('')
@@ -140,9 +149,11 @@ export default function AdminPage() {
     setPendingMatch(null)
     if (!val.length) { setIsNewHike(false); return }
     const slug = slugify(val)
-    const existsInKnown = hikes.some(h => h.id === slug || h.name.toLowerCase() === val.toLowerCase())
+    const existsInKnown = hikes.some(h =>
+      h.id === slug || h.name.toLowerCase() === val.toLowerCase() || wordsMatch(slug, h.id)
+    )
     if (existsInKnown) { setIsNewHike(false); return }
-    const matched = pendingHikeIds.find(id => id === slug || id.includes(slug) || slug.includes(id))
+    const matched = pendingHikeIds.find(id => id === slug || wordsMatch(slug, id))
     if (matched) { setPendingMatch(matched); setIsNewHike(false); return }
     setIsNewHike(true)
   }
