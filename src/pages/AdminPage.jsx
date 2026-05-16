@@ -302,19 +302,14 @@ export default function AdminPage() {
         )
       }
 
-      if (isNewHike) {
-        setHikeId('')
-        setCustomHike('')
-        setIsNewHike(false)
-        setReportText('')
-        setHotTake('')
-        setPhotos([])
-        setExistingPhotos([])
-        setExistingHashes(new Set())
-      } else {
-        setExistingPhotos(prev => [...prev, ...newlyUploaded])
-        setPhotos([])
-      }
+      setHikeId('')
+      setCustomHike('')
+      setIsNewHike(false)
+      setReportText('')
+      setHotTake('')
+      setPhotos([])
+      setExistingPhotos([])
+      setExistingHashes(new Set())
       setSaved(true)
       setTimeout(() => setSaved(false), 4000)
     } catch (err) {
