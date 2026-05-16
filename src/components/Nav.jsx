@@ -15,6 +15,7 @@ export default function Nav() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
+
   return (
     <>
       <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
@@ -50,6 +51,9 @@ export default function Nav() {
                 </NavLink>
                 <NavLink to="/about" onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
                   About
+                </NavLink>
+                <NavLink to="/gear" onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
+                  Gear
                 </NavLink>
               </nav>
             )}

@@ -8,6 +8,7 @@ import AboutPage from './pages/AboutPage'
 import AdminLoginPage from './pages/AdminLoginPage'
 import AdminPage from './pages/AdminPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import GearPage from './pages/GearPage'
 import './App.css'
 
 function ScrollToTop() {
@@ -45,6 +46,7 @@ export default function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/hikes/:slug" element={<HikePage />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/gear" element={<GearPage />} />
               </Routes>
             </main>
             <Footer />
