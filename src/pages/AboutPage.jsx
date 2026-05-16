@@ -6,7 +6,7 @@ export default function AboutPage() {
     <div className="about">
       <section className="about-hero">
         <p className="hero-eyebrow">Who we are</p>
-        <h1>The Lost Trailhead</h1>
+        <h1>Scott &amp; Alan</h1>
         <p className="about-tagline">
           Thirty years of friendship, measured in elevation gain.
         </p>

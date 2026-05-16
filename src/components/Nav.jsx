@@ -33,7 +33,7 @@ export default function Nav() {
       <header className="nav">
         <div className="nav-inner">
 
-          <div className="nav-hamburger-fixed" ref={menuRef}>
+          <div className="nav-hamburger-fixed" ref={menuRef} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
             <button
               className={`nav-menu-btn${open ? ' is-open' : ''}`}
               onClick={() => setOpen(o => !o)}
@@ -46,13 +46,13 @@ export default function Nav() {
             </button>
             {open && (
               <nav className="nav-dropdown">
-                <NavLink to="/" end onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
+                <NavLink to="/" end onClick={() => setOpen(false)} className="">
                   Hikes
                 </NavLink>
-                <NavLink to="/about" onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
+                <NavLink to="/about" onClick={() => setOpen(false)} className="">
                   About
                 </NavLink>
-                <NavLink to="/gear" onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'active' : ''}>
+                <NavLink to="/gear" onClick={() => setOpen(false)} className="">
                   Gear
                 </NavLink>
               </nav>
