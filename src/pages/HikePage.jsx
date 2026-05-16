@@ -135,12 +135,14 @@ export default function HikePage() {
 
       {lightboxIndex !== null && (
         <div className="gallery-lightbox" onClick={() => setLightboxIndex(null)}>
-          <img
-            src={allPhotos[lightboxIndex]}
-            alt={`${hike.name} — photo ${lightboxIndex + 1}`}
-            className="gallery-lightbox-img"
-            onClick={e => e.stopPropagation()}
-          />
+          <div className="gallery-lightbox-frame" onClick={e => e.stopPropagation()}>
+            <img
+              src={allPhotos[lightboxIndex]}
+              alt={`${hike.name} — photo ${lightboxIndex + 1}`}
+              className="gallery-lightbox-img"
+            />
+            <span className="gallery-lightbox-count">{lightboxIndex + 1} / {allPhotos.length}</span>
+          </div>
           {allPhotos.length > 1 && (
             <>
               <button
@@ -163,7 +165,6 @@ export default function HikePage() {
               </button>
             </>
           )}
-          <span className="gallery-lightbox-count">{lightboxIndex + 1} / {allPhotos.length}</span>
         </div>
       )}
     </div>
