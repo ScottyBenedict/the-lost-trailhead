@@ -1,38 +1,52 @@
 import { Link } from 'react-router-dom'
 import { hikes } from '../data/hikes'
+import TLTLogo from '../components/TLTLogo'
 
 export default function AboutPage() {
   return (
     <div className="about">
       <section className="about-hero">
         <p className="hero-eyebrow">Who we are</p>
-        <h1>Scott &amp; Alan</h1>
+        <h1>Alan &amp; Scott</h1>
         <p className="about-tagline">
           Thirty years of friendship, measured in elevation gain.
         </p>
       </section>
 
       <section className="about-story">
-        <div className="about-text">
-          <p>
-            The Lost Trailhead started the way most good ideas do — somewhere between a summit
-            and a parking lot, probably during a discussion about whether those clouds on the
-            horizon were "building" or "just passing through."
-          </p>
-          <p>
-            We're Scott and Alan. We've been hiking together long enough to know that "oh it's
-            just right over there" almost always means another hour. Most of these trails are in the Cascades — our
-            backyard, the range we keep coming back to through every season it can throw at you.
-          </p>
-          <p>
-            This is our shared archive. The photos, the trip reports, the honest takes on what's
-            worth the drive and what isn't — collected here so we don't forget what it felt like
-            to be somewhere worth remembering.
-          </p>
+        <div className="about-story-inner">
+          <div className="about-text">
+            <p>
+              The Lost Trailhead started the way most good ideas do — somewhere between a summit
+              and a parking lot, probably during a discussion about whether those clouds on the
+              horizon were "building" or "just passing through."
+            </p>
+            <p>
+              We're Alan and Scott. We've been hiking together long enough to know that "oh it's
+              just right over there" almost always means another hour. Most of these trails are in the Cascades — our
+              backyard, the range we keep coming back to through every season it can throw at you.
+            </p>
+            <p>
+              This is our shared archive. The photos, the trip reports, the honest takes on what's
+              worth the drive and what isn't — collected here so we don't forget what it felt like
+              to be somewhere worth remembering.
+            </p>
+          </div>
+          <div className="about-story-logo">
+            <TLTLogo size={110} color="var(--forest)" />
+          </div>
         </div>
       </section>
 
       <section className="about-people">
+        <div className="about-person">
+          <h2>Alan</h2>
+          <p>
+            Alan brings a careful eye and a willingness to go one more ridge over just to see
+            what's there. A thirty-year friendship's worth of judgment calls — and he's
+            almost always right about the weather.
+          </p>
+        </div>
         <div className="about-person">
           <img src="/photos/scott-profile.jpeg" alt="Scott" className="about-person-avatar" />
           <h2>Scott</h2>
@@ -59,14 +73,6 @@ export default function AboutPage() {
             I can't claim to be a professional photographer or elite mountaineer — just a guy who
             loves wild places, early trailhead starts, and documenting the moments that make sore
             legs and occasional wet gear worth it.
-          </p>
-        </div>
-        <div className="about-person">
-          <h2>Alan</h2>
-          <p>
-            Alan brings a careful eye and a willingness to go one more ridge over just to see
-            what's there. A thirty-year friendship's worth of judgment calls — and he's
-            almost always right about the weather.
           </p>
         </div>
       </section>
