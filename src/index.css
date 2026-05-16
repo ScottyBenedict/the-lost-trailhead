@@ -833,7 +833,7 @@ a   { color: inherit; text-decoration: none; }
 
 .about-story-inner {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .about-text {
@@ -846,6 +846,7 @@ a   { color: inherit; text-decoration: none; }
   flex: 1;
   display: flex;
   justify-content: flex-end;
+  margin-top: 1.5rem;
 }
 
 .about-text p {
