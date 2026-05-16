@@ -21,7 +21,7 @@ const STOP_WORDS = new Set(['and', 'the', 'a', 'an', 'of', 'at', 'in'])
 function wordsMatch(inputSlug, candidateId) {
   const inputWords = inputSlug.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
   const candidateWords = candidateId.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
-  if (inputWords.length < 2) return false
+  if (inputWords.length === 0) return false
   return inputWords.every(w => candidateWords.some(cw => cw.startsWith(w) || w.startsWith(cw)))
 }
 
@@ -153,8 +153,9 @@ export default function AdminPage() {
     const slug = slugify(val)
     const exactKnown = hikes.find(h => h.id === slug || h.name.toLowerCase() === val.toLowerCase())
     if (exactKnown) { setIsNewHike(false); return }
-    const wordKnown = hikes.find(h => wordsMatch(slug, h.id))
-    if (wordKnown) { setKnownMatch(wordKnown); setIsNewHike(false); return }
+    const wordKnownMatches = hikes.filter(h => wordsMatch(slug, h.id))
+    if (wordKnownMatches.length === 1) { setKnownMatch(wordKnownMatches[0]); setIsNewHike(false); return }
+    if (wordKnownMatches.length > 1) { setIsNewHike(false); return } // ambiguous, keep typing
     const matched = pendingHikeIds.find(id => id === slug || wordsMatch(slug, id))
     if (matched) { setPendingMatch(matched); setIsNewHike(false); return }
     setIsNewHike(true)
