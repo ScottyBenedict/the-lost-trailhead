@@ -76,20 +76,28 @@ export default function AboutPage() {
           Home is the Cascades, but the list keeps growing. From Washington's granite ridgelines
           to the red rock canyons of the Southwest — these are the places we keep coming back to.
         </p>
-        <div className="about-regions">
-          {['Alpine Lakes Wilderness', 'North Cascades National Park',
-            'Mount Rainier National Park', 'Okanogan-Wenatchee National Forest',
-            'Red Rock-Secret Mountain Wilderness'].map((r) => (
-            <span key={r} className="about-region-tag">{r}</span>
-          ))}
-        </div>
-        <div className="about-hike-links">
-          {hikes.map((hike) => (
-            <Link key={hike.id} to={`/hikes/${hike.id}`} className="about-hike-link">
-              <span className="about-hike-link-name">{hike.name}</span>
-              <span className="about-hike-link-region">{hike.region}</span>
-            </Link>
-          ))}
+        <div className="about-range-grid">
+          <div className="about-range-col">
+            <h3 className="about-range-heading">Where We've Been</h3>
+            <div className="about-range-tags">
+              {hikes.map((hike) => (
+                <Link key={hike.id} to={`/hikes/${hike.id}`} className="about-range-tag about-range-tag-link">{hike.name}</Link>
+              ))}
+            </div>
+          </div>
+          <div className="about-range-col">
+            <h3 className="about-range-heading">Where We're Going Next</h3>
+            <div className="about-range-tags">
+              {[
+                'Mt. Washington', 'Lake Ann', 'Mt. Baldy', 'Sourdough Mountain',
+                'Minotaur Lake', 'Maple Pass', 'Robin Lakes', 'Green Mountain',
+                'Vesper Peak', 'Smutwood Peak, Alberta', 'Mt. Pilchuck',
+                'Mt. Dickerman', 'Sahale Glacier', 'Eagle Lake — Sawtooths',
+              ].map(h => (
+                <span key={h} className="about-range-tag">{h}</span>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
     </div>

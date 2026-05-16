@@ -845,23 +845,41 @@ a   { color: inherit; text-decoration: none; }
   color: var(--muted);
   font-size: 0.96rem;
   max-width: 480px;
-  margin: 0 auto 2.5rem;
+  margin: 0 auto 3rem;
   line-height: 1.7;
 }
 
-.about-regions {
+.about-range-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .about-range-grid { grid-template-columns: 1fr; }
+}
+
+.about-range-heading {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--forest);
+  margin-bottom: 1.25rem;
+}
+
+.about-range-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  justify-content: center;
-  max-width: 600px;
-  margin: 0 auto 3.5rem;
 }
 
-.about-region-tag {
-  font-size: 0.76rem;
+.about-range-tag {
+  font-size: 0.78rem;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   padding: 6px 14px;
   border: 1px solid var(--stone);
@@ -869,41 +887,12 @@ a   { color: inherit; text-decoration: none; }
   color: var(--stone);
 }
 
-.about-hike-links {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  max-width: 480px;
-  margin: 0 auto;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  overflow: hidden;
-  background: var(--white);
+.about-range-tag-link {
+  transition: background 0.15s, color 0.15s;
 }
 
-.about-hike-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.4rem;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.about-hike-link:last-child { border-bottom: none; }
-
-.about-hike-link:hover { background: var(--cream); }
-
-.about-hike-link-name {
-  font-family: var(--font-serif);
-  font-size: 1.05rem;
-  color: var(--dark);
-}
-
-.about-hike-link-region {
-  font-size: 0.78rem;
-  color: var(--muted);
-  letter-spacing: 0.02em;
+.about-range-tag-link:hover {
+  background: rgba(255,255,255,0.15);
 }
 
 /* ── Footer ──────────────────────────────────────────── */
