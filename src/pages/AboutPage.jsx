@@ -7,9 +7,9 @@ export default function AboutPage() {
     <div className="about">
       <section className="about-hero">
         <p className="hero-eyebrow">Who we are</p>
-        <h1>Alan &amp; Scott</h1>
+        <h1>The People</h1>
         <p className="about-tagline">
-          Thirty years of friendship, measured in elevation gain.
+          Alan and Scott — thirty years of friendship, still chasing new trails.
         </p>
       </section>
 
