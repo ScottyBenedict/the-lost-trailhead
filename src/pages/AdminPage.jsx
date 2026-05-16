@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [isDragOver, setIsDragOver] = useState(false)
   const [activeTab, setActiveTab] = useState('log')
   const [pendingHikes, setPendingHikes] = useState([])
+  const [pendingHikeIds, setPendingHikeIds] = useState([])
   const [loadingPending, setLoadingPending] = useState(false)
   const fileInputRef = useRef()
 
@@ -77,6 +78,23 @@ export default function AdminPage() {
     }
     loadHikeData()
   }, [selectedHikeId, isNewHike, session])
+
+  useEffect(() => {
+    if (!session) return
+    async function fetchPendingIds() {
+      const knownIds = new Set(hikes.map(h => h.id))
+      const [{ data: reportData }, { data: photoData }] = await Promise.all([
+        supabase.from('hike_reports').select('hike_id'),
+        supabase.from('hike_photos').select('hike_id'),
+      ])
+      const all = new Set([
+        ...(reportData || []).map(r => r.hike_id),
+        ...(photoData || []).map(p => p.hike_id),
+      ])
+      setPendingHikeIds([...all].filter(id => !knownIds.has(id)))
+    }
+    fetchPendingIds()
+  }, [session])
 
   useEffect(() => {
     if (activeTab !== 'pending' || !session) return
@@ -329,9 +347,18 @@ export default function AdminPage() {
           <p className="admin-or">or add photos and reports to a previous hike</p>
           <select className="admin-input" value={hikeId} onChange={handleHikeSelect}>
             <option value="">— choose a hike —</option>
-            {hikes.map(h => (
-              <option key={h.id} value={h.id}>{h.name}</option>
-            ))}
+            <optgroup label="Published hikes">
+              {hikes.map(h => (
+                <option key={h.id} value={h.id}>{h.name}</option>
+              ))}
+            </optgroup>
+            {pendingHikeIds.length > 0 && (
+              <optgroup label="Needs a page">
+                {pendingHikeIds.map(id => (
+                  <option key={id} value={id}>{unslugify(id)}</option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </section>
 
