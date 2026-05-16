@@ -1,6 +1,6 @@
 export const people = [
   {
-    name: 'Scott',
+    name: 'Alan',
     gear: [
       { category: 'Footwear', name: 'Placeholder Boot', brand: 'Brand', description: 'Placeholder description.' },
       { category: 'Pack', name: 'Placeholder Pack', brand: 'Brand', description: 'Placeholder description.' },
@@ -11,7 +11,7 @@ export const people = [
     ],
   },
   {
-    name: 'Alan',
+    name: 'Scott',
     gear: [
       { category: 'Footwear', name: 'Placeholder Boot', brand: 'Brand', description: 'Placeholder description.' },
       { category: 'Pack', name: 'Placeholder Pack', brand: 'Brand', description: 'Placeholder description.' },
