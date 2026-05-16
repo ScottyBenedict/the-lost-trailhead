@@ -12,6 +12,10 @@ function slugify(str) {
     .replace(/\s+/g, '-')
 }
 
+function unslugify(slug) {
+  return slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 export default function AdminPage() {
   const { session, signOut } = useAuth()
   const [hikeId, setHikeId] = useState('')
@@ -26,6 +30,9 @@ export default function AdminPage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [activeTab, setActiveTab] = useState('log')
+  const [pendingHikes, setPendingHikes] = useState([])
+  const [loadingPending, setLoadingPending] = useState(false)
   const fileInputRef = useRef()
 
   const selectedHikeId = hikeId || slugify(customHike)
@@ -70,6 +77,33 @@ export default function AdminPage() {
     }
     loadHikeData()
   }, [selectedHikeId, isNewHike, session])
+
+  useEffect(() => {
+    if (activeTab !== 'pending' || !session) return
+    async function fetchPending() {
+      setLoadingPending(true)
+      const knownIds = new Set(hikes.map(h => h.id))
+      const [{ data: reportData }, { data: photoData }] = await Promise.all([
+        supabase.from('hike_reports').select('hike_id, profiles(display_name)'),
+        supabase.from('hike_photos').select('hike_id'),
+      ])
+      const byHike = {}
+      for (const r of (reportData || [])) {
+        if (knownIds.has(r.hike_id)) continue
+        if (!byHike[r.hike_id]) byHike[r.hike_id] = { hike_id: r.hike_id, reports: 0, photos: 0, submitters: new Set() }
+        byHike[r.hike_id].reports++
+        if (r.profiles?.display_name) byHike[r.hike_id].submitters.add(r.profiles.display_name)
+      }
+      for (const p of (photoData || [])) {
+        if (knownIds.has(p.hike_id)) continue
+        if (!byHike[p.hike_id]) byHike[p.hike_id] = { hike_id: p.hike_id, reports: 0, photos: 0, submitters: new Set() }
+        byHike[p.hike_id].photos++
+      }
+      setPendingHikes(Object.values(byHike).map(h => ({ ...h, submitters: [...h.submitters] })))
+      setLoadingPending(false)
+    }
+    fetchPending()
+  }, [activeTab, session])
 
   function handleHikeSelect(e) {
     const val = e.target.value
@@ -217,8 +251,18 @@ export default function AdminPage() {
         )
       }
 
-      setExistingPhotos(prev => [...prev, ...newlyUploaded])
-      setPhotos([])
+      if (isNewHike) {
+        setHikeId('')
+        setCustomHike('')
+        setIsNewHike(false)
+        setReportText('')
+        setHotTake('')
+        setPhotos([])
+        setExistingPhotos([])
+      } else {
+        setExistingPhotos(prev => [...prev, ...newlyUploaded])
+        setPhotos([])
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 4000)
     } catch (err) {
@@ -235,7 +279,39 @@ export default function AdminPage() {
         <button className="admin-btn-ghost" onClick={signOut}>Sign out</button>
       </header>
 
-      <main className="admin-main">
+      <nav className="admin-tabs">
+        <button className={`admin-tab${activeTab === 'log' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('log')}>Log Trip</button>
+        <button className={`admin-tab${activeTab === 'pending' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('pending')}>
+          Needs a Page
+          {pendingHikes.length > 0 && <span className="admin-tab-badge">{pendingHikes.length}</span>}
+        </button>
+      </nav>
+
+      {activeTab === 'pending' && (
+        <main className="admin-main">
+          {loadingPending ? (
+            <p className="admin-or">Loading…</p>
+          ) : pendingHikes.length === 0 ? (
+            <p className="admin-or">No pending hikes — you're all caught up.</p>
+          ) : (
+            <div className="admin-pending-list">
+              {pendingHikes.map(h => (
+                <div key={h.hike_id} className="admin-pending-item">
+                  <p className="admin-pending-name">{unslugify(h.hike_id)}</p>
+                  <p className="admin-pending-meta">
+                    {h.photos} photo{h.photos !== 1 ? 's' : ''}
+                    {h.reports > 0 && ` · ${h.reports} report${h.reports !== 1 ? 's' : ''}`}
+                    {h.submitters.length > 0 && ` · ${h.submitters.join(', ')}`}
+                  </p>
+                  <p className="admin-pending-slug">{h.hike_id}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </main>
+      )}
+
+      {activeTab === 'log' && <main className="admin-main">
         <section className="admin-section">
           <label className="admin-label">NEW HIKE</label>
           <input
@@ -359,7 +435,7 @@ export default function AdminPage() {
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
-      </main>
+      </main>}
     </div>
   )
 }
