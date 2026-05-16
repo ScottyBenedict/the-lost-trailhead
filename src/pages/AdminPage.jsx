@@ -22,7 +22,7 @@ function wordsMatch(inputSlug, candidateId) {
   const inputWords = inputSlug.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
   const candidateWords = candidateId.split('-').filter(w => w.length > 2 && !STOP_WORDS.has(w))
   if (inputWords.length < 2) return false
-  return inputWords.every(w => candidateWords.includes(w))
+  return inputWords.every(w => candidateWords.some(cw => cw.startsWith(w) || w.startsWith(cw)))
 }
 
 export default function AdminPage() {
