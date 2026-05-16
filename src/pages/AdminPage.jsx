@@ -149,6 +149,8 @@ export default function AdminPage() {
     setHikeId(val)
     setCustomHike('')
     setIsNewHike(false)
+    setPendingMatch(null)
+    setKnownMatch(null)
     setPhotos([])
   }
 
