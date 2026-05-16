@@ -55,10 +55,10 @@ export default function AboutPage() {
             and former skateboard kid who still occasionally forgets he's too old to be trying kickflips.
           </p>
           <p>
-            Between work, time with my two kids, and trying to be the first Subaru at the trailhead
-            on hike days, I spend as much time outside as I can — usually somewhere in the Cascades
-            chasing alpine lakes, mountain light, and trails that looked like they had a lot less
-            elevation gain online the night before. I also have a well-documented weakness for
+            Between work, time with my two kids, and a long-distance relationship with my fiancée
+            Danielle, getting outside is how I reset — usually somewhere in the Cascades chasing
+            alpine lakes, mountain light, and trails that looked like they had a lot less elevation
+            gain online the night before. I also have a well-documented weakness for
             technical outdoor gear, which is how I've somehow convinced myself that owning "just
             one more layer" is always a reasonable decision.
           </p>
