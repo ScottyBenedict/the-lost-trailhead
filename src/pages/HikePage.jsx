@@ -141,30 +141,32 @@ export default function HikePage() {
               alt={`${hike.name} — photo ${lightboxIndex + 1}`}
               className="gallery-lightbox-img"
             />
-            <span className="gallery-lightbox-count">{lightboxIndex + 1} / {allPhotos.length}</span>
+            <div className="gallery-lightbox-controls">
+              {allPhotos.length > 1 && (
+                <button
+                  className="gallery-lightbox-arrow"
+                  onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + allPhotos.length) % allPhotos.length) }}
+                  aria-label="Previous photo"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 6 9 12 15 18" />
+                  </svg>
+                </button>
+              )}
+              <span className="gallery-lightbox-count">{lightboxIndex + 1} / {allPhotos.length}</span>
+              {allPhotos.length > 1 && (
+                <button
+                  className="gallery-lightbox-arrow"
+                  onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % allPhotos.length) }}
+                  aria-label="Next photo"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 6 15 12 9 18" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
-          {allPhotos.length > 1 && (
-            <>
-              <button
-                className="gallery-lightbox-arrow gallery-lightbox-prev"
-                onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + allPhotos.length) % allPhotos.length) }}
-                aria-label="Previous photo"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 6 9 12 15 18" />
-                </svg>
-              </button>
-              <button
-                className="gallery-lightbox-arrow gallery-lightbox-next"
-                onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % allPhotos.length) }}
-                aria-label="Next photo"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 6 15 12 9 18" />
-                </svg>
-              </button>
-            </>
-          )}
         </div>
       )}
     </div>
