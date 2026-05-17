@@ -107,7 +107,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!session) return
     async function fetchPendingIds() {
-      const knownIds = new Set(hikes.map(h => h.id))
+      const knownIds = new Set([...hikes.map(h => h.id), ...hikes.filter(h => h.supabaseId).map(h => h.supabaseId)])
       const [{ data: reportData }, { data: photoData }] = await Promise.all([
         supabase.from('hike_reports').select('hike_id'),
         supabase.from('hike_photos').select('hike_id'),
@@ -125,7 +125,7 @@ export default function AdminPage() {
     if (activeTab !== 'pending' || !session) return
     async function fetchPending() {
       setLoadingPending(true)
-      const knownIds = new Set(hikes.map(h => h.id))
+      const knownIds = new Set([...hikes.map(h => h.id), ...hikes.filter(h => h.supabaseId).map(h => h.supabaseId)])
       const [{ data: reportData }, { data: photoData }] = await Promise.all([
         supabase.from('hike_reports').select('hike_id, profiles(display_name)'),
         supabase.from('hike_photos').select('hike_id'),
