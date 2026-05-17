@@ -1,24 +1,20 @@
 export const people = [
   {
     name: 'Alan',
-    gear: [
-      { category: 'Footwear', name: 'Placeholder Boot', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Pack', name: 'Placeholder Pack', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Layers', name: 'Placeholder Shell', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Layers', name: 'Placeholder Midlayer', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Navigation', name: 'Placeholder GPS', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Safety', name: 'Placeholder First Aid Kit', brand: 'Brand', description: 'Placeholder description.' },
-    ],
+    gear: [],
   },
   {
     name: 'Scott',
     gear: [
-      { category: 'Footwear', name: 'Placeholder Boot', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Pack', name: 'Placeholder Pack', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Layers', name: 'Placeholder Shell', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Layers', name: 'Placeholder Midlayer', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Navigation', name: 'Placeholder GPS', brand: 'Brand', description: 'Placeholder description.' },
-      { category: 'Safety', name: 'Placeholder First Aid Kit', brand: 'Brand', description: 'Placeholder description.' },
+      { category: 'Footwear', name: 'Pegasus Trail 4 GTX', brand: 'Nike', description: 'Daily driver on everything from muddy I-90 trails to dry Teanaway ridge walks. Enough cushion to go long, enough grip to stay honest.' },
+      { category: 'Footwear', name: 'X Ultra', brand: 'Salomon', description: 'When the terrain calls for something more structured. Mostly reserved for scrambles and late-season snow.' },
+      { category: 'Pack', name: 'ADV Skin 12', brand: 'Salomon', description: 'The go-to for anything under 10 miles. Runs close to the body, holds enough, and disappears on your back after the first mile.' },
+      { category: 'Pack', name: 'Talon Pro 30', brand: 'Osprey', description: 'Full-day and overnight-ready. Enough capacity to carry layers, food, and water without feeling like you\'re hauling a house.' },
+      { category: 'Watch', name: 'Watch Ultra', brand: 'Apple', description: 'Tracks every mile, every foot of gain, and still has battery left at the trailhead. The dual-crown design is genuinely useful with gloves on.' },
+      { category: 'Camera', name: 'iPhone 17 Pro', brand: 'Apple', description: 'Everything on this site was shot on this phone. The answer to "what camera do you use?" is always going to disappoint someone.' },
+      { category: 'Poles', name: 'Trekking Poles', brand: 'Black Diamond', description: 'Not always in the pack, but always appreciated on the descent. Knee insurance for long days.' },
+      { category: 'Headlamp', name: 'NU25', brand: 'Nitecore', description: 'Lightweight, USB-C rechargeable, and bright enough to be useful. The kind of gear you forget you have until you need it.' },
+      { category: 'Sunglasses', name: 'Sunglasses', brand: 'Madson', description: 'Built for Pacific Northwest light — which means they earn their keep on the rare bluebird days and stay out of the way the rest of the time.' },
     ],
   },
 ]
