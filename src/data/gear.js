@@ -14,7 +14,7 @@ export const people = [
       { category: 'Camera', name: 'iPhone 17 Pro', brand: 'Apple', description: 'Everything on this site was shot on this phone. The answer to "what camera do you use?" is always going to disappoint someone.' },
       { category: 'Poles', name: 'Trekking Poles', brand: 'Black Diamond', description: 'Not always in the pack, but always appreciated on the descent. Knee insurance for long days.' },
       { category: 'Gaiters', name: 'Gaiters', brand: 'Outdoor Research', description: 'Snow days and post-hole season. Keep the cold and wet where it belongs — outside the boot.' },
-      { category: 'Gloves', name: 'Firemark Tactical', brand: 'Firemark', description: 'Dexterous enough to use your phone, warm enough to matter. A winter day kit staple.' },
+      { category: 'Gloves', name: 'Firemark Tactical', brand: 'Outdoor Research', description: 'Dexterous enough to use your phone, warm enough to matter. A winter day kit staple.' },
       { category: 'Headlamp', name: 'NU25', brand: 'Nitecore', description: 'Lightweight, USB-C rechargeable, and bright enough to be useful. The kind of gear you forget you have until you need it.' },
       { category: 'Sunglasses', name: 'Sunglasses', brand: 'Madson', description: 'Built for Pacific Northwest light — which means they earn their keep on the rare bluebird days and stay out of the way the rest of the time.' },
     ],
