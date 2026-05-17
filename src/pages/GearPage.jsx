@@ -26,6 +26,9 @@ export default function GearPage() {
       </section>
 
       <section className="gear-section">
+        <div className="gear-section-logo">
+          <TLTLogo size={180} color="var(--forest)" />
+        </div>
         <div className="gear-columns">
           {people.map(person => {
             const grouped = groupByCategory(person.gear)
