@@ -145,16 +145,6 @@ a   { color: inherit; text-decoration: none; }
 
 .nav-menu-btn:hover {
   opacity: 1;
-  animation: shimmy 0.4s ease;
-}
-
-@keyframes shimmy {
-  0%   { transform: translateX(0) rotate(0deg); }
-  20%  { transform: translateX(-6px) rotate(-5deg); }
-  45%  { transform: translateX(6px) rotate(5deg); }
-  65%  { transform: translateX(-4px) rotate(-3deg); }
-  85%  { transform: translateX(4px) rotate(3deg); }
-  100% { transform: translateX(0) rotate(0deg); }
 }
 
 .nav-menu-btn span {
@@ -805,6 +795,7 @@ a   { color: inherit; text-decoration: none; }
 .about-hero {
   background: var(--dark);
   padding: 9rem var(--pad) 5rem;
+  min-height: 420px;
   border-bottom: 14px solid var(--stone-pale);
   position: relative;
   overflow: hidden;
@@ -1697,6 +1688,7 @@ a   { color: inherit; text-decoration: none; }
 .gear-hero {
   background: var(--dark);
   padding: 9rem var(--pad) 5rem;
+  min-height: 420px;
   border-bottom: 14px solid var(--stone-pale);
   position: relative;
   overflow: hidden;
