@@ -29,10 +29,10 @@ export const people = [
 ]
 
 export const brands = [
-  'Brand One',
-  'Brand Two',
-  'Brand Three',
-  'Brand Four',
-  'Brand Five',
-  'Brand Six',
+  'Outdoor Research',
+  'Black Diamond',
+  'Salomon',
+  'Nitecore',
+  'Patagonia',
+  'Osprey',
 ]
