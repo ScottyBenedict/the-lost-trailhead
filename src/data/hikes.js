@@ -242,6 +242,20 @@ export const hikes = [
     ],
   },
   {
+    id: 'red-top-lookout',
+    name: 'Red Top Lookout',
+    region: 'Teanaway · Wenatchee National Forest',
+    distance: '2.6 mi',
+    gain: '1,200 ft',
+    difficulty: 'Moderate',
+    season: 'Jun – Oct',
+    description:
+      'Red Top Lookout sits at 5,361 feet above the Teanaway valley — a small cabin perched on a bare summit with nothing between it and the horizon. The approach is short but steep: switchbacks through dry ponderosa pine before the trees thin and the view opens in every direction. Mount Rainier anchors the south, Mount Stuart fills the northeast, and the entire Teanaway drainage spreads below. This is east-of-the-pass country — drier, quieter, with a different sky than the west slope. The lookout is a reminder that someone once lived up here watching for smoke, and that some summits earn their view by making you work.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/red-top-lookout/4d781942-cee2-4a99-ba03-aeb06eef81d1/1778901288875_0.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+  },
+  {
     id: 'snow-lake',
     name: 'Snow Lake',
     region: 'Alpine Lakes Wilderness',
