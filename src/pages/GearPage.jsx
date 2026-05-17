@@ -20,12 +20,12 @@ export default function GearPage() {
             Our time in the mountains started strapped to a board, going down. Now we go up too. Either direction, the obsession with getting the gear right has never changed.
           </p>
         </div>
+        <div className="gear-hero-logo">
+          <TLTLogo size={200} color="var(--white)" />
+        </div>
       </section>
 
       <section className="gear-section">
-        <div className="gear-section-logo">
-          <TLTLogo size={180} color="var(--forest)" />
-        </div>
         <div className="gear-columns">
           {people.map(person => {
             const grouped = groupByCategory(person.gear)
