@@ -38,7 +38,6 @@ export default function GearPage() {
                             <span className="gear-item-brand">{item.brand}</span>
                             <span className="gear-item-name">{item.name}</span>
                           </div>
-                          <p className="gear-item-desc">{item.description}</p>
                         </li>
                       ))}
                     </ul>
