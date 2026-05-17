@@ -39,6 +39,20 @@ export const hikes = [
     ],
   },
   {
+    id: 'camelback-mountain',
+    name: 'Camelback Mountain',
+    region: 'Echo Canyon · Phoenix, Arizona',
+    distance: '2.5 mi',
+    gain: '1,280 ft',
+    difficulty: 'Strenuous',
+    season: 'Oct – Apr',
+    description:
+      'Camelback Mountain rises 2,704 feet above the Phoenix metro — a desert climb that earns its reputation without apology. The Echo Canyon route is the direct line: red rock scrambles, iron handrails bolted into the upper face, and a sustained push that makes no concessions. The payoff is a 360-degree view over the entire Valley of the Sun, with Paradise Valley and Papago Park spread below and the Superstitions fading into the haze to the east. This is not a Cascades trail — no old-growth, no glaciers, no shoulder season rain. What it has is the clarity of the desert: a sharp summit, empty sky, and a city laid out beneath you like a map.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/camelback-mountain/4d781942-cee2-4a99-ba03-aeb06eef81d1/1778987844446_1.jpg',
+    coverPosition: 'center 45%',
+    photos: [],
+  },
+  {
     id: 'cascade-pass-sahale-arm',
     name: 'Cascade Pass & Sahale Arm',
     region: 'North Cascades National Park',
@@ -271,6 +285,21 @@ export const hikes = [
     photos: [
       '/photos/IMG_5009.jpeg',
     ],
+  },
+  {
+    id: 'snow-lake-winter',
+    supabaseId: 'Snow Lake - Winter',
+    name: 'Snow Lake — Winter',
+    region: 'Alpine Lakes Wilderness · Snoqualmie Pass',
+    distance: '7.2 mi',
+    gain: '1,800 ft',
+    difficulty: 'Strenuous',
+    season: 'Dec – Mar',
+    description:
+      'Snow Lake in winter is a different trail entirely. The crowds are gone, the forest is buried, and the lake arrives only after terrain that feels nothing like the summer route — post-holed, unmarked, occasionally serious. What\'s waiting is worth it: still water reflecting snow-loaded cirque walls, a low winter sun cutting through the trees, and the valley below filling with fog. There is avalanche terrain on the approach, which deserves respect. But on a clear day with fresh snow underfoot and no one else on trail, this is the Cascades without the noise.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/Snow%20Lake%20-%20Winter/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1778955051248_2.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
   },
   {
     id: 'sourdough-ridge',

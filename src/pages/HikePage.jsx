@@ -11,6 +11,8 @@ export default function HikePage() {
   const [uploadedPhotos, setUploadedPhotos] = useState([])
   const [lightboxIndex, setLightboxIndex] = useState(null)
 
+  const supabaseId = hike?.supabaseId || hike?.id
+
   useEffect(() => {
     if (!hike) return
     async function fetchContent() {
@@ -18,14 +20,14 @@ export default function HikePage() {
         supabase
           .from('hike_reports')
           .select('report_text, hot_take, profiles(display_name)')
-          .eq('hike_id', hike.id),
+          .eq('hike_id', supabaseId),
         supabase
           .from('hike_photos')
           .select('storage_path, display_order')
-          .eq('hike_id', hike.id)
+          .eq('hike_id', supabaseId)
           .order('display_order'),
       ])
-      const data = reportRes.error ? (await supabase.from('hike_reports').select('report_text, hot_take').eq('hike_id', hike.id)).data : reportRes.data
+      const data = reportRes.error ? (await supabase.from('hike_reports').select('report_text, hot_take').eq('hike_id', supabaseId)).data : reportRes.data
       if (data) setReports(data.filter(r => r.report_text || r.hot_take))
       if (photoData) {
         const urls = photoData.map(p =>
