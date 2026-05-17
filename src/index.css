@@ -1737,7 +1737,11 @@ a   { color: inherit; text-decoration: none; }
 }
 
 .gear-section-logo {
-  display: none;
+  position: absolute;
+  right: 4rem;
+  top: 2rem;
+  opacity: 0.18;
+  pointer-events: none;
 }
 
 .gear-columns {
@@ -1872,6 +1876,9 @@ a   { color: inherit; text-decoration: none; }
   }
   .gear-columns {
     grid-template-columns: 1fr;
+  }
+  .gear-section-logo {
+    display: none;
   }
   .gear-hero-logo {
     display: block;
