@@ -1715,8 +1715,7 @@ a   { color: inherit; text-decoration: none; }
 .gear-section-logo {
   position: absolute;
   right: 4rem;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 4rem;
   opacity: 0.18;
   pointer-events: none;
 }
