@@ -42,7 +42,7 @@ export const hikes = [
     id: 'camelback-mountain',
     name: 'Camelback Mountain',
     region: 'Echo Canyon · Phoenix, Arizona',
-    distance: '2.5 mi',
+    distance: '3.1 mi',
     gain: '1,280 ft',
     difficulty: 'Strenuous',
     season: 'Oct – Apr',
