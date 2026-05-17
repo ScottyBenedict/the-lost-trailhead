@@ -1740,7 +1740,7 @@ a   { color: inherit; text-decoration: none; }
   color: var(--dark);
   padding-bottom: 0.75rem;
   border-bottom: 2px solid var(--dark);
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
 }
 
 .gear-category {
