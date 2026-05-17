@@ -46,7 +46,8 @@ export default function HikePage() {
     )
   }
 
-  const allPhotos = [...hike.photos, ...uploadedPhotos]
+  const hidden = new Set(hike.hiddenPhotos || [])
+  const allPhotos = [...hike.photos, ...uploadedPhotos.filter(url => !hidden.has(url))]
 
   const galleryItems = useMemo(() => {
     const items = []

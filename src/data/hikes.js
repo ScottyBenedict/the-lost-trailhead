@@ -254,6 +254,7 @@ export const hikes = [
     cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/red-top-lookout/4d781942-cee2-4a99-ba03-aeb06eef81d1/1778901288875_0.jpg',
     coverPosition: 'center 50%',
     photos: [],
+    hiddenPhotos: ['https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/red-top-lookout/4d781942-cee2-4a99-ba03-aeb06eef81d1/1778893314459_0.jpg'],
   },
   {
     id: 'snow-lake',
