@@ -893,16 +893,16 @@ a   { color: inherit; text-decoration: none; }
 @media (max-width: 620px) {
   .about-people {
     grid-template-columns: 1fr;
-    gap: 5.5rem;
+    gap: 7rem;
     padding-top: 7rem;
   }
   .about-person {
-    padding: 5rem 1.75rem 2rem;
+    padding: 4.5rem 1.75rem 2rem;
   }
   .about-person-avatar {
-    width: 130px;
-    height: 130px;
-    top: -65px;
+    width: 100px;
+    height: 100px;
+    top: -50px;
   }
 }
 
