@@ -806,11 +806,25 @@ a   { color: inherit; text-decoration: none; }
   background: var(--dark);
   padding: 9rem var(--pad) 5rem;
   border-bottom: 14px solid var(--stone-pale);
+  position: relative;
+  overflow: hidden;
+}
+
+.about-hero-logo {
+  position: absolute;
+  right: -2rem;
+  bottom: -2rem;
+  opacity: 0.12;
+  pointer-events: none;
 }
 
 @media (max-width: 620px) {
   .about-hero {
     padding: 6rem var(--pad) 3rem;
+  }
+  .about-hero-logo svg {
+    width: 130px;
+    height: 130px;
   }
 }
 
@@ -1857,6 +1871,9 @@ a   { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 700px) {
+  .gear-hero {
+    padding: 6rem var(--pad) 3rem;
+  }
   .gear-columns {
     grid-template-columns: 1fr;
   }

@@ -11,6 +11,9 @@ export default function AboutPage() {
         <p className="about-tagline">
           Alan and Scott — thirty years of friendship, still chasing new trails.
         </p>
+        <div className="about-hero-logo">
+          <TLTLogo size={200} color="var(--white)" />
+        </div>
       </section>
 
       <section className="about-story">
