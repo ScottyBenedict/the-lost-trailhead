@@ -1805,13 +1805,13 @@ a   { color: inherit; text-decoration: none; }
 
 .gear-brands {
   background: rgba(194, 210, 192, 0.68);
-  padding: 4rem var(--pad);
+  padding: 2rem var(--pad) 4rem;
   text-align: center;
 }
 
 .gear-brands-title {
   font-family: 'Josefin Sans', sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.88rem;
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
