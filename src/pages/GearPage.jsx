@@ -57,8 +57,8 @@ export default function GearPage() {
         <h2 className="gear-brands-title">Brands We Trust</h2>
         <div className="gear-brands-grid">
           {brands.map(brand => (
-            <div key={brand} className="gear-brand-logo">
-              <span>{brand}</span>
+            <div key={brand.name} className="gear-brand-logo">
+              <img src={brand.logo} alt={brand.name} />
             </div>
           ))}
         </div>
