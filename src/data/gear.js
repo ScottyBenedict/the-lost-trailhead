@@ -1,7 +1,13 @@
 export const people = [
   {
     name: 'Alan',
-    gear: [],
+    gear: [
+      { category: 'Footwear', name: 'Coming Soon', brand: '—', description: '' },
+      { category: 'Pack', name: 'Coming Soon', brand: '—', description: '' },
+      { category: 'Watch', name: 'Coming Soon', brand: '—', description: '' },
+      { category: 'Camera', name: 'Coming Soon', brand: '—', description: '' },
+      { category: 'Headlamp', name: 'Coming Soon', brand: '—', description: '' },
+    ],
   },
   {
     name: 'Scott',
