@@ -247,13 +247,11 @@ export const hikes = [
     season: 'Year-round',
     description:
       'One of the most accessible summit views in the I-90 corridor, Rattlesnake Ledge sits above Rattlesnake Lake with a sweeping look across the Cedar River watershed toward the Cascades. The trail climbs steadily through second-growth forest before breaking out onto the rocky ledge — a wide, exposed perch that rewards the short effort with a genuinely outsized view. A classic year-round trail when most of the range is buried in snow.',
-    cover: '/photos/IMG_6015.jpeg',
-    coverPosition: 'center 35%',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/rattlesnake-ledge/4d781942-cee2-4a99-ba03-aeb06eef81d1/1778991080731_0.jpg',
+    coverPosition: 'center 50%',
     map: '/maps/rattlesnake-ledge.svg',
     topo: '/maps/rattlesnake-ledge-topo.jpg',
-    photos: [
-      '/photos/IMG_6015.jpeg',
-    ],
+    photos: [],
   },
   {
     id: 'red-top-lookout',
