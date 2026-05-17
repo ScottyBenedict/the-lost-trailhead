@@ -1820,18 +1820,15 @@ a   { color: inherit; text-decoration: none; }
 }
 
 .gear-brands-grid {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
   align-items: center;
-  gap: 3rem;
+  gap: 2rem;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .gear-brand-logo {
-  flex: 0 0 auto;
-  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
