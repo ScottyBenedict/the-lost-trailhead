@@ -18,7 +18,7 @@ export const people = [
       { category: 'Pack', name: 'ADV Skin 12 (Short Hikes)', brand: 'Salomon', description: 'The go-to for anything under 10 miles. Runs close to the body, holds enough, and disappears on your back after the first mile.' },
       { category: 'Pack', name: 'Talon Pro 30 (Long Hikes)', brand: 'Osprey', description: 'Full-day and overnight-ready. Enough capacity to carry layers, food, and water without feeling like you\'re hauling a house.' },
       { category: 'Watch', name: 'Watch Ultra', brand: 'Apple', description: 'Tracks every mile, every foot of gain, and still has battery left at the trailhead. The dual-crown design is genuinely useful with gloves on.' },
-      { category: 'Camera', name: 'iPhone 17 Pro', brand: 'Apple', description: 'Everything on this site was shot on this phone. The answer to "what camera do you use?" is always going to disappoint someone.' },
+      { category: 'Phone/Camera', name: 'iPhone 17 Pro', brand: 'Apple', description: 'Everything on this site was shot on this phone. The answer to "what camera do you use?" is always going to disappoint someone.' },
       { category: 'Poles', name: 'Trekking Poles', brand: 'Black Diamond', description: 'Not always in the pack, but always appreciated on the descent. Knee insurance for long days.' },
       { category: 'Gaiters', name: 'Gaiters', brand: 'Outdoor Research', description: 'Snow days and post-hole season. Keep the cold and wet where it belongs — outside the boot.' },
       { category: 'Gloves', name: 'Firemark Tactical', brand: 'Outdoor Research', description: 'Dexterous enough to use your phone, warm enough to matter. A winter day kit staple.' },
