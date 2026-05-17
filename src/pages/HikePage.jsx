@@ -50,7 +50,9 @@ export default function HikePage() {
 
   const hidden = new Set(hike.hiddenPhotos || [])
   const combined = [...hike.photos, ...uploadedPhotos.filter(url => !hidden.has(url))]
-  const allPhotos = combined.length > 1 ? combined.filter(url => url !== hike.cover) : combined
+  const allPhotos = combined.length > 1 && combined[0] === hike.cover
+    ? [...combined.slice(1), combined[0]]
+    : combined
 
   const galleryItems = useMemo(() => {
     const items = []
