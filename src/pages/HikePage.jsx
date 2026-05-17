@@ -27,14 +27,16 @@ export default function HikePage() {
           .eq('hike_id', supabaseId)
           .order('display_order'),
       ])
-      const data = reportRes.data || []
-      const filtered = data.filter(r => r.report_text || r.hot_take)
-      if (filtered.length > 0) {
-        const userIds = [...new Set(filtered.map(r => r.user_id))]
-        const { data: profileData } = await supabase.from('profiles').select('id, display_name').in('id', userIds)
-        const nameMap = Object.fromEntries((profileData || []).map(p => [p.id, p.display_name]))
-        setReports(filtered.map(r => ({ ...r, displayName: nameMap[r.user_id] || null })))
+      const AUTHORS = {
+        '4d781942-cee2-4a99-ba03-aeb06eef81d1': 'Scott',
+        'dd5d9dfd-2613-46d9-962a-e116bf5ba145': 'Alan',
       }
+      const data = reportRes.data || []
+      setReports(
+        data
+          .filter(r => r.report_text || r.hot_take)
+          .map(r => ({ ...r, displayName: AUTHORS[r.user_id] || null }))
+      )
       if (photoData) {
         const urls = photoData.map(p =>
           supabase.storage.from('hike-photos').getPublicUrl(p.storage_path).data.publicUrl
