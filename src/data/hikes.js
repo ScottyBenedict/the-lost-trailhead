@@ -120,7 +120,7 @@ export const hikes = [
     description:
       'The Hidden Lake Lookout sits perched above a glacially carved cirque at 6,890 feet, offering what many consider the finest panorama in the North Cascades. The route climbs through wildflower-soaked Sibley Creek Basin before a final scramble to the historic fire lookout. On a clear day the view stretches from Glacier Peak to the Canadian border.',
     cover: '/photos/IMG_9270.jpeg',
-    coverPosition: 'center 30%',
+    coverPosition: 'center 50%',
     photos: [
       '/photos/IMG_9270.jpeg',
       '/photos/IMG_9271.jpeg',
@@ -137,7 +137,7 @@ export const hikes = [
     description:
       'The most dramatic stretch of the PCT in Washington, Kendall Katwalk is a trail blasted into the sheer granite face of Kendall Peak, with nothing but air between you and the valley floor. The approach climbs steadily through old-growth forest and subalpine meadows before the ridge suddenly drops away and the Katwalk comes into view — a narrow ledge with the entire Snoqualmie Pass corridor spread below.',
     cover: '/photos/IMG_1870.jpeg',
-    coverPosition: 'center 40%',
+    coverPosition: 'center 50%',
     photos: [
       '/photos/IMG_1870.jpeg',
       '/photos/IMG_1871.jpeg',
@@ -154,7 +154,7 @@ export const hikes = [
     description:
       'Tucked below the craggy granite face of Mount Stuart, Lake Ingalls is the jewel of the Teanaway country. The trail winds through subalpine meadows carpeted in lupine and paintbrush before cresting Ingalls Pass and revealing the steel-blue lake framed by larchwood. In late September the Western larches ignite with gold — one of the finest fall color displays in the Cascades.',
     cover: '/photos/IMG_8823.jpeg',
-    coverPosition: 'center 35%',
+    coverPosition: 'center 45%',
     photos: [
       '/photos/IMG_2633.jpeg',
       '/photos/IMG_8823.jpeg',
