@@ -7,7 +7,7 @@ export const people = [
     name: 'Scott',
     gear: [
       { category: 'Footwear', name: 'Pegasus Trail 4 GTX', brand: 'Nike', description: 'Daily driver on everything from muddy I-90 trails to dry Teanaway ridge walks. Enough cushion to go long, enough grip to stay honest.' },
-      { category: 'Footwear', name: 'X Ultra', brand: 'Salomon', description: 'When the terrain calls for something more structured. Mostly reserved for scrambles and late-season snow.' },
+      { category: 'Footwear', name: 'Cross Hike', brand: 'Salomon', description: 'When the terrain calls for something more structured. Mostly reserved for scrambles and late-season snow.' },
       { category: 'Pack', name: 'ADV Skin 12', brand: 'Salomon', description: 'The go-to for anything under 10 miles. Runs close to the body, holds enough, and disappears on your back after the first mile.' },
       { category: 'Pack', name: 'Talon Pro 30', brand: 'Osprey', description: 'Full-day and overnight-ready. Enough capacity to carry layers, food, and water without feeling like you\'re hauling a house.' },
       { category: 'Watch', name: 'Watch Ultra', brand: 'Apple', description: 'Tracks every mile, every foot of gain, and still has battery left at the trailhead. The dual-crown design is genuinely useful with gloves on.' },

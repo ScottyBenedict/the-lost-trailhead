@@ -35,8 +35,8 @@ export default function GearPage() {
                       {items.map((item, i) => (
                         <li key={i} className="gear-item">
                           <div className="gear-item-header">
-                            <span className="gear-item-name">{item.name}</span>
                             <span className="gear-item-brand">{item.brand}</span>
+                            <span className="gear-item-name">{item.name}</span>
                           </div>
                           <p className="gear-item-desc">{item.description}</p>
                         </li>
