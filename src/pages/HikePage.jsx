@@ -27,7 +27,9 @@ export default function HikePage() {
           .eq('hike_id', supabaseId)
           .order('display_order'),
       ])
-      const data = reportRes.error ? (await supabase.from('hike_reports').select('report_text, hot_take').eq('hike_id', supabaseId)).data : reportRes.data
+      const data = reportRes.error
+        ? (await supabase.from('hike_reports').select('report_text, hot_take, profiles(display_name)').eq('hike_id', supabaseId)).data
+        : reportRes.data
       if (data) setReports(data.filter(r => r.report_text || r.hot_take))
       if (photoData) {
         const urls = photoData.map(p =>
@@ -131,7 +133,11 @@ export default function HikePage() {
             return (
               <div key={`report-${i}`} className="gallery-report-card">
                 <p className="gallery-report-label">
-                  From the Trail{item.data.profiles?.display_name ? ` — ${item.data.profiles.display_name}` : ''}
+                  {(() => {
+                    const p = item.data.profiles
+                    const name = Array.isArray(p) ? p[0]?.display_name : p?.display_name
+                    return `From the Trail${name ? ` — ${name}` : ''}`
+                  })()}
                 </p>
                 {item.data.report_text && (
                   <p className="gallery-report-text">{item.data.report_text}</p>
