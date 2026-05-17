@@ -594,6 +594,7 @@ a   { color: inherit; text-decoration: none; }
   flex: 1;
   display: flex;
   justify-content: flex-end;
+  opacity: 0.18;
 }
 
 @media (max-width: 680px) {
@@ -853,6 +854,7 @@ a   { color: inherit; text-decoration: none; }
   display: flex;
   justify-content: flex-end;
   margin-top: 1.5rem;
+  opacity: 0.18;
 }
 
 @media (max-width: 680px) {
@@ -1708,14 +1710,15 @@ a   { color: inherit; text-decoration: none; }
 }
 
 .gear-section {
-  padding: 4rem var(--pad);
+  padding: 4rem var(--pad) 4rem;
+  padding-top: 6rem;
   position: relative;
 }
 
 .gear-section-logo {
   position: absolute;
   right: 4rem;
-  top: 4rem;
+  top: 2rem;
   opacity: 0.18;
   pointer-events: none;
 }
