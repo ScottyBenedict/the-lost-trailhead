@@ -63,19 +63,43 @@ export default function HikePage() {
     : combined
 
   const galleryItems = useMemo(() => {
-    const items = []
-    const insertAfter = new Set([2, 5])
-    let reportIdx = 0
-    allPhotos.forEach((src, photoIdx) => {
-      items.push({ type: 'photo', src, photoIdx })
-      if (insertAfter.has(photoIdx) && reportIdx < reports.length) {
-        items.push({ type: 'report', data: reports[reportIdx++] })
+    const n = allPhotos.length
+    const photoItems = allPhotos.map((src, photoIdx) => ({ type: 'photo', src, photoIdx }))
+    if (reports.length === 0) return photoItems
+
+    // Insertion position = index in photoItems BEFORE which to insert a report card.
+    // pos === n means append after all photos.
+    let insertions
+    if (reports.length === 1) {
+      const pos = n > 1 ? Math.floor(Math.random() * (n - 1)) + 1 : n
+      insertions = [{ pos, ri: 0 }]
+    } else {
+      const MIN_GAP = 3
+      let pos1, pos2
+      if (n > MIN_GAP + 1) {
+        pos1 = Math.floor(Math.random() * (n - MIN_GAP)) + 1
+        const lo = pos1 + MIN_GAP
+        pos2 = lo + Math.floor(Math.random() * (n - lo + 1))
+      } else {
+        pos1 = Math.max(1, Math.floor(n / 3))
+        pos2 = Math.min(n, pos1 + Math.max(1, n - pos1))
       }
-    })
-    while (reportIdx < reports.length) {
-      items.push({ type: 'report', data: reports[reportIdx++] })
+      const [r0, r1] = Math.random() < 0.5 ? [0, 1] : [1, 0]
+      insertions = [{ pos: pos1, ri: r0 }, { pos: pos2, ri: r1 }].sort((a, b) => a.pos - b.pos)
     }
-    return items
+
+    const result = []
+    let ii = 0
+    photoItems.forEach((item, i) => {
+      while (ii < insertions.length && insertions[ii].pos === i) {
+        result.push({ type: 'report', data: reports[insertions[ii++].ri] })
+      }
+      result.push(item)
+    })
+    while (ii < insertions.length) {
+      result.push({ type: 'report', data: reports[insertions[ii++].ri] })
+    }
+    return result
   }, [allPhotos, reports])
 
   const handleKeyDown = useCallback((e) => {
