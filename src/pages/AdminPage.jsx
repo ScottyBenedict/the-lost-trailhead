@@ -78,7 +78,7 @@ export default function AdminPage() {
   const [profileBioSaved, setProfileBioSaved] = useState('')
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(null)
   const [profileAvatar, setProfileAvatar] = useState(null)
-  const [isDragOverAvatar, setIsDragOverAvatar] = useState(false)
+
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
   const [profileError, setProfileError] = useState(null)
@@ -384,15 +384,6 @@ export default function AdminPage() {
     const processed = await processFiles(e.target.files)
     if (processed[0]) setProfileAvatar(processed[0])
     e.target.value = ''
-  }
-
-  function handleAvatarDragEnter(e) { e.preventDefault(); setIsDragOverAvatar(true) }
-  function handleAvatarDragOver(e) { e.preventDefault(); setIsDragOverAvatar(true) }
-  function handleAvatarDragLeave(e) { if (e.currentTarget.contains(e.relatedTarget)) return; setIsDragOverAvatar(false) }
-  async function handleAvatarDrop(e) {
-    e.preventDefault(); setIsDragOverAvatar(false)
-    const processed = await processFiles(e.dataTransfer.files)
-    if (processed[0]) setProfileAvatar(processed[0])
   }
 
   async function saveProfile() {
