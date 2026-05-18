@@ -75,6 +75,7 @@ export default function AdminPage() {
 
   // ── Profile tab ───────────────────────────────────────────────────────────
   const [profileBio, setProfileBio] = useState('')
+  const [profileBioSaved, setProfileBioSaved] = useState('')
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(null)
   const [profileAvatar, setProfileAvatar] = useState(null)
   const [isDragOverAvatar, setIsDragOverAvatar] = useState(false)
@@ -176,7 +177,7 @@ export default function AdminPage() {
     if (activeTab !== 'profile' || !session) return
     async function loadProfile() {
       const { data } = await supabase.from('profiles').select('bio_text, avatar_url').eq('id', session.user.id).maybeSingle()
-      if (data) { setProfileBio(data.bio_text || ''); setProfileAvatarUrl(data.avatar_url || null) }
+      if (data) { setProfileBioSaved(data.bio_text || ''); setProfileBio(''); setProfileAvatarUrl(data.avatar_url || null) }
     }
     loadProfile()
   }, [activeTab, session])
@@ -405,9 +406,11 @@ export default function AdminPage() {
         if (uploadError) throw uploadError
         avatarUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
       }
-      const { error } = await supabase.from('profiles').update({ bio_text: profileBio, avatar_url: avatarUrl }).eq('id', session.user.id)
+      const finalBio = profileBio.trim() ? profileBio : profileBioSaved
+      const { error } = await supabase.from('profiles').update({ bio_text: finalBio, avatar_url: avatarUrl }).eq('id', session.user.id)
       if (error) throw error
       setProfileAvatarUrl(avatarUrl); setProfileAvatar(null)
+      setProfileBioSaved(finalBio); setProfileBio('')
       setProfileSaved(true); setTimeout(() => setProfileSaved(false), 3000)
     } catch (err) { setProfileError(err.message) }
     finally { setProfileSaving(false) }
@@ -730,7 +733,7 @@ export default function AdminPage() {
 
       {/* ── Profile tab ───────────────────────────────────────────────── */}
       {activeTab === 'profile' && (
-        <main className="admin-main">
+        <main className="admin-main admin-main-profile">
           <section className="admin-section">
             <label className="admin-label">AVATAR</label>
             {(profileAvatarUrl || profileAvatar) && (
@@ -754,14 +757,27 @@ export default function AdminPage() {
 
           <section className="admin-section">
             <label className="admin-label">BIO</label>
-            <p className="admin-or">Separate paragraphs with a blank line.</p>
-            <textarea
-              className="admin-textarea"
-              rows={12}
-              placeholder="Write your bio…"
-              value={profileBio}
-              onChange={e => setProfileBio(e.target.value)}
-            />
+            <p className="admin-or">Leave the right side blank to keep your current bio. Separate paragraphs with a blank line.</p>
+            <div className="admin-bio-columns">
+              <div className="admin-bio-pane">
+                <p className="admin-bio-pane-label">CURRENT BIO</p>
+                <div className="admin-bio-current-box">
+                  {profileBioSaved
+                    ? profileBioSaved.split('\n\n').map((para, i) => <p key={i} className="admin-bio-pane-text">{para}</p>)
+                    : <p className="admin-bio-pane-empty">No bio saved yet.</p>
+                  }
+                </div>
+              </div>
+              <div className="admin-bio-pane">
+                <p className="admin-bio-pane-label">NEW BIO</p>
+                <textarea
+                  className="admin-textarea admin-bio-textarea"
+                  placeholder="Write replacement bio…"
+                  value={profileBio}
+                  onChange={e => setProfileBio(e.target.value)}
+                />
+              </div>
+            </div>
           </section>
 
           {profileError && <p className="admin-error">{profileError}</p>}
