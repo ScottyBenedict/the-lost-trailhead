@@ -1131,25 +1131,71 @@ a   { color: inherit; text-decoration: none; }
   background: var(--cream);
 }
 
+/* ── Dark mode ───────────────────────────────────────────────────────────── */
+.admin-dark { background: #111; color: #f0f0f0; }
+.admin-dark .admin-header { background: #0a0a0a; }
+.admin-dark .admin-main { color: #f0f0f0; }
+.admin-dark .admin-label { color: #aaa; }
+.admin-dark .admin-or { color: #aaa; }
+.admin-dark .admin-section { color: #f0f0f0; }
+.admin-dark .admin-pending-item { background: #222; border-color: #383838; }
+.admin-dark .admin-pending-name { color: #f0f0f0; }
+.admin-dark .admin-pending-slug { color: #888; }
+.admin-dark .admin-drop-zone { background: #1e1e1e; border-color: #484848; }
+.admin-dark .admin-drop-zone-active { border-color: #aaa; background: #2a2a2a; }
+.admin-dark .admin-drop-icon { color: #aaa; }
+.admin-dark .admin-drop-text { color: #aaa; }
+.admin-dark .admin-drop-link { color: #ccc; }
+.admin-dark .admin-textarea,
+.admin-dark .admin-input,
+.admin-dark .admin-select { background: #222; border-color: #484848; color: #f0f0f0; }
+.admin-dark .admin-textarea::placeholder,
+.admin-dark .admin-input::placeholder { color: #777; }
+.admin-dark .admin-gear-item { background: #222; border-color: #383838; }
+.admin-dark .admin-gear-item-category { color: #aaa; }
+.admin-dark .admin-gear-item-name { color: #f0f0f0; }
+.admin-dark .admin-gear-item-brand { color: #ccc; }
+.admin-dark .admin-gear-form { background: #1e1e1e; border-color: #383838; }
+.admin-dark .admin-bio-current-box { background: #222; border-color: #484848; }
+.admin-dark .admin-bio-pane-label { color: #aaa; }
+.admin-dark .admin-bio-pane-text { color: #e0e0e0; }
+.admin-dark .admin-bio-pane-empty { color: #666; }
+.admin-dark .admin-merch-product { background: #222; border-color: #383838; }
+.admin-dark .admin-btn-ghost { color: #ccc; border-color: #484848; }
+.admin-dark .admin-btn-ghost:hover { background: rgba(255,255,255,0.1); }
+.admin-dark .admin-error { color: #f88; }
+.admin-dark .admin-success { color: #6d6; }
+
+.admin-dark-toggle {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: var(--white);
+  border-radius: 6px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s;
+}
+.admin-dark-toggle:hover { background: rgba(255,255,255,0.12); }
+
 .admin-tabs {
   display: flex;
   overflow-x: auto;
-  border-bottom: 1px solid var(--border);
-  background: var(--white);
-  padding: 0 1.5rem;
+  padding: 0 1.75rem;
   scrollbar-width: none;
 }
 
 .admin-tabs::-webkit-scrollbar { display: none; }
 
 .admin-tab {
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 1rem;
   font-family: var(--font-sans);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgba(255,255,255,0.5);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -1162,11 +1208,11 @@ a   { color: inherit; text-decoration: none; }
   flex-shrink: 0;
 }
 
-.admin-tab:hover { color: var(--forest); }
+.admin-tab:hover { color: rgba(255,255,255,0.85); }
 
 .admin-tab-active {
-  color: var(--forest);
-  border-bottom-color: var(--forest);
+  color: var(--white);
+  border-bottom-color: var(--white);
 }
 
 .admin-tab-badge {
@@ -1214,16 +1260,29 @@ a   { color: inherit; text-decoration: none; }
 .admin-header {
   background: var(--forest);
   color: var(--white);
-  padding: 1rem 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-header-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 1.4rem 1.75rem 1rem;
 }
 
 .admin-header-title {
   font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.admin-header-subtitle {
+  font-weight: 400;
+  opacity: 0.65;
   font-size: 1.1rem;
-  font-weight: 500;
 }
 
 .admin-main {

@@ -39,6 +39,15 @@ function wordsMatch(inputSlug, candidateId) {
 export default function AdminPage() {
   const { session, signOut } = useAuth()
   const [activeTab, setActiveTab] = useState('log')
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('adminDarkMode') === 'true')
+
+  function toggleDarkMode() {
+    setDarkMode(prev => {
+      const next = !prev
+      localStorage.setItem('adminDarkMode', next)
+      return next
+    })
+  }
 
   // ── Log Trip ──────────────────────────────────────────────────────────────
   const [hikeId, setHikeId] = useState('')
@@ -500,22 +509,28 @@ export default function AdminPage() {
   const archivedProducts = merchProducts.filter(p => !p.is_active)
 
   return (
-    <div className="admin-wrap">
+    <div className={`admin-wrap${darkMode ? ' admin-dark' : ''}`}>
       <header className="admin-header">
-        <span className="admin-header-title">Trail Log Admin</span>
-        <button className="admin-btn-ghost" onClick={signOut}>Sign out</button>
+        <div className="admin-header-top">
+          <span className="admin-header-title">The Lost Trailhead <span className="admin-header-subtitle">Admin</span></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button className="admin-dark-toggle" onClick={toggleDarkMode} aria-label="Toggle dark mode">
+              {darkMode ? '☀︎' : '☽'}
+            </button>
+            <button className="admin-btn-ghost" onClick={signOut}>Sign out</button>
+          </div>
+        </div>
+        <nav className="admin-tabs">
+          <button className={`admin-tab${activeTab === 'log' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('log')}>Log Trip</button>
+          <button className={`admin-tab${activeTab === 'pending' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('pending')}>
+            Needs a Page
+            {pendingHikes.length > 0 && <span className="admin-tab-badge">{pendingHikes.length}</span>}
+          </button>
+          <button className={`admin-tab${activeTab === 'gear' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('gear')}>Gear</button>
+          <button className={`admin-tab${activeTab === 'profile' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>
+          <button className={`admin-tab${activeTab === 'merch' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('merch')}>Merch</button>
+        </nav>
       </header>
-
-      <nav className="admin-tabs">
-        <button className={`admin-tab${activeTab === 'log' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('log')}>Log Trip</button>
-        <button className={`admin-tab${activeTab === 'pending' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('pending')}>
-          Needs a Page
-          {pendingHikes.length > 0 && <span className="admin-tab-badge">{pendingHikes.length}</span>}
-        </button>
-        <button className={`admin-tab${activeTab === 'gear' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('gear')}>Gear</button>
-        <button className={`admin-tab${activeTab === 'profile' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>
-        <button className={`admin-tab${activeTab === 'merch' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('merch')}>Merch</button>
-      </nav>
 
       {/* ── Pending tab ───────────────────────────────────────────────── */}
       {activeTab === 'pending' && (
