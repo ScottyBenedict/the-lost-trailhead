@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { hikes } from '../data/hikes'
 import exifr from 'exifr'
 import heic2any from 'heic2any'
+import TLTLogo from '../components/TLTLogo'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ export default function AdminPage() {
   // ── Pending tab ───────────────────────────────────────────────────────────
   const [pendingHikes, setPendingHikes] = useState([])
   const [loadingPending, setLoadingPending] = useState(false)
+  const [siteStats, setSiteStats] = useState(null)
 
   // ── Gear tab ──────────────────────────────────────────────────────────────
   const [gearItems, setGearItems] = useState([])
@@ -172,6 +174,11 @@ export default function AdminPage() {
         byHike[p.hike_id].photos++
       }
       setPendingHikes(Object.values(byHike).map(h => ({ ...h, submitters: [...h.submitters] })))
+      const [{ count: hikeCount }, { count: photoCount }] = await Promise.all([
+        supabase.from('hike_reports').select('*', { count: 'exact', head: true }),
+        supabase.from('hike_photos').select('*', { count: 'exact', head: true }),
+      ])
+      setSiteStats({ hikes: hikeCount || 0, photos: photoCount || 0 })
       setLoadingPending(false)
     }
     fetchPending()
@@ -536,7 +543,11 @@ export default function AdminPage() {
       {activeTab === 'pending' && (
         <main className="admin-main">
           {loadingPending ? <p className="admin-or">Loading…</p> : pendingHikes.length === 0 ? (
-            <p className="admin-or">No pending hikes — you're all caught up.</p>
+            <div className="admin-pending-empty">
+              <TLTLogo size={240} color="#c4c0b8" />
+              <p className="admin-pending-empty-title">You're done here.</p>
+              <p className="admin-pending-empty-sub">Every hike has a page. Don't worry — Alan is definitely already planning something you'll regret saying yes to.</p>
+            </div>
           ) : (
             <div className="admin-pending-list">
               {pendingHikes.map(h => (
