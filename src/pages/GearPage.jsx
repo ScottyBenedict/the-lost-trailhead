@@ -1,4 +1,6 @@
-import { people, brands } from '../data/gear'
+import { useState, useEffect } from 'react'
+import { publicSupabase as supabase } from '../lib/supabase'
+import { brands } from '../data/gear'
 import TLTLogo from '../components/TLTLogo'
 
 function groupByCategory(gearList) {
@@ -9,7 +11,41 @@ function groupByCategory(gearList) {
   }, {})
 }
 
+// Alan first, Scott second
+const PERSON_ORDER = [
+  'dd5d9dfd-2613-46d9-962a-e116bf5ba145',
+  '4d781942-cee2-4a99-ba03-aeb06eef81d1',
+]
+
 export default function GearPage() {
+  const [people, setPeople] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadGear() {
+      const [{ data: items }, { data: profiles }] = await Promise.all([
+        supabase.from('gear_items').select('*').order('sort_order'),
+        supabase.from('profiles').select('id, display_name'),
+      ])
+      if (!items || !profiles) { setLoading(false); return }
+
+      const profileMap = Object.fromEntries((profiles).map(p => [p.id, p]))
+      const byUser = {}
+      for (const item of items) {
+        if (!byUser[item.user_id]) byUser[item.user_id] = []
+        byUser[item.user_id].push(item)
+      }
+
+      const result = PERSON_ORDER
+        .filter(uid => profileMap[uid])
+        .map(uid => ({ name: profileMap[uid].display_name, gear: byUser[uid] || [] }))
+
+      setPeople(result)
+      setLoading(false)
+    }
+    loadGear()
+  }, [])
+
   return (
     <div className="gear-page">
       <section className="gear-hero">
@@ -30,7 +66,9 @@ export default function GearPage() {
           <TLTLogo size={180} color="var(--forest)" />
         </div>
         <div className="gear-columns">
-          {people.map(person => {
+          {loading ? (
+            <p style={{ padding: '2rem', color: 'var(--muted)', fontFamily: 'var(--font-sans)', fontSize: '0.85rem' }}>Loading…</p>
+          ) : people.map(person => {
             const grouped = groupByCategory(person.gear)
             return (
               <div key={person.name} className="gear-person">

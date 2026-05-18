@@ -1133,15 +1133,19 @@ a   { color: inherit; text-decoration: none; }
 
 .admin-tabs {
   display: flex;
+  overflow-x: auto;
   border-bottom: 1px solid var(--border);
   background: var(--white);
   padding: 0 1.5rem;
+  scrollbar-width: none;
 }
 
+.admin-tabs::-webkit-scrollbar { display: none; }
+
 .admin-tab {
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1rem;
   font-family: var(--font-sans);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1154,6 +1158,8 @@ a   { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 0.5rem;
   transition: color 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .admin-tab:hover { color: var(--forest); }
@@ -1602,6 +1608,261 @@ a   { color: inherit; text-decoration: none; }
   border-radius: 8px;
   padding: 0.75rem 1rem;
   text-align: center;
+}
+
+/* ── Admin: Gear tab ─────────────────────────────────── */
+.admin-gear-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin-gear-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-gear-item:last-child { border-bottom: none; }
+
+.admin-gear-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.admin-gear-item-category {
+  font-family: var(--font-sans);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--forest);
+  opacity: 0.6;
+}
+
+.admin-gear-item-name {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--forest);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-gear-item-brand {
+  opacity: 0.55;
+}
+
+.admin-gear-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.admin-gear-ctrl {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--forest);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.25rem 0.55rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.admin-gear-ctrl:hover { background: var(--stone-pale); }
+.admin-gear-ctrl:disabled { opacity: 0.3; cursor: default; }
+
+.admin-gear-ctrl-danger { color: #c0392b; border-color: rgba(192, 57, 43, 0.3); }
+.admin-gear-ctrl-danger:hover { background: rgba(192, 57, 43, 0.08); }
+
+.admin-gear-delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--forest);
+}
+
+.admin-gear-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0;
+}
+
+.admin-gear-form-add {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.admin-gear-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.admin-gear-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.admin-gear-add-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  justify-content: center;
+  color: var(--forest) !important;
+  border-color: var(--forest) !important;
+  border-width: 1.5px !important;
+  opacity: 0.75;
+}
+
+.admin-gear-add-btn:hover { opacity: 1; background: rgba(42, 58, 44, 0.06) !important; }
+
+/* ── Admin: Profile tab ──────────────────────────────── */
+.admin-profile-current-avatar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-profile-avatar-img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+}
+
+.admin-avatar-drop {
+  min-height: 80px;
+  padding: 1.25rem;
+}
+
+/* ── Admin: Merch tab ────────────────────────────────── */
+.admin-merch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin-merch-product {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-merch-product:last-child { border-bottom: none; }
+
+.admin-merch-product-archived { opacity: 0.55; }
+
+.admin-merch-list-archived {
+  margin-top: 0.5rem;
+  border-color: var(--border);
+}
+
+.admin-merch-product-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.admin-merch-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.admin-merch-product-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.admin-merch-product-name {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--forest);
+  font-weight: 600;
+}
+
+.admin-merch-product-meta {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.admin-merch-badge {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+}
+
+.admin-merch-badge-in_stock { color: var(--forest); background: rgba(42, 58, 44, 0.1); }
+.admin-merch-badge-low_stock { color: #b07d10; background: rgba(176, 125, 16, 0.1); }
+.admin-merch-badge-out_of_stock { color: #c0392b; background: rgba(192, 57, 43, 0.1); }
+
+.admin-merch-archived-section {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-merch-active-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  color: var(--forest);
+  cursor: pointer;
+  margin-top: 0.25rem;
+}
+
+.admin-merch-active-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--forest);
 }
 
 /* ── From the Trail (public hike page) ───────────────── */
