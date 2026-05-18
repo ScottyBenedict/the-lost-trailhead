@@ -735,22 +735,20 @@ export default function AdminPage() {
       {activeTab === 'profile' && (
         <main className="admin-main admin-main-profile">
           <section className="admin-section">
-            <label className="admin-label">AVATAR</label>
-            {(profileAvatarUrl || profileAvatar) && (
-              <div className="admin-profile-current-avatar">
-                <img src={profileAvatar ? profileAvatar.previewUrl : profileAvatarUrl} alt="Avatar" className="admin-profile-avatar-img" />
+            <label className="admin-label">CURRENT AVATAR</label>
+            <input ref={avatarInputRef} type="file" accept="image/*,.heic,.heif" style={{ display: 'none' }} onChange={handleAvatarSelect} />
+            {(profileAvatarUrl || profileAvatar) ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <div className="admin-avatar-change-wrap">
+                  <img src={profileAvatar ? profileAvatar.previewUrl : profileAvatarUrl} alt="Avatar" className="admin-profile-avatar-img" />
+                  <button className="admin-avatar-badge" onClick={() => avatarInputRef.current.click()} aria-label="Change avatar">+</button>
+                </div>
                 {profileAvatar && <button className="admin-btn-ghost" onClick={() => setProfileAvatar(null)}>Remove new photo</button>}
               </div>
-            )}
-            {!profileAvatar && (
-              <div
-                className={`admin-drop-zone admin-avatar-drop${isDragOverAvatar ? ' admin-drop-zone-active' : ''}`}
-                onDragEnter={handleAvatarDragEnter} onDragOver={handleAvatarDragOver} onDragLeave={handleAvatarDragLeave} onDrop={handleAvatarDrop}
-                onClick={() => avatarInputRef.current.click()}
-              >
-                <input ref={avatarInputRef} type="file" accept="image/*,.heic,.heif" style={{ display: 'none' }} onChange={handleAvatarSelect} />
-                <span className="admin-drop-icon">↑</span>
-                <p className="admin-drop-text">{profileAvatarUrl ? 'Drop a new photo or ' : 'Drop a photo or '}<span className="admin-drop-link">click to browse</span></p>
+            ) : (
+              <div className="admin-avatar-empty" onClick={() => avatarInputRef.current.click()}>
+                <span className="admin-avatar-empty-icon">+</span>
+                <span className="admin-avatar-empty-label">Add photo</span>
               </div>
             )}
           </section>
