@@ -686,7 +686,7 @@ export default function AdminPage() {
                           <div className="admin-gear-form-row">
                             <select className="admin-input" value={gearForm.category} onChange={e => setGearForm(f => ({ ...f, category: e.target.value }))}>
                               <option value="">— Category —</option>
-                              {['Footwear','Shell','Pack','Watch','Phone/Camera','Poles','Gaiters','Gloves','Headlamp','Sunglasses','Baselayer','Midlayer','Pants','Accessories'].map(c => <option key={c} value={c}>{c}</option>)}
+                              {['Footwear','Shell','Pack','Watch','Phone/Camera','Poles','Gaiters','Gloves','Headlamp','Sunglasses','Baselayer','Midlayer','Pants','Tent','Stove','Sleeping Bag','Pad','Navigation','Accessories'].map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                             <input className="admin-input" placeholder="Brand" value={gearForm.brand} onChange={e => setGearForm(f => ({ ...f, brand: e.target.value }))} />
                           </div>
@@ -725,7 +725,7 @@ export default function AdminPage() {
                     <div className="admin-gear-form-row">
                       <select className="admin-input" value={gearForm.category} onChange={e => setGearForm(f => ({ ...f, category: e.target.value }))}>
                         <option value="">— Category —</option>
-                        {['Footwear','Shell','Pack','Watch','Phone/Camera','Poles','Gaiters','Gloves','Headlamp','Sunglasses','Baselayer','Midlayer','Pants','Accessories'].map(c => <option key={c} value={c}>{c}</option>)}
+                        {['Footwear','Shell','Pack','Watch','Phone/Camera','Poles','Gaiters','Gloves','Headlamp','Sunglasses','Baselayer','Midlayer','Pants','Tent','Stove','Sleeping Bag','Pad','Navigation','Accessories'].map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                       <input className="admin-input" placeholder="Brand" value={gearForm.brand} onChange={e => setGearForm(f => ({ ...f, brand: e.target.value }))} />
                     </div>
