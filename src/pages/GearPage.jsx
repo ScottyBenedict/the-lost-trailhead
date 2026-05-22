@@ -3,6 +3,19 @@ import { publicSupabase as supabase } from '../lib/supabase'
 import { brands } from '../data/gear'
 import TLTLogo from '../components/TLTLogo'
 
+const CATEGORY_ORDER = ['Footwear','Shell','Pack','Watch','Phone/Camera','Poles','Gaiters','Gloves','Headlamp','Sunglasses','Baselayer','Midlayer','Pants','Tent','Stove','Sleeping Bag','Pad','Navigation','Accessories']
+
+function sortCategories(categories) {
+  return [...categories].sort((a, b) => {
+    const ai = CATEGORY_ORDER.indexOf(a)
+    const bi = CATEGORY_ORDER.indexOf(b)
+    if (ai === -1 && bi === -1) return a.localeCompare(b)
+    if (ai === -1) return 1
+    if (bi === -1) return -1
+    return ai - bi
+  })
+}
+
 function groupByCategory(gearList) {
   return gearList.reduce((acc, item) => {
     if (!acc[item.category]) acc[item.category] = []
@@ -36,9 +49,11 @@ export default function GearPage() {
         byUser[item.user_id].push(item)
       }
 
+      const allCategories = sortCategories([...new Set(items.map(i => i.category))])
+
       const result = PERSON_ORDER
         .filter(uid => profileMap[uid])
-        .map(uid => ({ name: profileMap[uid].display_name, gear: byUser[uid] || [] }))
+        .map(uid => ({ name: profileMap[uid].display_name, gear: byUser[uid] || [], allCategories }))
 
       setPeople(result)
       setLoading(false)
@@ -73,11 +88,11 @@ export default function GearPage() {
             return (
               <div key={person.name} className="gear-person">
                 <h2 className="gear-person-name">{person.name}</h2>
-                {Object.entries(grouped).map(([category, items]) => (
+                {person.allCategories.filter(cat => grouped[cat]).map(category => (
                   <div key={category} className="gear-category">
                     <h3 className="gear-category-label">{category}</h3>
                     <ul className="gear-list">
-                      {items.map((item, i) => (
+                      {grouped[category].map((item, i) => (
                         <li key={i} className="gear-item">
                           <div className="gear-item-header">
                             <span className="gear-item-brand">{item.brand}</span>
