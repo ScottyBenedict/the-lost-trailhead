@@ -57,7 +57,10 @@ export default function HikePage() {
   }
 
   const hidden = new Set(hike.hiddenPhotos || [])
-  const combined = [...hike.photos, ...uploadedPhotos.filter(url => !hidden.has(url))]
+  const start = hike.galleryStart ?? 0
+  const filtered = uploadedPhotos.filter(url => !hidden.has(url))
+  const reordered = start > 0 ? [...filtered.slice(start), ...filtered.slice(0, start)] : filtered
+  const combined = [...hike.photos, ...reordered]
   const allPhotos = combined.length > 1 && combined[0] === hike.cover
     ? [...combined.slice(1), combined[0]]
     : combined
