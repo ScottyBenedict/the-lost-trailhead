@@ -331,5 +331,8 @@ export const hikes = [
     photos: [
       '/photos/IMG_7510.jpeg',
     ],
+    hiddenPhotos: [
+      'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/subway-cave/4d781942-cee2-4a99-ba03-aeb06eef81d1/1779644246638_0.jpg',
+    ],
   },
 ]
