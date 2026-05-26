@@ -207,9 +207,9 @@ a   { color: inherit; text-decoration: none; }
   background: linear-gradient(
     to bottom,
     rgba(20, 26, 18, 0.1) 0%,
-    rgba(20, 26, 18, 0.25) 45%,
-    rgba(20, 26, 18, 0.72) 80%,
-    rgba(20, 26, 18, 0.85) 100%
+    rgba(20, 26, 18, 0.3) 40%,
+    rgba(20, 26, 18, 0.75) 70%,
+    rgba(20, 26, 18, 0.88) 100%
   );
 }
 
@@ -238,7 +238,7 @@ a   { color: inherit; text-decoration: none; }
   z-index: 1;
   max-width: 520px;
   margin: 0;
-  padding: 4rem var(--pad) 5rem;
+  padding: 1.5rem var(--pad) 3.5rem;
   width: 100%;
 }
 
