@@ -1,5 +1,19 @@
 export const hikes = [
   {
+    id: 'annette-lake',
+    name: 'Annette Lake',
+    region: 'Mt. Baker-Snoqualmie National Forest · I-90 Corridor',
+    distance: '7.5 mi',
+    gain: '1,800 ft',
+    difficulty: 'Moderate',
+    season: 'Jun – Oct',
+    description:
+      'Annette Lake sits at 3,600 feet in a quiet cirque above the Humpback Creek drainage, reached by a forest trail that climbs steadily through old-growth hemlock and silver fir before the trees thin and the basin opens below the cliffs. For a short trail in the I-90 corridor it feels more removed than it has any right to — the lake holds a clean reflection of the surrounding ridgeline well into afternoon, and the cirque walls keep the light long. Start early. This one fills up fast on summer weekends, and the trail shows it.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/annette-lake/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1779481713978_0.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+  },
+  {
     id: 'bandera-mountain',
     name: 'Bandera Mountain',
     region: 'Olallie State Park · I-90 Corridor',
