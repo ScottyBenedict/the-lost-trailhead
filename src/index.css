@@ -1350,6 +1350,122 @@ a   { color: inherit; text-decoration: none; }
   font-family: monospace;
 }
 
+.admin-pending-item {
+  padding: 0;
+  overflow: hidden;
+}
+
+.admin-pending-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+.admin-pending-item-header:hover { background: rgba(0,0,0,0.02); }
+.admin-dark .admin-pending-item-header:hover { background: rgba(255,255,255,0.03); }
+
+.admin-pending-chevron {
+  font-size: 0.7rem;
+  opacity: 0.4;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+
+.admin-pending-photos {
+  border-top: 1px solid var(--border);
+  padding: 1.25rem;
+}
+.admin-dark .admin-pending-photos { border-top-color: #383838; }
+
+.admin-pending-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-pending-photo {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: #f0f0f0;
+}
+.admin-pending-photo.is-hero { border-color: var(--forest); }
+.admin-pending-photo.is-second { border-color: #e8a020; }
+.admin-dark .admin-pending-photo { background: #2a2a2a; }
+
+.admin-pending-photo img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-pending-photo-num {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(0,0,0,0.65);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  line-height: 1.4;
+}
+
+.admin-pending-photo-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: var(--forest);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.admin-pending-photo-badge-second { background: #e8a020; }
+
+.admin-pending-photo-btns {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.4rem 0.4rem 0.4rem;
+}
+.admin-pending-photo-btns .admin-gear-ctrl {
+  flex: 1;
+  font-size: 0.72rem;
+  padding: 3px 4px;
+  text-align: center;
+}
+
+.admin-gear-ctrl-active {
+  background: var(--forest) !important;
+  color: white !important;
+  border-color: var(--forest) !important;
+}
+
+.admin-pending-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.admin-pending-summary .dot {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0.4;
+}
+
 .admin-header {
   background: var(--forest);
   color: var(--white);

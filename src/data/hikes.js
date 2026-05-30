@@ -253,6 +253,21 @@ export const hikes = [
     galleryStart: 1,
   },
   {
+    id: 'mt-baldy',
+    name: 'Mt. Baldy',
+    region: 'Okanogan-Wenatchee National Forest · Snoqualmie Pass',
+    distance: '7.6 mi',
+    gain: '3,175 ft',
+    difficulty: 'Strenuous',
+    season: 'May – Sep',
+    description:
+      'The Domerie Divide Trail earns its reputation the hard way — mostly straight up, minimal switchbacks, little shade, and enough vertical to test your resolve before you\'re halfway done. What it lacks in mercy it makes up for at the top: the Mt. Baldy summit sits at the convergence of several different sight lines, with Lake Kachess and Lake Easton visible below the ridge, Mount Rainier hard to the south, Glacier Peak catching the light to the north, and the Enchantments stacked against the eastern skyline. Not many trails this close to Snoqualmie Pass deliver a view from every direction. Most hikers don\'t realize that until they\'re already standing on top of it.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/mt-baldy/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1780168251686_3.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+    galleryStart: 1,
+  },
+  {
     id: 'rachel-rampart-lakes',
     name: 'Rachel & Rampart Lakes',
     region: 'Alpine Lakes Wilderness · Salmon La Sac',

@@ -74,6 +74,12 @@ export default function AdminPage() {
   const [pendingHikes, setPendingHikes] = useState([])
   const [loadingPending, setLoadingPending] = useState(false)
   const [siteStats, setSiteStats] = useState(null)
+  const [expandedPendingId, setExpandedPendingId] = useState(null)
+  const [pendingPhotos, setPendingPhotos] = useState([])
+  const [pendingSetup, setPendingSetup] = useState({ hero_path: null, second_path: null })
+  const [setupSaving, setSetupSaving] = useState(false)
+  const [setupSaved, setSetupSaved] = useState(false)
+  const [setupError, setSetupError] = useState(null)
 
   // ── Gear tab ──────────────────────────────────────────────────────────────
   const [gearItems, setGearItems] = useState([])
@@ -495,6 +501,48 @@ export default function AdminPage() {
     if (!error) setExistingDates(prev => prev.filter(d => d.id !== id))
   }
 
+  // ── Pending photo picker ──────────────────────────────────────────────────
+
+  async function togglePendingExpand(hikeId) {
+    if (expandedPendingId === hikeId) {
+      setExpandedPendingId(null)
+      setPendingPhotos([])
+      setPendingSetup({ hero_path: null, second_path: null })
+      return
+    }
+    setExpandedPendingId(hikeId)
+    setPendingPhotos([])
+    setPendingSetup({ hero_path: null, second_path: null })
+    setSetupError(null)
+    setSetupSaved(false)
+    const [{ data: photoData }, { data: setupData }] = await Promise.all([
+      supabase.from('hike_photos').select('storage_path, display_order').eq('hike_id', hikeId).order('display_order'),
+      supabase.from('hike_setup').select('hero_path, second_path').eq('hike_id', hikeId).maybeSingle(),
+    ])
+    if (photoData) {
+      setPendingPhotos(photoData.map(p => ({
+        storage_path: p.storage_path,
+        display_order: p.display_order,
+        url: supabase.storage.from('hike-photos').getPublicUrl(p.storage_path).data.publicUrl,
+      })))
+    }
+    if (setupData) setPendingSetup({ hero_path: setupData.hero_path, second_path: setupData.second_path })
+  }
+
+  async function handleSetupSave(hikeId, updates) {
+    setSetupSaving(true); setSetupError(null); setSetupSaved(false)
+    try {
+      const { error } = await supabase.from('hike_setup').upsert(
+        { hike_id: hikeId, ...updates, updated_at: new Date().toISOString() },
+        { onConflict: 'hike_id' }
+      )
+      if (error) throw error
+      setPendingSetup(prev => ({ ...prev, ...updates }))
+      setSetupSaved(true); setTimeout(() => setSetupSaved(false), 3000)
+    } catch (err) { setSetupError(err.message) }
+    finally { setSetupSaving(false) }
+  }
+
   // ── Merch handlers ────────────────────────────────────────────────────────
 
   async function loadMerch() {
@@ -623,17 +671,82 @@ export default function AdminPage() {
             </div>
           ) : (
             <div className="admin-pending-list">
-              {pendingHikes.map(h => (
-                <div key={h.hike_id} className="admin-pending-item">
-                  <p className="admin-pending-name">{unslugify(h.hike_id)}</p>
-                  <p className="admin-pending-meta">
-                    {h.photos} photo{h.photos !== 1 ? 's' : ''}
-                    {h.reports > 0 && ` · ${h.reports} report${h.reports !== 1 ? 's' : ''}`}
-                    {h.submitters.length > 0 && ` · ${h.submitters.join(', ')}`}
-                  </p>
-                  <p className="admin-pending-slug">{h.hike_id}</p>
-                </div>
-              ))}
+              {pendingHikes.map(h => {
+                const isExpanded = expandedPendingId === h.hike_id
+                return (
+                  <div key={h.hike_id} className="admin-pending-item">
+                    <div className="admin-pending-item-header" onClick={() => togglePendingExpand(h.hike_id)}>
+                      <div>
+                        <p className="admin-pending-name">{unslugify(h.hike_id)}</p>
+                        <p className="admin-pending-meta">
+                          {h.photos} photo{h.photos !== 1 ? 's' : ''}
+                          {h.reports > 0 && ` · ${h.reports} report${h.reports !== 1 ? 's' : ''}`}
+                          {h.submitters.length > 0 && ` · ${h.submitters.join(', ')}`}
+                        </p>
+                        <p className="admin-pending-slug">{h.hike_id}</p>
+                      </div>
+                      <span className="admin-pending-chevron">{isExpanded ? '▲' : '▼'}</span>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="admin-pending-photos">
+                        {pendingPhotos.length === 0 ? (
+                          <p className="admin-or" style={{ padding: '1rem 0' }}>Loading photos…</p>
+                        ) : (
+                          <>
+                            <div className="admin-pending-photo-grid">
+                              {pendingPhotos.map(photo => {
+                                const isHero = pendingSetup.hero_path === photo.storage_path
+                                const isSecond = pendingSetup.second_path === photo.storage_path
+                                return (
+                                  <div
+                                    key={photo.storage_path}
+                                    className={`admin-pending-photo${isHero ? ' is-hero' : isSecond ? ' is-second' : ''}`}
+                                  >
+                                    <div className="admin-pending-photo-num">{photo.display_order + 1}</div>
+                                    <img src={photo.url} alt={`Photo ${photo.display_order + 1}`} loading="lazy" />
+                                    {isHero && <div className="admin-pending-photo-badge">Hero</div>}
+                                    {isSecond && <div className="admin-pending-photo-badge admin-pending-photo-badge-second">2nd</div>}
+                                    <div className="admin-pending-photo-btns">
+                                      <button
+                                        className={`admin-gear-ctrl${isHero ? ' admin-gear-ctrl-active' : ''}`}
+                                        onClick={() => handleSetupSave(h.hike_id, { hero_path: photo.storage_path })}
+                                        disabled={setupSaving}
+                                      >
+                                        {isHero ? 'Hero ✓' : 'Set Hero'}
+                                      </button>
+                                      <button
+                                        className={`admin-gear-ctrl${isSecond ? ' admin-gear-ctrl-active' : ''}`}
+                                        onClick={() => handleSetupSave(h.hike_id, { second_path: photo.storage_path })}
+                                        disabled={setupSaving}
+                                      >
+                                        {isSecond ? '2nd ✓' : 'Set 2nd'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            {setupError && <p className="admin-error">{setupError}</p>}
+                            {setupSaved && <p className="admin-success">Saved!</p>}
+                            {(pendingSetup.hero_path || pendingSetup.second_path) && (
+                              <div className="admin-pending-summary">
+                                {pendingSetup.hero_path && (
+                                  <span>Hero: photo {pendingPhotos.findIndex(p => p.storage_path === pendingSetup.hero_path) + 1}</span>
+                                )}
+                                {pendingSetup.hero_path && pendingSetup.second_path && <span className="dot" />}
+                                {pendingSetup.second_path && (
+                                  <span>2nd: photo {pendingPhotos.findIndex(p => p.storage_path === pendingSetup.second_path) + 1}</span>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </main>
