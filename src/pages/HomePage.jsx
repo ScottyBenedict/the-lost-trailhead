@@ -1,7 +1,40 @@
+import { useState, useEffect, useMemo } from 'react'
 import { hikes } from '../data/hikes'
+import { supabase } from '../lib/supabase'
 import HikeCard from '../components/HikeCard'
 
 export default function HomePage() {
+  const [sortMode, setSortMode] = useState('recent')
+  const [hikeDates, setHikeDates] = useState(new Map())
+
+  useEffect(() => {
+    async function fetchDates() {
+      const { data } = await supabase.from('hike_dates').select('hike_id, hike_date')
+      if (!data) return
+      const map = new Map()
+      for (const row of data) {
+        const d = new Date(row.hike_date)
+        if (!map.has(row.hike_id) || d > map.get(row.hike_id)) {
+          map.set(row.hike_id, d)
+        }
+      }
+      setHikeDates(map)
+    }
+    fetchDates()
+  }, [])
+
+  const sorted = useMemo(() => {
+    return [...hikes].sort((a, b) => {
+      if (sortMode === 'az') return a.name.localeCompare(b.name)
+      const aDate = hikeDates.get(a.supabaseId || a.id)
+      const bDate = hikeDates.get(b.supabaseId || b.id)
+      if (aDate && bDate) return bDate - aDate
+      if (aDate) return -1
+      if (bDate) return 1
+      return a.name.localeCompare(b.name)
+    })
+  }, [sortMode, hikeDates])
+
   return (
     <>
       <section className="hero">
@@ -24,8 +57,22 @@ export default function HomePage() {
       </section>
 
       <section className="hikes-section">
+        <div className="sort-toggle">
+          <button
+            className={`sort-btn${sortMode === 'recent' ? ' sort-btn-active' : ''}`}
+            onClick={() => setSortMode('recent')}
+          >
+            Recent
+          </button>
+          <button
+            className={`sort-btn${sortMode === 'az' ? ' sort-btn-active' : ''}`}
+            onClick={() => setSortMode('az')}
+          >
+            A–Z
+          </button>
+        </div>
         <div className="hike-grid">
-          {hikes.map((hike) => (
+          {sorted.map((hike) => (
             <HikeCard key={hike.id} hike={hike} />
           ))}
         </div>
