@@ -411,7 +411,7 @@ export default function AdminPage() {
         const path = `${session.user.id}/avatar.jpg`
         const { error: uploadError } = await supabase.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true })
         if (uploadError) throw uploadError
-        avatarUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
+        avatarUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl + `?v=${Date.now()}`
       }
       const finalBio = profileBio.trim() ? profileBio : profileBioSaved
       const { error } = await supabase.from('profiles').update({ bio_text: finalBio, avatar_url: avatarUrl }).eq('id', session.user.id)
