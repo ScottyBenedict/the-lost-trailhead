@@ -3,12 +3,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
+import HikeMap from '../components/HikeMap'
 
 export default function HikePage() {
   const { slug } = useParams()
   const hike = hikes.find((h) => h.id === slug)
   const [reports, setReports] = useState([])
   const [uploadedPhotos, setUploadedPhotos] = useState([])
+  const [gpxUrl, setGpxUrl] = useState(null)
   const [lightboxIndex, setLightboxIndex] = useState(null)
 
   const supabaseId = hike?.supabaseId || hike?.id
@@ -16,7 +18,7 @@ export default function HikePage() {
   useEffect(() => {
     if (!hike) return
     async function fetchContent() {
-      const [reportRes, { data: photoData }] = await Promise.all([
+      const [reportRes, { data: photoData }, { data: gpxData }] = await Promise.all([
         supabase
           .from('hike_reports')
           .select('user_id, report_text, hot_take')
@@ -26,6 +28,11 @@ export default function HikePage() {
           .select('storage_path, display_order')
           .eq('hike_id', supabaseId)
           .order('display_order'),
+        supabase
+          .from('hike_gpx')
+          .select('gpx_url')
+          .eq('hike_id', supabaseId)
+          .maybeSingle(),
       ])
       const AUTHORS = {
         '4d781942-cee2-4a99-ba03-aeb06eef81d1': 'Scott',
@@ -43,6 +50,7 @@ export default function HikePage() {
         )
         setUploadedPhotos(urls)
       }
+      if (gpxData?.gpx_url) setGpxUrl(gpxData.gpx_url)
     }
     fetchContent()
   }, [hike])
@@ -159,6 +167,8 @@ export default function HikePage() {
           </div>
         </div>
       </div>
+
+      {gpxUrl && <HikeMap gpxUrl={gpxUrl} hikeName={hike.name} />}
 
       <div className="hike-gallery">
         {galleryItems.map((item, i) => {

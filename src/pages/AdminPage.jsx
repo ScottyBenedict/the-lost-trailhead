@@ -108,6 +108,15 @@ export default function AdminPage() {
   const [merchDeleteConfirm, setMerchDeleteConfirm] = useState(null)
   const merchImageInputRef = useRef()
 
+  // ── GPX tab ───────────────────────────────────────────────────────────────
+  const [gpxHikeId, setGpxHikeId] = useState('')
+  const [gpxFile, setGpxFile] = useState(null)
+  const [gpxExistingUrl, setGpxExistingUrl] = useState(null)
+  const [gpxSaving, setGpxSaving] = useState(false)
+  const [gpxSaved, setGpxSaved] = useState(false)
+  const [gpxError, setGpxError] = useState(null)
+  const gpxFileInputRef = useRef()
+
   const selectedHikeId = hikeId || slugify(customHike)
 
   // ── effects ───────────────────────────────────────────────────────────────
@@ -202,6 +211,12 @@ export default function AdminPage() {
     if (activeTab !== 'merch' || !session) return
     loadMerch()
   }, [activeTab, session])
+
+  useEffect(() => {
+    if (activeTab !== 'gpx' || !gpxHikeId || !session) { setGpxExistingUrl(null); return }
+    supabase.from('hike_gpx').select('gpx_url').eq('hike_id', gpxHikeId).maybeSingle()
+      .then(({ data }) => setGpxExistingUrl(data?.gpx_url || null))
+  }, [activeTab, gpxHikeId, session])
 
   // ── shared image processing ───────────────────────────────────────────────
 
@@ -423,6 +438,26 @@ export default function AdminPage() {
     finally { setProfileSaving(false) }
   }
 
+  // ── GPX handlers ──────────────────────────────────────────────────────────
+
+  async function handleGpxSave() {
+    if (!gpxHikeId || !gpxFile) return
+    setGpxSaving(true); setGpxError(null); setGpxSaved(false)
+    try {
+      const path = `${gpxHikeId}.gpx`
+      const { error: uploadError } = await supabase.storage.from('gpx-files').upload(path, gpxFile, { contentType: 'application/gpx+xml', upsert: true })
+      if (uploadError) throw uploadError
+      const gpx_url = supabase.storage.from('gpx-files').getPublicUrl(path).data.publicUrl
+      const { error: upsertError } = await supabase.from('hike_gpx').upsert({
+        hike_id: gpxHikeId, gpx_url, uploaded_by: session.user.id, uploaded_at: new Date().toISOString(),
+      }, { onConflict: 'hike_id' })
+      if (upsertError) throw upsertError
+      setGpxExistingUrl(gpx_url); setGpxFile(null)
+      setGpxSaved(true); setTimeout(() => setGpxSaved(false), 4000)
+    } catch (err) { setGpxError(err.message) }
+    finally { setGpxSaving(false) }
+  }
+
   // ── Merch handlers ────────────────────────────────────────────────────────
 
   async function loadMerch() {
@@ -536,6 +571,7 @@ export default function AdminPage() {
           <button className={`admin-tab${activeTab === 'gear' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('gear')}>Gear</button>
           <button className={`admin-tab${activeTab === 'profile' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>
           <button className={`admin-tab${activeTab === 'merch' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('merch')}>Merch</button>
+          <button className={`admin-tab${activeTab === 'gpx' ? ' admin-tab-active' : ''}`} onClick={() => setActiveTab('gpx')}>Maps</button>
         </nav>
       </header>
 
@@ -947,6 +983,48 @@ export default function AdminPage() {
                   <button className="admin-btn-ghost admin-gear-add-btn" onClick={() => openMerchForm()}>+ Add Product</button>
                 )}
               </>
+            )}
+          </section>
+        </main>
+      )}
+
+      {/* ── Maps / GPX tab ────────────────────────────────────────────── */}
+      {activeTab === 'gpx' && (
+        <main className="admin-main">
+          <section className="admin-section">
+            <label className="admin-label">UPLOAD GPX ROUTE</label>
+            <p className="admin-or">Select a hike, then upload its GPX file. This powers the interactive trail map on the hike page.</p>
+            <select className="admin-input" value={gpxHikeId} onChange={e => { setGpxHikeId(e.target.value); setGpxFile(null); setGpxError(null); setGpxSaved(false) }}>
+              <option value="">— choose a hike —</option>
+              {hikes.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+            </select>
+
+            {gpxHikeId && (
+              <>
+                {gpxExistingUrl && (
+                  <div className="admin-flag admin-flag-info">
+                    A GPX file already exists for this hike — uploading will replace it.
+                  </div>
+                )}
+                <input
+                  ref={gpxFileInputRef}
+                  type="file"
+                  accept=".gpx,application/gpx+xml"
+                  style={{ display: 'none' }}
+                  onChange={e => { setGpxFile(e.target.files[0] || null); e.target.value = '' }}
+                />
+                <button className="admin-btn-ghost" style={{ marginTop: '0.75rem' }} onClick={() => gpxFileInputRef.current.click()}>
+                  {gpxFile ? gpxFile.name : 'Choose GPX file…'}
+                </button>
+              </>
+            )}
+
+            {gpxError && <p className="admin-error">{gpxError}</p>}
+            {gpxSaved && <p className="admin-success">GPX uploaded!</p>}
+            {gpxHikeId && (
+              <button className="admin-btn-primary" onClick={handleGpxSave} disabled={gpxSaving || !gpxFile} style={{ marginTop: '1rem' }}>
+                {gpxSaving ? 'Uploading…' : 'Upload GPX'}
+              </button>
             )}
           </section>
         </main>
