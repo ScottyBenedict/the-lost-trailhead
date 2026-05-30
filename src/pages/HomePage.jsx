@@ -4,23 +4,31 @@ import { supabase } from '../lib/supabase'
 import HikeCard from '../components/HikeCard'
 
 export default function HomePage() {
-  const [sortMode, setSortMode] = useState('recent')
+  const [sortMode, setSortMode] = useState('az')
   const [hikeDates, setHikeDates] = useState(new Map())
+  const [gpxUrls, setGpxUrls] = useState(new Map())
 
   useEffect(() => {
-    async function fetchDates() {
-      const { data } = await supabase.from('hike_dates').select('hike_id, hike_date')
-      if (!data) return
-      const map = new Map()
-      for (const row of data) {
-        const d = new Date(row.hike_date)
-        if (!map.has(row.hike_id) || d > map.get(row.hike_id)) {
-          map.set(row.hike_id, d)
+    async function fetchData() {
+      const [{ data: dateData }, { data: gpxData }] = await Promise.all([
+        supabase.from('hike_dates').select('hike_id, hike_date'),
+        supabase.from('hike_gpx').select('hike_id, gpx_url'),
+      ])
+      if (dateData) {
+        const map = new Map()
+        for (const row of dateData) {
+          const d = new Date(row.hike_date)
+          if (!map.has(row.hike_id) || d > map.get(row.hike_id)) map.set(row.hike_id, d)
         }
+        setHikeDates(map)
       }
-      setHikeDates(map)
+      if (gpxData) {
+        const map = new Map()
+        for (const row of gpxData) map.set(row.hike_id, row.gpx_url)
+        setGpxUrls(map)
+      }
     }
-    fetchDates()
+    fetchData()
   }, [])
 
   const sorted = useMemo(() => {
@@ -59,21 +67,21 @@ export default function HomePage() {
       <section className="hikes-section">
         <div className="sort-toggle">
           <button
-            className={`sort-btn${sortMode === 'recent' ? ' sort-btn-active' : ''}`}
-            onClick={() => setSortMode('recent')}
-          >
-            Recent
-          </button>
-          <button
             className={`sort-btn${sortMode === 'az' ? ' sort-btn-active' : ''}`}
             onClick={() => setSortMode('az')}
           >
             A–Z
           </button>
+          <button
+            className={`sort-btn${sortMode === 'recent' ? ' sort-btn-active' : ''}`}
+            onClick={() => setSortMode('recent')}
+          >
+            Recent
+          </button>
         </div>
         <div className="hike-grid">
           {sorted.map((hike) => (
-            <HikeCard key={hike.id} hike={hike} />
+            <HikeCard key={hike.id} hike={hike} gpxUrl={gpxUrls.get(hike.supabaseId || hike.id)} />
           ))}
         </div>
       </section>

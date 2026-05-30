@@ -238,6 +238,21 @@ export const hikes = [
     ],
   },
   {
+    id: 'mailbox-old-trail',
+    name: 'Mailbox Peak — Old Trail',
+    region: 'Mt. Baker-Snoqualmie National Forest · North Bend',
+    distance: '9.4 mi',
+    gain: '4,000 ft',
+    difficulty: 'Strenuous',
+    season: 'Jun – Oct',
+    description:
+      'The Old Trail at Mailbox Peak doesn\'t build to anything — it starts steep, stays steep, and doesn\'t apologize. Four miles of boot-beaten track grind straight up the mountain\'s south face through forest, brush, and loose rock, with no switchbacks worth calling switchbacks. The summit at 4,831 feet opens wide above the Middle Fork Snoqualmie Valley, the kind of view that makes you briefly forget what it took to get there. This is the route the newer trail was built to replace, which tells you everything you need to know before you start.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/mailbox-old-trail/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1780153863788_7.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+    galleryStart: 1,
+  },
+  {
     id: 'rachel-rampart-lakes',
     name: 'Rachel & Rampart Lakes',
     region: 'Alpine Lakes Wilderness · Salmon La Sac',
