@@ -95,7 +95,7 @@ export default function AboutPage() {
             <h3 className="about-range-heading">Where We're Going Next</h3>
             <div className="about-range-tags">
               {[
-                'Mt. Washington', 'Lake Ann', 'Mt. Baldy', 'Sourdough Mountain',
+                'Mt. Washington', 'Lake Ann', 'Sourdough Mountain',
                 'Minotaur Lake', 'Maple Pass', 'Robin Lakes', 'Green Mountain',
                 'Vesper Peak', 'Smutwood Peak, Alberta', 'Mt. Pilchuck',
                 'Mt. Dickerman', 'Sahale Glacier', 'Eagle Lake — Sawtooths',
