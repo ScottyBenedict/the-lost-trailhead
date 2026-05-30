@@ -1031,7 +1031,7 @@ export default function AdminPage() {
           <section className="admin-section">
             <label className="admin-label">UPLOAD GPX ROUTE</label>
             <p className="admin-or">Select a hike, then upload its GPX file. This powers the interactive trail map on the hike page.</p>
-            <select className="admin-input" value={gpxHikeId} onChange={e => { setGpxHikeId(e.target.value); setGpxFile(null); setGpxError(null); setGpxSaved(false) }}>
+            <select className="admin-input" value={gpxHikeId} onChange={e => { setGpxHikeId(e.target.value); setGpxFile(null); setGpxError(null); setGpxSaved(false); setGpxExistingUrl(null) }}>
               <option value="">— choose a hike —</option>
               {hikes.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>
