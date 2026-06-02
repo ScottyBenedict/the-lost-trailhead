@@ -362,7 +362,14 @@ a   { color: inherit; text-decoration: none; }
   -webkit-transition: -webkit-transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.hike-card-flippable:hover .hike-card-inner {
+@media (hover: hover) {
+  .hike-card-flippable:hover .hike-card-inner {
+    transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);
+  }
+}
+
+.hike-card-flippable.touch-flipped .hike-card-inner {
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
 }
@@ -374,6 +381,8 @@ a   { color: inherit; text-decoration: none; }
   overflow: hidden;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
 .hike-card-front::after {
@@ -399,8 +408,8 @@ a   { color: inherit; text-decoration: none; }
   overflow: hidden;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  transform: rotateY(180deg);
-  -webkit-transform: rotateY(180deg);
+  transform: translate3d(0, 0, 0) rotateY(180deg);
+  -webkit-transform: translate3d(0, 0, 0) rotateY(180deg);
   background: var(--forest);
   display: flex;
   flex-direction: column;
