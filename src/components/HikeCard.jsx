@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState } from 'react'
 
 // ─── GPX helpers ────────────────────────────────────────────────────────────
 
@@ -24,6 +24,7 @@ export default function HikeCard({ hike, gpxUrl }) {
   const mapDivRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const initializedRef = useRef(false)
+  const [touchFlipped, setTouchFlipped] = useState(false)
 
   const isFlippable = !!(hike.map || gpxUrl)
 
@@ -74,11 +75,19 @@ export default function HikeCard({ hike, gpxUrl }) {
     } catch (_) { /* silent */ }
   }, [gpxUrl])
 
+  function handleTouchStart(e) {
+    if (!isFlippable || touchFlipped) return
+    e.preventDefault()
+    setTouchFlipped(true)
+    initGpxBack()
+  }
+
   return (
     <Link
       to={`/hikes/${hike.id}`}
-      className={`hike-card${isFlippable ? ' hike-card-flippable' : ''}`}
+      className={`hike-card${isFlippable ? ' hike-card-flippable' : ''}${touchFlipped ? ' touch-flipped' : ''}`}
       onMouseEnter={initGpxBack}
+      onTouchStart={handleTouchStart}
     >
       <div className="hike-card-inner">
 
