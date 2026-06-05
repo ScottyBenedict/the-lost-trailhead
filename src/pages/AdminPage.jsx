@@ -32,7 +32,7 @@ function wordsMatch(inputSlug, candidateId) {
   const inputWords = inputSlug.split('-').filter(w => w.length > 1 && !STOP_WORDS.has(w))
   const candidateWords = candidateId.split('-').filter(w => w.length > 1 && !STOP_WORDS.has(w))
   if (inputWords.length === 0) return false
-  return inputWords.every(w => candidateWords.some(cw => cw.startsWith(w) || w.startsWith(cw)))
+  return inputWords.every(w => candidateWords.some(cw => cw.startsWith(w)))
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
@@ -1146,7 +1146,7 @@ export default function AdminPage() {
             <p className="admin-or">Select a hike, then upload its GPX file. This powers the interactive trail map on the hike page.</p>
             <select className="admin-input" value={gpxHikeId} onChange={e => { setGpxHikeId(e.target.value); setGpxFile(null); setGpxError(null); setGpxSaved(false); setGpxExistingUrl(null) }}>
               <option value="">— choose a hike —</option>
-              {hikes.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+              {hikes.map(h => <option key={h.id} value={h.supabaseId || h.id}>{h.name}</option>)}
             </select>
 
             {gpxHikeId && (
@@ -1183,7 +1183,7 @@ export default function AdminPage() {
             <p className="admin-or">Log visit dates per hike. These drive the Recent sort order on the homepage.</p>
             <select className="admin-input" value={dateHikeId} onChange={e => { setDateHikeId(e.target.value); setDateValue(''); setDateNotes(''); setDateError(null); setDateSaved(false) }}>
               <option value="">— choose a hike —</option>
-              {hikes.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+              {hikes.map(h => <option key={h.id} value={h.supabaseId || h.id}>{h.name}</option>)}
             </select>
 
             {dateHikeId && (
