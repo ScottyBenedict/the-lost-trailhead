@@ -765,7 +765,7 @@ export default function AdminPage() {
             <select className="admin-input" value={hikeId} onChange={handleHikeSelect}>
               <option value="">— choose a hike —</option>
               <optgroup label="Published hikes">
-                {hikes.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                {hikes.map(h => <option key={h.id} value={h.supabaseId || h.id}>{h.name}</option>)}
               </optgroup>
               {pendingHikeIds.length > 0 && (
                 <optgroup label="Needs a page">
