@@ -32,7 +32,14 @@ function wordsMatch(inputSlug, candidateId) {
   const inputWords = inputSlug.split('-').filter(w => w.length > 1 && !STOP_WORDS.has(w))
   const candidateWords = candidateId.split('-').filter(w => w.length > 1 && !STOP_WORDS.has(w))
   if (inputWords.length === 0) return false
-  return inputWords.every(w => candidateWords.some(cw => cw.startsWith(w)))
+  // prefix matching only when the shorter word is at least 4 chars (avoids "si" matching "silver")
+  return inputWords.every(w =>
+    candidateWords.some(cw => {
+      if (cw === w) return true
+      const [shorter, longer] = cw.length <= w.length ? [cw, w] : [w, cw]
+      return shorter.length >= 4 && longer.startsWith(shorter)
+    })
+  )
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
