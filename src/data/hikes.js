@@ -327,6 +327,20 @@ export const hikes = [
     galleryStart: 1,
   },
   {
+    id: 'manastash',
+    name: 'Manastash Ridge',
+    region: 'Okanogan-Wenatchee National Forest · Ellensburg',
+    distance: '3.7 mi',
+    gain: '1,600 ft',
+    difficulty: 'Strenuous',
+    season: 'Year-round',
+    description:
+      'Manastash Ridge in winter is a different animal than the summer trail — the exposed basalt scrub is buried, the trail climbs steep through open snow with no landmarks and no shade, and the wind on the ridge has nothing to stop it. The Kittitas Valley spreads wide below, and the kind of silence that comes when you\'re the only person on the mountain sets in fast. The exposure here is real in any season, but in winter the weather makes sure you know it. Come with more layers than the forecast suggests.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/manastash/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1780713876103_0.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+  },
+  {
     id: 'mt-baldy',
     name: 'Mt. Baldy',
     region: 'Okanogan-Wenatchee National Forest · Snoqualmie Pass',
@@ -417,6 +431,20 @@ export const hikes = [
     hiddenPhotos: ['https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/red-top-lookout/4d781942-cee2-4a99-ba03-aeb06eef81d1/1778893314459_0.jpg'],
   },
   {
+    id: 'silver-peak',
+    name: 'Silver Peak',
+    region: 'Alpine Lakes Wilderness · Snoqualmie Pass',
+    distance: '5.6 mi',
+    gain: '2,100 ft',
+    difficulty: 'Strenuous',
+    season: 'Jul – Nov',
+    description:
+      'Silver Peak sits at 5,605 feet on the southern wall of Snoqualmie Pass — overlooked by most hikers who come to the area for bigger names, which means the summit is often empty when it shouldn\'t be. The Cold Creek Trail climbs through second-growth forest before breaking out onto open slopes where the views start arriving: Kecheelus Lake below, the Alpine Lakes stretching north, and Mount Rainier hard on the southern horizon. The final pitch is steep and exposed, requiring hands in places — a short scramble that earns the summit fast. What\'s waiting is a panoramic view in every direction with almost no one else around.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/silver-peak/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1780696039073_0.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+  },
+  {
     id: 'snow-lake',
     name: 'Snow Lake',
     region: 'Alpine Lakes Wilderness',
@@ -434,7 +462,6 @@ export const hikes = [
   },
   {
     id: 'snow-lake-winter',
-    supabaseId: 'Snow Lake - Winter',
     name: 'Snow Lake — Winter',
     region: 'Alpine Lakes Wilderness · Snoqualmie Pass',
     distance: '7.2 mi',
