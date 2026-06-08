@@ -275,10 +275,17 @@ export default function AdminPage() {
     return canvas.toDataURL('image/jpeg', 0.92)
   }
 
+  const MAX_FILE_BYTES = 20 * 1024 * 1024 // 20 MB
+
   async function processFiles(files) {
     const imageFiles = Array.from(files).filter(f =>
       f.type.startsWith('image/') || f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif')
     )
+    const oversized = imageFiles.filter(f => f.size > MAX_FILE_BYTES)
+    if (oversized.length > 0) {
+      setError(`${oversized.map(f => f.name).join(', ')} exceed${oversized.length === 1 ? 's' : ''} the 20 MB limit.`)
+      return []
+    }
     return Promise.all(imageFiles.map(async file => {
       let workingFile = file
       if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
@@ -403,7 +410,7 @@ export default function AdminPage() {
         const { error } = await supabase.from('gear_items').update({
           category: gearForm.category.trim(), brand: gearForm.brand.trim(),
           name: gearForm.name.trim(), description: gearForm.description.trim(),
-        }).eq('id', editingGearId)
+        }).eq('id', editingGearId).eq('user_id', session.user.id)
         if (error) throw error
       } else {
         const maxOrder = gearItems.length > 0 ? Math.max(...gearItems.map(i => i.sort_order)) : -1
@@ -420,7 +427,7 @@ export default function AdminPage() {
   }
 
   async function deleteGearItem(id) {
-    const { error } = await supabase.from('gear_items').delete().eq('id', id)
+    const { error } = await supabase.from('gear_items').delete().eq('id', id).eq('user_id', session.user.id)
     if (!error) { setGearItems(prev => prev.filter(i => i.id !== id)); setGearDeleteConfirm(null) }
   }
 
@@ -430,8 +437,8 @@ export default function AdminPage() {
     if (swapIdx < 0 || swapIdx >= gearItems.length) return
     const a = gearItems[idx]; const b = gearItems[swapIdx]
     await Promise.all([
-      supabase.from('gear_items').update({ sort_order: b.sort_order }).eq('id', a.id),
-      supabase.from('gear_items').update({ sort_order: a.sort_order }).eq('id', b.id),
+      supabase.from('gear_items').update({ sort_order: b.sort_order }).eq('id', a.id).eq('user_id', session.user.id),
+      supabase.from('gear_items').update({ sort_order: a.sort_order }).eq('id', b.id).eq('user_id', session.user.id),
     ])
     await loadGear()
   }
@@ -632,7 +639,8 @@ export default function AdminPage() {
   }
 
   async function deleteMerchProduct(id) {
-    await supabase.from('merch_products').delete().eq('id', id)
+    const { error } = await supabase.from('merch_products').delete().eq('id', id)
+    if (error) { setMerchError(error.message); return }
     setMerchProducts(prev => prev.filter(p => p.id !== id))
     setMerchDeleteConfirm(null)
   }

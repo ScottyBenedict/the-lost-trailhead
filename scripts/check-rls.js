@@ -2,10 +2,25 @@
 // Runs before `npm run dev`. Warns if any public table has RLS disabled.
 // Requires tables_without_rls() SQL function to be installed in Supabase.
 
+import { readFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://ikjgtsvauctfmxpqwmyd.supabase.co';
-const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlramd0c3ZhdWN0Zm14cHF3bXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzI5NTEsImV4cCI6MjA5NDMwODk1MX0.Bkzz7c1125OUf2B7MXTqtKnls52mGCwE64LiBjyR5Do';
+// Load .env.local manually — this script runs outside Vite
+try {
+  const env = readFileSync(new URL('../.env.local', import.meta.url), 'utf8');
+  for (const line of env.split('\n')) {
+    const [key, ...rest] = line.split('=');
+    if (key && rest.length) process.env[key.trim()] = rest.join('=').trim();
+  }
+} catch { /* .env.local is optional */ }
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !ANON_KEY) {
+  console.warn('\x1b[33m⚠  RLS check skipped: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY not set in .env.local\x1b[0m');
+  process.exit(0);
+}
 
 const supabase = createClient(SUPABASE_URL, ANON_KEY);
 const { data, error } = await supabase.rpc('tables_without_rls');
