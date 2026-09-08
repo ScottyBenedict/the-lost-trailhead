@@ -6,14 +6,10 @@ import HikeCard from '../components/HikeCard'
 export default function HomePage() {
   const [sortMode, setSortMode] = useState('az')
   const [hikeDates, setHikeDates] = useState(new Map())
-  const [gpxUrls, setGpxUrls] = useState(new Map())
 
   useEffect(() => {
     async function fetchData() {
-      const [{ data: dateData }, { data: gpxData }] = await Promise.all([
-        supabase.from('hike_dates').select('hike_id, hike_date'),
-        supabase.from('hike_gpx').select('hike_id, gpx_url'),
-      ])
+      const { data: dateData } = await supabase.from('hike_dates').select('hike_id, hike_date')
       if (dateData) {
         const map = new Map()
         for (const row of dateData) {
@@ -21,11 +17,6 @@ export default function HomePage() {
           if (!map.has(row.hike_id) || d > map.get(row.hike_id)) map.set(row.hike_id, d)
         }
         setHikeDates(map)
-      }
-      if (gpxData) {
-        const map = new Map()
-        for (const row of gpxData) map.set(row.hike_id, row.gpx_url)
-        setGpxUrls(map)
       }
     }
     fetchData()
@@ -81,7 +72,7 @@ export default function HomePage() {
         </div>
         <div className="hike-grid">
           {sorted.map((hike) => (
-            <HikeCard key={hike.id} hike={hike} gpxUrl={gpxUrls.get(hike.supabaseId || hike.id)} />
+            <HikeCard key={hike.id} hike={hike} />
           ))}
         </div>
       </section>

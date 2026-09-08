@@ -346,49 +346,11 @@ a   { color: inherit; text-decoration: none; }
   cursor: pointer;
 }
 
-.hike-card-flippable {
-  overflow: visible;
-  perspective: 1200px;
-  -webkit-perspective: 1200px;
-}
-
-.hike-card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-  -webkit-transition: -webkit-transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@media (hover: hover) {
-  .hike-card-flippable:hover .hike-card-inner {
-    transform: rotateY(180deg);
-    -webkit-transform: rotateY(180deg);
-  }
-}
-
-.hike-card-flippable.touch-flipped .hike-card-inner {
-  transform: rotateY(180deg);
-  -webkit-transform: rotateY(180deg);
-}
-
-.hike-card-front {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
-}
-
-.hike-card-front::after {
+.hike-card::after {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(
     to top,
     rgba(15, 25, 15, 0.55) 0%,
@@ -399,72 +361,7 @@ a   { color: inherit; text-decoration: none; }
   transition: opacity 0.4s;
 }
 
-.hike-card:hover .hike-card-front::after { opacity: 0.8; }
-
-.hike-card-back {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: translate3d(0, 0, 0) rotateY(180deg);
-  -webkit-transform: translate3d(0, 0, 0) rotateY(180deg);
-  background: var(--forest);
-  display: flex;
-  flex-direction: column;
-}
-
-.hike-card-topo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.12;
-  mix-blend-mode: screen;
-}
-
-.hike-card-map {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  object-fit: contain;
-  padding: 1.5rem 1.5rem 0.75rem;
-  position: relative;
-  z-index: 1;
-}
-
-.hike-card-map-container {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.hike-card-elevation-canvas {
-  display: block;
-  width: 100%;
-  height: 52px;
-  flex-shrink: 0;
-  border-top: 1px solid rgba(255,255,255,0.1);
-}
-
-.hike-card-back-body {
-  padding: 1.25rem 1.5rem 1.5rem;
-  min-height: 9rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  background: rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(5px) saturate(1.4);
-  -webkit-backdrop-filter: blur(5px) saturate(1.4);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  position: relative;
-  z-index: 1;
-}
+.hike-card:hover::after { opacity: 0.8; }
 
 .hike-card-img {
   position: absolute;
@@ -478,7 +375,7 @@ a   { color: inherit; text-decoration: none; }
   transition: transform 0.6s ease;
 }
 
-.hike-card:not(.hike-card-flippable):hover .hike-card-img img { transform: scale(1.07); }
+.hike-card:hover .hike-card-img img { transform: scale(1.07); }
 
 .hike-card-img-placeholder {
   width: 100%;
@@ -491,7 +388,7 @@ a   { color: inherit; text-decoration: none; }
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1;
+  z-index: 2;
   padding: 1.25rem 1.5rem 1.5rem;
   min-height: 9rem;
   display: flex;
@@ -752,11 +649,6 @@ a   { color: inherit; text-decoration: none; }
   cursor: pointer;
 }
 
-.gallery-item-large {
-  grid-column: 1 / -1;
-  aspect-ratio: 16 / 9;
-}
-
 .gallery-item img {
   width: 100%;
   height: 100%;
@@ -768,7 +660,69 @@ a   { color: inherit; text-decoration: none; }
 
 @media (max-width: 560px) {
   .hike-gallery { grid-template-columns: 1fr; }
-  .gallery-item-large { aspect-ratio: 4 / 3; }
+}
+
+.map-card {
+  position: relative;
+  background: var(--forest);
+}
+
+.map-card-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.map-card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to top, rgba(15,25,15,0.55) 0%, rgba(15,25,15,0.08) 55%, transparent 100%);
+  pointer-events: none;
+}
+
+.map-card-play {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--forest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.map-card-replay {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(20, 28, 22, 0.75);
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.map-card-caption {
+  position: absolute;
+  left: 0.9rem;
+  bottom: 0.75rem;
+  z-index: 500;
+  color: #fff;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 /* ── Gallery Lightbox ────────────────────────────────── */
@@ -783,6 +737,32 @@ a   { color: inherit; text-decoration: none; }
   cursor: pointer;
 }
 
+.gallery-lightbox-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 20;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s;
+}
+
+.gallery-lightbox-close:hover { background: rgba(0, 0, 0, 0.75); }
+
+.gallery-lightbox-close svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
 .gallery-lightbox-img {
   max-width: 77vw;
   max-height: 75vh;
@@ -793,10 +773,20 @@ a   { color: inherit; text-decoration: none; }
 }
 
 .gallery-lightbox-frame {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+}
+
+.gallery-lightbox-frame-map {
+  width: min(760px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
 }
 
 .gallery-lightbox-controls {

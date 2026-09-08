@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
+import HikeMap from '../components/HikeMap'
+import HikeMapCard from '../components/HikeMapCard'
 
 export default function HikePage() {
   const { slug } = useParams()
@@ -10,13 +12,34 @@ export default function HikePage() {
   const [reports, setReports] = useState([])
   const [uploadedPhotos, setUploadedPhotos] = useState([])
   const [lightboxIndex, setLightboxIndex] = useState(null)
+  const [gpxUrl, setGpxUrl] = useState(null)
 
   const supabaseId = hike?.supabaseId || hike?.id
+
+  // Locks background scroll while the lightbox is open. Compensating with paddingRight
+  // matters: overflow:hidden removes the scrollbar, which widens the page by its width
+  // and reflows the gallery grid — that reflow was the actual cause of the background
+  // content visibly jumping/shifting when the lightbox opened.
+  useEffect(() => {
+    if (lightboxIndex === null) return
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    const prevBodyOverflow = document.body.style.overflow
+    const prevHtmlOverflow = document.documentElement.style.overflow
+    const prevPaddingRight = document.body.style.paddingRight
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`
+    return () => {
+      document.body.style.overflow = prevBodyOverflow
+      document.documentElement.style.overflow = prevHtmlOverflow
+      document.body.style.paddingRight = prevPaddingRight
+    }
+  }, [lightboxIndex])
 
   useEffect(() => {
     if (!hike) return
     async function fetchContent() {
-      const [reportRes, { data: photoData }] = await Promise.all([
+      const [reportRes, { data: photoData }, { data: gpxData }] = await Promise.all([
         supabase
           .from('hike_reports')
           .select('user_id, report_text, hot_take')
@@ -26,7 +49,13 @@ export default function HikePage() {
           .select('storage_path, display_order')
           .eq('hike_id', supabaseId)
           .order('display_order'),
+        supabase
+          .from('hike_gpx')
+          .select('gpx_url')
+          .eq('hike_id', supabaseId)
+          .maybeSingle(),
       ])
+      setGpxUrl(gpxData?.gpx_url || null)
       const AUTHORS = {
         '4d781942-cee2-4a99-ba03-aeb06eef81d1': 'Scott',
         'dd5d9dfd-2613-46d9-962a-e116bf5ba145': 'Alan',
@@ -56,14 +85,20 @@ export default function HikePage() {
     )
   }
 
-  const hidden = new Set(hike.hiddenPhotos || [])
-  const start = hike.galleryStart ?? 0
-  const filtered = uploadedPhotos.filter(url => !hidden.has(url))
-  const reordered = start > 0 ? [...filtered.slice(start), ...filtered.slice(0, start)] : filtered
-  const combined = [...hike.photos, ...reordered]
-  const allPhotos = combined.length > 1 && combined[0] === hike.cover
-    ? [...combined.slice(1), combined[0]]
-    : combined
+  // Memoized so this array keeps a stable reference across unrelated re-renders (e.g.
+  // opening/closing the lightbox). Without that, galleryItems below — which depends on
+  // this by reference and picks the report card's position with Math.random() — recomputed
+  // on every render and reshuffled the report card to a new spot each time.
+  const allPhotos = useMemo(() => {
+    const hidden = new Set(hike.hiddenPhotos || [])
+    const start = hike.galleryStart ?? 0
+    const filtered = uploadedPhotos.filter(url => !hidden.has(url))
+    const reordered = start > 0 ? [...filtered.slice(start), ...filtered.slice(0, start)] : filtered
+    const combined = [...hike.photos, ...reordered]
+    return combined.length > 1 && combined[0] === hike.cover
+      ? [...combined.slice(1), combined[0]]
+      : combined
+  }, [hike, uploadedPhotos])
 
   const galleryItems = useMemo(() => {
     const n = allPhotos.length
@@ -102,15 +137,25 @@ export default function HikePage() {
     while (ii < insertions.length) {
       result.push({ type: 'report', data: reports[insertions[ii++].ri] })
     }
+    if (gpxUrl) result.unshift({ type: 'map' })
     return result
-  }, [allPhotos, reports])
+  }, [allPhotos, reports, gpxUrl])
+
+  // Lightbox carousel: map slide (if present) is index 0, followed by all photos —
+  // lets the flyover be reached both by clicking its grid card and by arrowing
+  // past it from the photos.
+  const lightboxItems = useMemo(() => {
+    const photoSlides = allPhotos.map(src => ({ type: 'photo', src }))
+    return gpxUrl ? [{ type: 'map' }, ...photoSlides] : photoSlides
+  }, [allPhotos, gpxUrl])
+  const photoIndexOffset = gpxUrl ? 1 : 0
 
   const handleKeyDown = useCallback((e) => {
     if (lightboxIndex === null) return
-    if (e.key === 'ArrowRight') setLightboxIndex(i => (i + 1) % allPhotos.length)
-    if (e.key === 'ArrowLeft')  setLightboxIndex(i => (i - 1 + allPhotos.length) % allPhotos.length)
+    if (e.key === 'ArrowRight') setLightboxIndex(i => (i + 1) % lightboxItems.length)
+    if (e.key === 'ArrowLeft')  setLightboxIndex(i => (i - 1 + lightboxItems.length) % lightboxItems.length)
     if (e.key === 'Escape')     setLightboxIndex(null)
-  }, [lightboxIndex, allPhotos.length])
+  }, [lightboxIndex, lightboxItems.length])
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -162,6 +207,11 @@ export default function HikePage() {
 
       <div className="hike-gallery">
         {galleryItems.map((item, i) => {
+          if (item.type === 'map') {
+            return (
+              <HikeMapCard key={`map-${i}`} gpxUrl={gpxUrl} onOpen={() => setLightboxIndex(0)} />
+            )
+          }
           if (item.type === 'report') {
             return (
               <div key={`report-${i}`} className="gallery-report-card">
@@ -183,8 +233,8 @@ export default function HikePage() {
           return (
             <div
               key={item.src}
-              className={`gallery-item${item.photoIdx === 0 ? ' gallery-item-large' : ''}`}
-              onClick={() => setLightboxIndex(item.photoIdx)}
+              className="gallery-item"
+              onClick={() => setLightboxIndex(item.photoIdx + photoIndexOffset)}
             >
               <img
                 src={item.src}
@@ -198,30 +248,47 @@ export default function HikePage() {
 
       {lightboxIndex !== null && (
         <div className="gallery-lightbox" onClick={() => setLightboxIndex(null)}>
-          <div className="gallery-lightbox-frame" onClick={e => e.stopPropagation()}>
-            <img
-              src={allPhotos[lightboxIndex]}
-              alt={`${hike.name} — photo ${lightboxIndex + 1}`}
-              className="gallery-lightbox-img"
-            />
+          <div
+            className={`gallery-lightbox-frame${lightboxItems[lightboxIndex].type === 'map' ? ' gallery-lightbox-frame-map' : ''}`}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              className="gallery-lightbox-close"
+              onClick={e => { e.stopPropagation(); setLightboxIndex(null) }}
+              aria-label="Close"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            {lightboxItems[lightboxIndex].type === 'map' ? (
+              <HikeMap gpxUrl={gpxUrl} hikeName={hike.name} />
+            ) : (
+              <img
+                src={lightboxItems[lightboxIndex].src}
+                alt={`${hike.name} — photo ${lightboxIndex + 1 - photoIndexOffset}`}
+                className="gallery-lightbox-img"
+              />
+            )}
             <div className="gallery-lightbox-controls">
-              {allPhotos.length > 1 && (
+              {lightboxItems.length > 1 && (
                 <button
                   className="gallery-lightbox-arrow"
-                  onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + allPhotos.length) % allPhotos.length) }}
-                  aria-label="Previous photo"
+                  onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i - 1 + lightboxItems.length) % lightboxItems.length) }}
+                  aria-label="Previous"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="15 6 9 12 15 18" />
                   </svg>
                 </button>
               )}
-              <span className="gallery-lightbox-count">{lightboxIndex + 1} / {allPhotos.length}</span>
-              {allPhotos.length > 1 && (
+              <span className="gallery-lightbox-count">{lightboxIndex + 1} / {lightboxItems.length}</span>
+              {lightboxItems.length > 1 && (
                 <button
                   className="gallery-lightbox-arrow"
-                  onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % allPhotos.length) }}
-                  aria-label="Next photo"
+                  onClick={e => { e.stopPropagation(); setLightboxIndex(i => (i + 1) % lightboxItems.length) }}
+                  aria-label="Next"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="9 6 15 12 9 18" />
