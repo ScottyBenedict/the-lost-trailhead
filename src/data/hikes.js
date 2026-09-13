@@ -298,7 +298,7 @@ export const hikes = [
   {
     id: 'little-si',
     name: 'Little Si',
-    region: 'Mount Si NRCA · North Bend',
+    region: 'Mt. Si Natural Resources Conservation Area · North Bend',
     distance: '4.7 mi',
     gain: '1,300 ft',
     difficulty: 'Moderate',
