@@ -1,0 +1,45 @@
+/* Cesium's default Viewer adds a "Cesium ion" logo credit unconditionally,
+   regardless of whether ion is actually used for anything — this project
+   uses zero ion services (self-hosted Terrarium terrain, third-party Esri
+   imagery, no ion access token configured anywhere), so there's no ion
+   Terms-of-Service attribution obligation tied to it, and CesiumJS's own
+   Apache 2.0 license doesn't require an on-screen watermark either. Safe to
+   remove outright. The Esri "Data attribution" text credit (set via the
+   imagery provider's `credit` option in terrainFlyover.js) is left
+   untouched — that one IS a real requirement, per Esri's terms for using
+   their World_Imagery tile service.
+   `:has()` hides the whole link wrapping the ion logo, not just the image
+   inside it, so no empty clickable box is left behind; the plain img rule
+   below is a graceful-degradation fallback for the rare browser without
+   `:has()` support — same shrink-to-fit treatment this used before, rather
+   than a full remove, so it's never left at native (oversized) dimensions. */
+.cesium-widget-credits a:has(img[src*="ion-credit"]) {
+  display: none;
+}
+.cesium-widget-credits img[src*="ion-credit"] {
+  max-height: 14px;
+  width: auto;
+}
+
+/* Matches .map-card-caption's own left inset (see index.css) so the
+   remaining Esri credit text lines up under "Trail Map & Flyover" instead of
+   sitting flush in the raw corner (Cesium's default: bottom: 0; left: 0)
+   while the caption above it has generous padding. Bottom stays smaller than
+   the caption's own 1.5rem so the two sit stacked with a visible gap rather
+   than overlapping. */
+.cesium-viewer-bottom {
+  left: 1.75rem;
+  bottom: 0.6rem;
+}
+
+/* The "Data attribution" expand-link is the only thing left in the credit
+   row (the ion logo above is gone) — it's what actually surfaces the Esri
+   imagery credit, required under Esri's terms for using their World_Imagery
+   tiles, so it stays rather than being removed outright. Dimmed and
+   underline-free so it reads as a quiet, secondary label rather than a
+   prominent link — as unobtrusive as it can be while still being present
+   and legible. */
+.cesium-credit-expand-link {
+  opacity: 0.55;
+  text-decoration: none;
+}

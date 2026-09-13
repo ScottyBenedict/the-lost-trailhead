@@ -263,7 +263,7 @@ export default function HikePage() {
               </svg>
             </button>
             {lightboxItems[lightboxIndex].type === 'map' ? (
-              <HikeMap gpxUrl={gpxUrl} hikeName={hike.name} />
+              <HikeMap gpxUrl={gpxUrl} hikeName={hike.name} hikeDistance={hike.distance} hikeGain={hike.gain} />
             ) : (
               <img
                 src={lightboxItems[lightboxIndex].src}

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Phase 1 Spike — Terrarium Terrain in MapLibre</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link
+  href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+  rel="stylesheet"
+/>
+<style>
+  html, body, #map { height: 100%; margin: 0; padding: 0; }
+  #info {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1;
+    background: rgba(255,255,255,0.9);
+    padding: 10px 14px;
+    font: 13px/1.4 -apple-system, sans-serif;
+    border-radius: 6px;
+    max-width: 320px;
+  }
+</style>
+</head>
+<body>
+<div id="info">
+  <strong>Phase 1 spike — terrain rendering only</strong><br>
+  Terrain source: <span id="terrain-label">Terrarium (AWS, free)</span> +
+  OpenFreeMap vector basemap (free, no key) + MapLibre GL JS.<br>
+  Centered on Rattlesnake Ledge, WA — bounding-box center of the real
+  uploaded <code>rattlesnake-ledge.gpx</code> track (12,279 points,
+  fetched directly from Supabase storage). No path/camera animation
+  yet — this is just confirming the terrain itself renders.
+</div>
+<div id="map"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+  // ---- Terrain source toggle -----------------------------------------
+  // Set to true and paste your free MapTiler key below to A/B test their
+  // terrain-rgb-v2 tiles against Terrarium. Terrarium confirmed capped at
+  // z15 for this area (checked directly against the S3 bucket — z16/z17
+  // both 404), which is why it looks soft when the camera is tighter than
+  // that. Get a free key at cloud.maptiler.com (Account -> Keys).
+  const USE_MAPTILER = true;
+  const MAPTILER_KEY = 'n8NcbyL2DSkpZhZtAJlo';
+  // ----------------------------------------------------------------------
+
+  // Terrarium tiles: free, static S3 bucket, no key, no commercial/
+  // non-commercial license boundary (see docs/roadmap-3d-flyover.md decision 1).
+  const TERRARIUM_URL =
+    'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+
+  // MapTiler terrain-rgb-v2: uses the Mapbox terrain-RGB elevation
+  // encoding (not Terrarium's), so the source `encoding` below must
+  // switch too, not just the tile URL.
+  const MAPTILER_URL = `https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=${MAPTILER_KEY}`;
+
+  // OpenFreeMap: free vector tiles, no key/account/usage cap, same
+  // no-license-boundary reasoning as the Terrarium pick (decision 1).
+  // Vector tiles instead of raster: raster PNG basemaps (e.g. OSM raster)
+  // get draped over the 3D terrain mesh as a single stretched texture,
+  // which is why labels warped/blurred in the first pass. Vector layers
+  // draw lines/labels fresh in map space every frame, so they stay crisp
+  // and upright regardless of terrain tilt.
+  const BASEMAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+
+  async function init() {
+    if (USE_MAPTILER) {
+      document.getElementById('terrain-label').textContent =
+        'MapTiler terrain-rgb-v2 (requires key)';
+    }
+
+    const style = await fetch(BASEMAP_STYLE_URL).then((r) => r.json());
+
+    style.sources.terrainSource = USE_MAPTILER
+      ? {
+          type: 'raster-dem',
+          tiles: [MAPTILER_URL],
+          tileSize: 512,
+          encoding: 'mapbox',
+          // Confirmed via https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json —
+          // this tileset's real maxzoom is 14, one level LOWER than Terrarium's
+          // confirmed 15 (see TERRARIUM_URL comment above). Tested 2026-09-11:
+          // no meaningful sharpness gain over Terrarium at tight zoom — the
+          // A/B result was a wash, as the roadmap doc predicted.
+          maxzoom: 14,
+        }
+      : {
+          type: 'raster-dem',
+          tiles: [TERRARIUM_URL],
+          tileSize: 256,
+          encoding: 'terrarium',
+          maxzoom: 15,
+        };
+
+    // Insert hillshade below labels (symbol layers) so labels stay crisp
+    // on top, but above fills/lines so relief is visible under them.
+    const firstSymbolIndex = style.layers.findIndex((l) => l.type === 'symbol');
+    const insertAt = firstSymbolIndex === -1 ? style.layers.length : firstSymbolIndex;
+    style.layers.splice(insertAt, 0, {
+      id: 'hillshade',
+      type: 'hillshade',
+      source: 'terrainSource',
+      paint: { 'hillshade-exaggeration': 0.4 },
+    });
+
+    style.terrain = { source: 'terrainSource', exaggeration: 1.5 };
+    style.sky = {
+      'sky-color': '#89c4f4',
+      'sky-horizon-blend': 0.5,
+      'horizon-color': '#f8f8f8',
+      'horizon-fog-blend': 0.5,
+      'fog-color': '#e8f0f5',
+      'fog-ground-blend': 0.5,
+    };
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style,
+      // Rattlesnake Ledge, WA — bounding-box center of the real
+      // rattlesnake-ledge.gpx track (fetched from Supabase storage
+      // 2026-09-08, 12,279 points; bbox lat 47.4329–47.4397,
+      // lon -121.7851–-121.7669).
+      center: [-121.7760, 47.4363],
+      zoom: 13.5,
+      pitch: 65,
+      bearing: -20,
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+
+    map.on('load', () => {
+      console.log('Map loaded. Vector basemap + terrain + hillshade + sky active.');
+    });
+
+    map.on('error', (e) => {
+      console.error('MapLibre error:', e);
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>

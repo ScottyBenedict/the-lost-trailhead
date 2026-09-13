@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Phase 1b — Flyover rendering test (card vs. lightbox size)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<style>
+  body { font: 14px/1.5 -apple-system, sans-serif; padding: 24px; max-width: 1200px; margin: 0 auto; }
+  p { color: #333; max-width: 800px; }
+  .test-row { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; margin-top: 20px; }
+  .test-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .test-sub { font-size: 12px; color: #666; margin-bottom: 8px; }
+  #map-card { width: 413px; height: 310px; border-radius: 16px; overflow: hidden; background: #2a3a2c; }
+  #map-lightbox { width: 760px; height: 500px; border-radius: 14px; overflow: hidden; background: #2a3a2c; }
+  code { background: #eee; padding: 1px 5px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h2>Phase 1b — flyover rendering test, at real display sizes</h2>
+<p>
+  Testing whether the "draped fabric" terrain look (flat vector basemap displaced
+  over a coarse DEM mesh — see <code>docs/roadmap-3d-flyover.md</code>) reads
+  differently at the sizes this would actually render at on the site, vs. a full
+  desktop window. The OSM viewpoint POI icons ("Rattlesnake Ledge" etc.) that
+  didn't line up with the terrain are stripped from the basemap here — those were
+  never our data, just OpenFreeMap's generic POI layer.
+</p>
+<p>
+  <strong>This is not the final camera</strong> (that's Phase 3 — an algorithmic
+  path with tuned pitch/lookahead). This just follows the real
+  <code>rattlesnake-ledge.gpx</code> track with a simple heading-facing camera,
+  enough motion to judge terrain quality while animated rather than from a
+  static shot.
+</p>
+<div class="test-row">
+  <div class="test-block">
+    <div class="test-label">Card size — 413×310</div>
+    <div class="test-sub">matches <code>.map-card</code> in index.css</div>
+    <div id="map-card"></div>
+  </div>
+  <div class="test-block">
+    <div class="test-label">Lightbox size — 760×500</div>
+    <div class="test-sub">matches <code>.gallery-lightbox-frame-map</code> width; height approximated</div>
+    <div id="map-lightbox"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+  const MAPTILER_KEY = 'n8NcbyL2DSkpZhZtAJlo';
+  const MAPTILER_URL = `https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=${MAPTILER_KEY}`;
+  const BASEMAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+  const GPX_URL = 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/gpx-files/rattlesnake-ledge.gpx';
+
+  // ---- Inlined from src/lib/gpxFlyover.js (kept self-contained, no build step) ----
+  function parseGPX(text) {
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    const points = [];
+    doc.querySelectorAll('trkpt').forEach(pt => {
+      const lat = parseFloat(pt.getAttribute('lat'));
+      const lon = parseFloat(pt.getAttribute('lon'));
+      if (!isNaN(lat) && !isNaN(lon)) points.push({ lat, lon });
+    });
+    return points;
+  }
+  function decimate(points, maxPoints = 400) {
+    if (points.length <= maxPoints) return points;
+    const step = (points.length - 1) / (maxPoints - 1);
+    const out = [];
+    for (let i = 0; i < maxPoints; i++) out.push(points[Math.round(i * step)]);
+    return out;
+  }
+  function haversineM(a, b) {
+    const R = 6371000;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLon = (b.lon - a.lon) * Math.PI / 180;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+  }
+  function buildCumulative(points) {
+    const cum = [0];
+    for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + haversineM(points[i - 1], points[i]));
+    return cum;
+  }
+  function positionAt(points, cum, total, frac) {
+    const targetDist = frac * total;
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < targetDist) i++;
+    const d0 = cum[i - 1], d1 = cum[i];
+    const segFrac = d1 > d0 ? (targetDist - d0) / (d1 - d0) : 0;
+    const p0 = points[i - 1], p1 = points[i];
+    return {
+      lat: p0.lat + (p1.lat - p0.lat) * segFrac,
+      lon: p0.lon + (p1.lon - p0.lon) * segFrac,
+      bearing: Math.atan2(
+        Math.sin((p1.lon - p0.lon) * Math.PI / 180) * Math.cos(p1.lat * Math.PI / 180),
+        Math.cos(p0.lat * Math.PI / 180) * Math.sin(p1.lat * Math.PI / 180) -
+          Math.sin(p0.lat * Math.PI / 180) * Math.cos(p1.lat * Math.PI / 180) * Math.cos((p1.lon - p0.lon) * Math.PI / 180)
+      ) * 180 / Math.PI,
+    };
+  }
+  // ---------------------------------------------------------------------------------
+
+  async function buildStyle() {
+    const style = await fetch(BASEMAP_STYLE_URL).then(r => r.json());
+
+    // Strip generic OSM POI icons (viewpoints, shops, etc.) — never our data,
+    // and the cause of markers not lining up with the draped terrain.
+    style.layers = style.layers.filter(l => !['poi_r1', 'poi_r7', 'poi_r20', 'poi_transit'].includes(l.id));
+
+    style.sources.terrainSource = {
+      type: 'raster-dem',
+      tiles: [MAPTILER_URL],
+      tileSize: 512,
+      encoding: 'mapbox',
+      maxzoom: 14,
+    };
+
+    const firstSymbolIndex = style.layers.findIndex(l => l.type === 'symbol');
+    style.layers.splice(firstSymbolIndex === -1 ? style.layers.length : firstSymbolIndex, 0, {
+      id: 'hillshade', type: 'hillshade', source: 'terrainSource', paint: { 'hillshade-exaggeration': 0.4 },
+    });
+    style.terrain = { source: 'terrainSource', exaggeration: 1.5 };
+    style.sky = {
+      'sky-color': '#89c4f4', 'sky-horizon-blend': 0.5,
+      'horizon-color': '#f8f8f8', 'horizon-fog-blend': 0.5,
+      'fog-color': '#e8f0f5', 'fog-ground-blend': 0.5,
+    };
+    return style;
+  }
+
+  async function initFlyoverMap(containerId, { pitch, zoomOffset }) {
+    const [style, gpxText] = await Promise.all([
+      buildStyle(),
+      fetch(GPX_URL).then(r => r.text()),
+    ]);
+    const points = decimate(parseGPX(gpxText));
+    const cum = buildCumulative(points);
+    const total = cum[cum.length - 1];
+    const durationMs = 14000;
+
+    const lineGeoJSON = {
+      type: 'Feature', geometry: { type: 'LineString', coordinates: points.map(p => [p.lon, p.lat]) },
+    };
+
+    style.sources.routeLine = { type: 'geojson', data: lineGeoJSON };
+    style.layers.push({
+      id: 'route-line', type: 'line', source: 'routeLine',
+      paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-opacity': 0.9 },
+    });
+
+    const bounds = points.reduce(
+      (b, p) => [Math.min(b[0], p.lon), Math.min(b[1], p.lat), Math.max(b[2], p.lon), Math.max(b[3], p.lat)],
+      [Infinity, Infinity, -Infinity, -Infinity]
+    );
+
+    const map = new maplibregl.Map({
+      container: containerId,
+      style,
+      bounds,
+      fitBoundsOptions: { padding: 30 },
+      pitch,
+      attributionControl: false,
+    });
+
+    let startTime = null;
+    function frame(ts) {
+      if (startTime == null) startTime = ts;
+      const frac = ((ts - startTime) % durationMs) / durationMs;
+      const { lat, lon, bearing } = positionAt(points, cum, total, frac);
+      map.jumpTo({ center: [lon, lat], pitch, bearing, zoom: map.getZoom() });
+      requestAnimationFrame(frame);
+    }
+
+    map.on('load', () => {
+      const z = map.getZoom();
+      map.setZoom(z + zoomOffset);
+      requestAnimationFrame(frame);
+    });
+  }
+
+  initFlyoverMap('map-card', { pitch: 55, zoomOffset: 2.4 });
+  initFlyoverMap('map-lightbox', { pitch: 55, zoomOffset: 1.6 });
+</script>
+</body>
+</html>

@@ -3,10 +3,14 @@ import { parseGPX, buildCumulative, positionAt, growTravelLine, decimate } from 
 
 const PLAY_MS = 15210; // 9s base, slowed 30% then another 30% per feedback
 
+// Dev-only toggle — see the matching one in HikeMap.jsx and docs/roadmap-3d-flyover.md.
+const USE_TERRAIN_3D = true;
+
 export default function HikeMapCard({ gpxUrl, onOpen }) {
   const rootRef = useRef(null);
   const mapDivRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const flyoverRef = useRef(null); // TerrainFlyover instance — 3D path only
   const rafRef = useRef(null);
   const visibleRef = useRef(true);
   const playRef = useRef(null);
@@ -20,16 +24,44 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
 
     async function init() {
       try {
-        const L = (await import('leaflet')).default;
-        await import('leaflet/dist/leaflet.css');
-
         const res = await fetch(gpxUrl);
         if (!res.ok) return;
         const text = await res.text();
         if (cancelled) return;
 
-        const points = decimate(parseGPX(text));
-        if (points.length === 0) return;
+        const fullPoints = parseGPX(text);
+        if (fullPoints.length === 0) return;
+
+        if (USE_TERRAIN_3D) {
+          // Static preview only — per explicit product direction, the 3D card
+          // should never animate on its own, only on click (which opens the
+          // lightbox / HikeMap.jsx, a separate TerrainFlyover instance that
+          // does play). `topDownPreview` gives this instance a straight-down
+          // plan view fit to the whole route instead of the lightbox's
+          // cinematic chase-cam frame — a different job (map, not flyover) for
+          // a card that never actually flies over anything itself. Deliberately
+          // never call .play() here, and the IntersectionObserver below no
+          // longer does either (it used to resume playback on scroll-into-view,
+          // which would have silently violated "never unless clicked").
+          window.CESIUM_BASE_URL = '/cesium/';
+          const { TerrainFlyover } = await import('../lib/terrainFlyover');
+          flyoverRef.current = new TerrainFlyover(mapDivRef.current, {
+            // Full precision, not decimated (see the 2D `points` below) —
+            // decimation exists only to bound Leaflet's per-frame SVG
+            // re-projection cost and doesn't apply to Cesium's one-time static
+            // WebGL line.
+            points: fullPoints,
+            durationMs: PLAY_MS,
+            onProgress: () => {},
+            topDownPreview: true,
+          });
+          return; // skip the Leaflet setup below entirely
+        }
+
+        const L = (await import('leaflet')).default;
+        await import('leaflet/dist/leaflet.css');
+
+        const points = decimate(fullPoints);
         const latlngs = points.map(p => [p.lat, p.lon]);
         const cum = buildCumulative(points);
         const total = cum[cum.length - 1];
@@ -118,7 +150,9 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
 
     let observer;
     if (rootRef.current && 'IntersectionObserver' in window) {
-      observer = new IntersectionObserver(([entry]) => { visibleRef.current = entry.isIntersecting; }, { threshold: 0.1 });
+      observer = new IntersectionObserver(([entry]) => {
+        visibleRef.current = entry.isIntersecting; // read by the 2D path's own frame() loop; irrelevant to the static 3D card
+      }, { threshold: 0.1 });
       observer.observe(rootRef.current);
     }
 
@@ -126,6 +160,10 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
       cancelled = true;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (observer) observer.disconnect();
+      if (flyoverRef.current) {
+        flyoverRef.current.destroy();
+        flyoverRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -138,7 +176,13 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
       <div ref={mapDivRef} className="map-card-canvas" />
       {!playing && !finished && (
         <div className="map-card-overlay">
-          <div className="map-card-play" aria-hidden="true">▶</div>
+          {/* No play affordance on the 3D card — it's a static top-down map, not
+              an inline player; clicking opens the animated flyover in the
+              lightbox instead. The 2D fallback path still auto-plays in place,
+              where a play/pause-style badge actually reflects what happens. */}
+          {!USE_TERRAIN_3D && (
+            <div className="map-card-play" aria-hidden="true">▶</div>
+          )}
         </div>
       )}
       {finished && (

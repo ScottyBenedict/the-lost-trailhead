@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate } from '../lib/gpxFlyover';
 
+// Dev-only toggle for comparing the 3D Cesium terrain flyover against the shipped
+// 2D Leaflet one on the same hike — not a shipped user-facing setting. See
+// docs/roadmap-3d-flyover.md for current status/known issues (camera feel not
+// tuned, a tile-fetch-count question not yet resolved) before flipping this on
+// for anything beyond local testing.
+const USE_TERRAIN_3D = true;
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function computeStats(points) {
@@ -54,7 +61,18 @@ function drawElevationCanvas(canvas, points, scale) {
   const eles = points.map(p => p.ele);
   const pad = { l: 0, r: 0 };
   const w = W - pad.l - pad.r;
-  const xAt = (i) => pad.l + (i / (eles.length - 1)) * w;
+  // Distance-based, not index-based: this GPX logs at a roughly constant
+  // *time* interval, not distance, so real hiking pace (slower on a climb,
+  // near switchbacks, or pausing at an overlook) makes index-fraction and
+  // real distance-fraction diverge — sometimes a lot. The live playback
+  // indicator (drawIndicator, via scale.x) already positions itself by real
+  // distance fraction, same as the camera/marker everywhere else in this
+  // file; this curve needs the same basis or the two visibly disagree
+  // wherever pace wasn't uniform, which is exactly what "doesn't track"
+  // looked like.
+  const cum = buildCumulative(points);
+  const total = cum[cum.length - 1] || 1;
+  const xAt = (i) => pad.l + (cum[i] / total) * w;
 
   const fill = new Path2D();
   eles.forEach((e, i) => i === 0 ? fill.moveTo(xAt(i), scale.y(e)) : fill.lineTo(xAt(i), scale.y(e)));
@@ -106,9 +124,15 @@ function drawIndicator(ctx, scale, frac, eleM) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function HikeMap({ gpxUrl, hikeName }) {
+export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
+  // Curated distance (e.g. "4.0 mi"), converted once to meters so the live
+  // progress readout during playback can scale against it — see onProgress
+  // below and the matching DISTANCE stat fix further down.
+  const hikeDistanceMeters = hikeDistance ? parseFloat(hikeDistance) / 0.000621371 : null;
+
   const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
+  const mapInstanceRef = useRef(null); // Leaflet map instance — 2D path only
+  const flyoverRef = useRef(null); // TerrainFlyover instance — 3D path only
   const canvasRef = useRef(null);
   const indicatorRef = useRef(null);
   const flyDataRef = useRef(null);
@@ -139,6 +163,21 @@ export default function HikeMap({ gpxUrl, hikeName }) {
   // highlight, not the focal motion). The React state driving the slider/readout text is
   // throttled separately since re-rendering on every frame is pure overhead with no
   // visible benefit.
+  // Shared between both renderers — the throttle window matters for the
+  // continuous 60fps animation loop and is harmless (imperceptible) for the
+  // discrete restart/scrub calls that also go through it.
+  const updateUiThrottled = useCallback((frac, ele, distM, { force = false } = {}) => {
+    const now = performance.now();
+    if (force || frac >= 1 || now - lastUiUpdateRef.current > 66) {
+      lastUiUpdateRef.current = now;
+      setProgressPct(Math.round(frac * 100));
+      setLiveDist((distM * 0.000621371).toFixed(1));
+      setLiveEle(ele != null ? Math.round(ele * 3.28084) : null);
+    }
+  }, []);
+
+  // 2D (Leaflet) path only — the 3D path's per-frame work lives inside
+  // TerrainFlyover itself; see its onProgress callback in init() below.
   const applyFrame = useCallback((frac, { force = false } = {}) => {
     const d = flyDataRef.current;
     if (!d) return;
@@ -155,17 +194,16 @@ export default function HikeMap({ gpxUrl, hikeName }) {
       d.travelTip.setLatLngs([tailFrom, [lat, lon]]);
     }
 
-    if (force || frac >= 1 || now - lastUiUpdateRef.current > 66) {
-      lastUiUpdateRef.current = now;
-      setProgressPct(Math.round(frac * 100));
-      setLiveDist((frac * d.total * 0.000621371).toFixed(1));
-      setLiveEle(ele != null ? Math.round(ele * 3.28084) : null);
-    }
-  }, []);
+    updateUiThrottled(frac, ele, frac * d.total, { force });
+  }, [updateUiThrottled]);
 
   const stopFlyover = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
+    if (USE_TERRAIN_3D) {
+      flyoverRef.current?.pause();
+    } else if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     setFlying(false);
   }, []);
 
@@ -184,6 +222,12 @@ export default function HikeMap({ gpxUrl, hikeName }) {
   }, [applyFrame, stopFlyover]);
 
   const playFlyover = useCallback(() => {
+    if (USE_TERRAIN_3D) {
+      if (!flyoverRef.current) return;
+      flyoverRef.current.play();
+      setFlying(true);
+      return;
+    }
     const d = flyDataRef.current;
     if (!d) return;
     const startFrac = progressPct >= 100 ? 0 : progressPct / 100;
@@ -193,12 +237,25 @@ export default function HikeMap({ gpxUrl, hikeName }) {
   }, [progressPct, step]);
 
   const restartFlyover = useCallback(() => {
+    if (USE_TERRAIN_3D) {
+      if (!flyoverRef.current) return;
+      flyoverRef.current.restart();
+      setProgressPct(0);
+      setFlying(true);
+      return;
+    }
     setProgressPct(0);
     applyFrame(0, { force: true });
     playFlyover();
   }, [applyFrame, playFlyover]);
 
   const scrub = useCallback((pct) => {
+    if (USE_TERRAIN_3D) {
+      flyoverRef.current?.scrubTo(pct / 100);
+      setFlying(false);
+      setProgressPct(pct);
+      return;
+    }
     if (flying) stopFlyover();
     setProgressPct(pct);
     applyFrame(pct / 100, { force: true });
@@ -211,9 +268,6 @@ export default function HikeMap({ gpxUrl, hikeName }) {
 
     async function init() {
       try {
-        const L = (await import('leaflet')).default;
-        await import('leaflet/dist/leaflet.css');
-
         const res = await fetch(gpxUrl);
         if (!res.ok) throw new Error('Failed to fetch GPX');
         const text = await res.text();
@@ -226,60 +280,113 @@ export default function HikeMap({ gpxUrl, hikeName }) {
         setStats(computed);
         setLoading(false);
 
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.remove();
-          mapInstanceRef.current = null;
-        }
-
-        const map = L.map(mapRef.current, { zoomControl: true, attributionControl: true });
-        mapInstanceRef.current = map;
-
-        L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenTopoMap, © OpenStreetMap contributors',
-          maxZoom: 17,
-        }).addTo(map);
-
         // Full-precision `points` feeds the stats above and the elevation chart below
         // (both one-time computations). Rendering and the flyover animation run 60x/sec
         // and don't need thousands of raw GPS points to look right — see decimate().
         const renderPoints = decimate(points);
-        const latlngs = renderPoints.map(p => [p.lat, p.lon]);
 
-        const line = L.polyline(latlngs, {
-          color: '#ffffff',
-          weight: 2,
-          opacity: 0.4,
-        }).addTo(map);
+        if (USE_TERRAIN_3D) {
+          if (flyoverRef.current) {
+            flyoverRef.current.destroy();
+            flyoverRef.current = null;
+          }
+          // Dynamic import (matching the existing Leaflet import below) keeps
+          // Cesium's JS out of the main bundle entirely when this toggle is off —
+          // not just unused, genuinely never fetched. CESIUM_BASE_URL must be set
+          // before this import resolves (Cesium reads it at module-init time to
+          // find its own Workers/Assets, copied by vite-plugin-static-copy — see
+          // vite.config.js); setting it here, immediately before a real dynamic
+          // import(), guarantees that ordering without needing a separate <script>
+          // tag the way the no-build-step spike required.
+          window.CESIUM_BASE_URL = '/cesium/';
+          const { TerrainFlyover } = await import('../lib/terrainFlyover');
+          // The standard duration formula (shared with the 2D flyover, which
+          // stays fixed) felt too fast for the 3D version specifically — a
+          // close-in, ground-level camera covering the same real-world
+          // distance reads as much faster motion than a flat top-down 2D
+          // view does, on top of the actual complaint (camera turn rate) this
+          // and the rate-limiter above both address. 1.6x is a starting point,
+          // not a carefully tuned final number.
+          const total3d = buildCumulative(points).at(-1);
+          flyoverRef.current = new TerrainFlyover(mapRef.current, {
+            // Full-precision points, not the decimated renderPoints used below for
+            // Leaflet — decimation exists only to bound Leaflet's per-frame SVG
+            // re-projection cost (see gpxFlyover.js's decimate() comment) and
+            // doesn't apply to Cesium's one-time static WebGL line; using it here
+            // was throwing away real resolution the drawn track needs.
+            points,
+            durationMs: flyoverDurationMs(total3d) * 1.6,
+            onProgress: ({ frac, ele, distM }) => {
+              drawIndicator(flyDataRef.current?.indicatorCtx, flyDataRef.current?.scale, frac, ele);
+              // Scaled against the same curated hike distance shown in the stats
+              // footer/page header, not TerrainFlyover's own `distM` (real length
+              // of the flowing/smoothed camera path) — otherwise the live readout
+              // during playback and the final DISTANCE stat disagree, the same
+              // mismatch already fixed for the stats footer itself (see the stats
+              // array below).
+              const scaledDistM = hikeDistanceMeters != null ? frac * hikeDistanceMeters : distM;
+              updateUiThrottled(frac, ele, scaledDistM);
+            },
+            onFinish: () => setFlying(false),
+          });
+          // Only the elevation-chart fields are needed in the 3D path — the
+          // setTimeout block below (shared with the 2D path) fills these in.
+          flyDataRef.current = { scale: null, indicatorCtx: null };
+        } else {
+          const L = (await import('leaflet')).default;
+          await import('leaflet/dist/leaflet.css');
 
-        L.circleMarker(latlngs[0], {
-          radius: 5, color: '#ffffff', fillColor: '#ffffff', fillOpacity: 1, weight: 2
-        }).bindPopup('Start').addTo(map);
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.remove();
+            mapInstanceRef.current = null;
+          }
 
-        L.circleMarker(latlngs[latlngs.length - 1], {
-          radius: 5, color: '#ffffff', fillColor: 'transparent', fillOpacity: 0, weight: 2
-        }).bindPopup('End').addTo(map);
+          const map = L.map(mapRef.current, { zoomControl: true, attributionControl: true });
+          mapInstanceRef.current = map;
 
-        map.fitBounds(line.getBounds(), { padding: [24, 24] });
+          L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenTopoMap, © OpenStreetMap contributors',
+            maxZoom: 17,
+          }).addTo(map);
 
-        // ── Flyover setup ──
-        const cum = buildCumulative(renderPoints);
-        const total = cum[cum.length - 1];
-        const durationMs = flyoverDurationMs(total);
+          const latlngs = renderPoints.map(p => [p.lat, p.lon]);
 
-        const travelLine = L.polyline([], { color: '#ffffff', weight: 4, opacity: 0.95 }).addTo(map);
-        const travelTip = L.polyline([], { color: '#ffffff', weight: 4, opacity: 0.95 }).addTo(map);
-        const flyMarker = L.circleMarker(latlngs[0], {
-          radius: 6, color: '#ffffff', fillColor: '#ffd166', fillOpacity: 1, weight: 2,
-        }).addTo(map);
+          const line = L.polyline(latlngs, {
+            color: '#ffffff',
+            weight: 2,
+            opacity: 0.4,
+          }).addTo(map);
 
-        flyDataRef.current = {
-          L, map, points: renderPoints, latlngs, cum, total, durationMs,
-          line, travelLine, travelTip, flyMarker,
-          posHint: { i: 1 },
-          committed: { committedIdx: 0 },
-          scale: null,
-          indicatorCtx: null,
-        };
+          L.circleMarker(latlngs[0], {
+            radius: 5, color: '#ffffff', fillColor: '#ffffff', fillOpacity: 1, weight: 2
+          }).bindPopup('Start').addTo(map);
+
+          L.circleMarker(latlngs[latlngs.length - 1], {
+            radius: 5, color: '#ffffff', fillColor: 'transparent', fillOpacity: 0, weight: 2
+          }).bindPopup('End').addTo(map);
+
+          map.fitBounds(line.getBounds(), { padding: [24, 24] });
+
+          // ── Flyover setup ──
+          const cum = buildCumulative(renderPoints);
+          const total = cum[cum.length - 1];
+          const durationMs = flyoverDurationMs(total);
+
+          const travelLine = L.polyline([], { color: '#ffffff', weight: 4, opacity: 0.95 }).addTo(map);
+          const travelTip = L.polyline([], { color: '#ffffff', weight: 4, opacity: 0.95 }).addTo(map);
+          const flyMarker = L.circleMarker(latlngs[0], {
+            radius: 6, color: '#ffffff', fillColor: '#ffd166', fillOpacity: 1, weight: 2,
+          }).addTo(map);
+
+          flyDataRef.current = {
+            L, map, points: renderPoints, latlngs, cum, total, durationMs,
+            line, travelLine, travelTip, flyMarker,
+            posHint: { i: 1 },
+            committed: { committedIdx: 0 },
+            scale: null,
+            indicatorCtx: null,
+          };
+        }
 
         setTimeout(() => {
           if (!flyDataRef.current) return;
@@ -302,12 +409,16 @@ export default function HikeMap({ gpxUrl, hikeName }) {
       rafRef.current = null;
       startTimeRef.current = null;
       flyDataRef.current = null;
+      if (flyoverRef.current) {
+        flyoverRef.current.destroy();
+        flyoverRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, [gpxUrl]);
+  }, [gpxUrl, updateUiThrottled]);
 
   return (
     <section style={styles.section}>
@@ -356,9 +467,19 @@ export default function HikeMap({ gpxUrl, hikeName }) {
         <div style={styles.footer}>
           <div style={styles.statsRow}>
             {[
-              { label: 'DISTANCE', value: `${stats.distMi} mi` },
-              { label: 'ELEVATION GAIN', value: `+${stats.gainFt.toLocaleString()} ft` },
-              { label: 'ELEVATION LOSS', value: `-${stats.lossFt.toLocaleString()} ft` },
+              // Distance and gain come from the same curated hike record shown in the
+              // page header (src/data/hikes.js) — not recomputed from the raw GPX, which
+              // runs high on both (full round-trip track length, and elevation gain
+              // inflated by consumer-GPS/barometric noise accumulated over thousands of
+              // points). Loss mirrors gain rather than using the raw computed value: on an
+              // out-and-back trail the elevation climbed and descended are the same trail,
+              // so showing a different, GPX-noise-derived loss figure next to the curated
+              // gain would read as internally inconsistent. High point has no equivalent
+              // curated field and the raw-computed value already checks out against the
+              // hike's known summit elevation, so it's left as-is.
+              { label: 'DISTANCE', value: hikeDistance || `${stats.distMi} mi` },
+              { label: 'ELEVATION GAIN', value: hikeGain ? `+${hikeGain}` : `+${stats.gainFt.toLocaleString()} ft` },
+              { label: 'ELEVATION LOSS', value: hikeGain ? `-${hikeGain}` : `-${stats.lossFt.toLocaleString()} ft` },
               { label: 'HIGH POINT', value: stats.maxFt ? `${stats.maxFt.toLocaleString()} ft` : '—' },
             ].map(({ label, value }) => (
               <div key={label} style={styles.stat}>
@@ -403,9 +524,13 @@ const styles = {
     margin: 0,
   },
   mapWrapper: {
+    // Was 420px, briefly 560px alongside a widened .gallery-lightbox-frame-map
+    // (index.css) — both reverted, then explicitly increased again (taller)
+    // paired with a narrower frame this time, a portrait-leaning shape rather
+    // than matching the photo lightbox's landscape one.
     position: 'relative',
     width: '100%',
-    height: '420px',
+    height: '660px',
   },
   map: {
     position: 'absolute',

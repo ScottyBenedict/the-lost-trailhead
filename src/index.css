@@ -622,11 +622,11 @@ a   { color: inherit; text-decoration: none; }
 
 .gallery-report-label {
   font-family: var(--font-sans);
-  font-size: 0.65rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--white);
   margin: 0 0 0.5rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
@@ -716,12 +716,16 @@ a   { color: inherit; text-decoration: none; }
 
 .map-card-caption {
   position: absolute;
-  left: 0.9rem;
-  bottom: 0.75rem;
+  /* Matches .gallery-report-card's own padding (1.75rem sides / 1.5rem
+     bottom) so this label sits with the same inset as "From the Trail" on
+     the report card next to it, instead of sitting flush in the corner. */
+  left: 1.75rem;
+  bottom: 1.5rem;
   z-index: 500;
   color: #fff;
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
@@ -781,7 +785,11 @@ a   { color: inherit; text-decoration: none; }
 }
 
 .gallery-lightbox-frame-map {
-  width: min(760px, 92vw);
+  /* Was min(760px, 92vw), then widened to min(1100px, 90vw) alongside a
+     taller map (see HikeMap.jsx's mapWrapper) — both reverted, then
+     narrowed further per explicit direction: taller and narrower than the
+     original, not just reverted back to it. */
+  width: min(700px, 90vw);
   max-height: 88vh;
   overflow-y: auto;
   overflow-x: hidden;

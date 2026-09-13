@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Phase 1c — Cesium self-hosted terrain flyover test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  body { font: 14px/1.5 -apple-system, sans-serif; padding: 24px; max-width: 1200px; margin: 0 auto; background: #f4f2ec; }
+  p { color: #333; max-width: 800px; }
+  .test-row { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; margin-top: 20px; }
+  .test-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .test-sub { font-size: 12px; color: #666; margin-bottom: 8px; }
+  #cesium-card, #cesium-lightbox { position: relative; border-radius: 16px; overflow: hidden; background: #1b2a20; }
+  #cesium-card { width: 413px; height: 310px; }
+  #cesium-lightbox { width: 760px; height: 500px; }
+  #cesium-card canvas, #cesium-lightbox canvas { width: 100%; height: 100%; display: block; }
+  code { background: #eee; padding: 1px 5px; border-radius: 3px; }
+  #status { white-space: pre-wrap; background: #111; color: #9fd89f; font: 12px/1.5 ui-monospace, monospace; padding: 14px; border-radius: 8px; margin-top: 24px; max-height: 320px; overflow-y: auto; }
+  #status .err { color: #ff8a8a; }
+</style>
+</head>
+<body>
+<h2>Phase 1c — Cesium self-hosted terrain, animated flyover</h2>
+<p>
+  Tests whether <strong>self-hosted CesiumJS terrain</strong> (no Cesium ion —
+  <code>MartiniTerrainProvider</code> from <code>@macrostrat/cesium-martini</code>,
+  converting the same Terrarium raster-DEM tiles used in the earlier MapLibre spikes
+  into quantized-mesh terrain in-browser) can handle a <strong>scripted, per-frame
+  camera flythrough</strong> — the exact workload that broke MapLibre GL JS terrain
+  (14–24 frames/8sec with terrain on, vs. a clean 476–482 with it off; see
+  <code>docs/roadmap-3d-flyover.md</code>). No imagery/basemap layer is loaded —
+  terrain shape is shown via Cesium's built-in sun-lighting shading only, to isolate
+  the animated-terrain performance question the same way the Three.js spike's own
+  scope note recommended ("no texture ... first pass, specifically to isolate the
+  performance question").
+</p>
+<p>
+  <strong>Camera is not final</strong> (same disclaimer as Phase 1b) — a simple
+  chase/offset camera following <code>rattlesnake-ledge.gpx</code>, enough motion to
+  match the earlier MapLibre test's methodology for a fair frame-rate comparison.
+</p>
+<p>
+  <strong>Known untested assumption:</strong> <code>CESIUM_BASE_URL</code> is pointed
+  at jsdelivr's copy of the npm package for Cesium's own internal Workers/Assets
+  (unrelated to the custom Terrarium-decode worker below, which is self-contained via
+  a Blob URL). This is the standard no-bundler pattern for CDN-loaded Cesium, but
+  hasn't been confirmed against this exact esm.sh + jsdelivr combination — if the
+  page below stays blank with terrain-loading errors in the status log, this is the
+  first thing to check.
+</p>
+<div class="test-row">
+  <div class="test-block">
+    <div class="test-label">Card size — 413×310</div>
+    <div class="test-sub">matches <code>.map-card</code> in index.css</div>
+    <div id="cesium-card"></div>
+  </div>
+  <div class="test-block">
+    <div class="test-label">Lightbox size — 760×500</div>
+    <div class="test-sub">matches <code>.gallery-lightbox-frame-map</code> width; height approximated</div>
+    <div id="cesium-lightbox"></div>
+  </div>
+</div>
+<div id="perf-summary" style="font: 14px/1.6 ui-monospace, monospace; background: #111; color: #ffd479; padding: 14px; border-radius: 8px; margin-top: 24px;">Perf: waiting for first measurement window…</div>
+<div id="status">Loading…</div>
+
+<script>
+  // Must be set before the Cesium module is imported/evaluated below — Cesium reads
+  // this at module-init time to resolve its own internal Workers/ (tile decoding,
+  // unrelated to our custom terrain worker) and Assets/ (textures, SVG icons).
+  window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.137.0/Build/Cesium/';
+</script>
+<script type="module">
+  const RATTLESNAKE_BBOX = { minLat: 47.4329, maxLat: 47.4397, minLon: -121.7851, maxLon: -121.7669 };
+  const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+  const GPX_URL = 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/gpx-files/rattlesnake-ledge.gpx';
+  const TERRARIUM_MAX_ZOOM = 15; // confirmed cap — z16/z17 404 against the S3 bucket directly (see roadmap doc)
+
+  const statusEl = document.getElementById('status');
+  function log(msg, isErr) {
+    const line = document.createElement('div');
+    if (isErr) line.className = 'err';
+    line.textContent = msg;
+    statusEl.appendChild(line);
+    statusEl.scrollTop = statusEl.scrollHeight;
+    (isErr ? console.error : console.log)(msg);
+  }
+  window.addEventListener('error', (e) => log('window error: ' + e.message, true));
+
+  // ---- Inlined from src/lib/gpxFlyover.js (kept self-contained, no build step) ----
+  function parseGPX(text) {
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    const points = [];
+    doc.querySelectorAll('trkpt').forEach(pt => {
+      const lat = parseFloat(pt.getAttribute('lat'));
+      const lon = parseFloat(pt.getAttribute('lon'));
+      const eleEl = pt.querySelector('ele');
+      const ele = eleEl ? parseFloat(eleEl.textContent) : 0;
+      if (!isNaN(lat) && !isNaN(lon)) points.push({ lat, lon, ele });
+    });
+    return points;
+  }
+  function decimate(points, maxPoints = 400) {
+    if (points.length <= maxPoints) return points;
+    const step = (points.length - 1) / (maxPoints - 1);
+    const out = [];
+    for (let i = 0; i < maxPoints; i++) out.push(points[Math.round(i * step)]);
+    return out;
+  }
+  function haversineM(a, b) {
+    const R = 6371000;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLon = (b.lon - a.lon) * Math.PI / 180;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+  }
+  function buildCumulative(points) {
+    const cum = [0];
+    for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + haversineM(points[i - 1], points[i]));
+    return cum;
+  }
+  function positionAt(points, cum, total, frac) {
+    const targetDist = frac * total;
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < targetDist) i++;
+    const d0 = cum[i - 1], d1 = cum[i];
+    const segFrac = d1 > d0 ? (targetDist - d0) / (d1 - d0) : 0;
+    const p0 = points[i - 1], p1 = points[i];
+    const bearing = Math.atan2(
+      Math.sin((p1.lon - p0.lon) * Math.PI / 180) * Math.cos(p1.lat * Math.PI / 180),
+      Math.cos(p0.lat * Math.PI / 180) * Math.sin(p1.lat * Math.PI / 180) -
+        Math.sin(p0.lat * Math.PI / 180) * Math.cos(p1.lat * Math.PI / 180) * Math.cos((p1.lon - p0.lon) * Math.PI / 180)
+    ) * 180 / Math.PI;
+    return {
+      lat: p0.lat + (p1.lat - p0.lat) * segFrac,
+      lon: p0.lon + (p1.lon - p0.lon) * segFrac,
+      ele: p0.ele + (p1.ele - p0.ele) * segFrac,
+      bearing: (bearing + 360) % 360,
+    };
+  }
+  // Destination point `distM` meters from (lat,lon) along `bearingDeg` — standard
+  // spherical-earth destination formula, used to place the chase camera behind the
+  // current track position rather than dead-center on top of it.
+  function destinationPoint(lat, lon, bearingDeg, distM) {
+    const R = 6371000;
+    const br = bearingDeg * Math.PI / 180;
+    const lat1 = lat * Math.PI / 180, lon1 = lon * Math.PI / 180;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(distM / R) + Math.cos(lat1) * Math.sin(distM / R) * Math.cos(br));
+    const lon2 = lon1 + Math.atan2(
+      Math.sin(br) * Math.sin(distM / R) * Math.cos(lat1),
+      Math.cos(distM / R) - Math.sin(lat1) * Math.sin(lat2)
+    );
+    return { lat: lat2 * 180 / Math.PI, lon: lon2 * 180 / Math.PI };
+  }
+  // ---------------------------------------------------------------------------------
+
+  const CESIUM_VERSION = '1.137.0';
+  const MARTINI_VERSION = '1.6.0';
+
+  log(`Loading Cesium ${CESIUM_VERSION} + cesium-martini ${MARTINI_VERSION} via esm.sh…`);
+
+  const Cesium = await import(`https://esm.sh/cesium@${CESIUM_VERSION}`);
+  const { MartiniTerrainProvider, DefaultHeightmapResource, WorkerFarmTerrainDecoder } =
+    await import(`https://esm.sh/@macrostrat/cesium-martini@${MARTINI_VERSION}`);
+  log('Cesium + cesium-martini modules loaded.');
+
+  Cesium.Ion.defaultAccessToken = ''; // no ion usage anywhere in this spike — self-hosted terrain only
+
+  // ---- Custom Terrarium-decode worker ----
+  // cesium-martini ships a Mapbox-terrain-RGB decoder out of the box (bundled via a
+  // Vite-specific `web-worker:` import that only works inside their own build — not
+  // usable from a plain no-build-step HTML file). Terrarium uses a different RGB→
+  // elevation formula than Mapbox, so this is a from-scratch worker — but it reuses
+  // cesium-martini's own `rgbTerrainToGrid`/`createQuantizedMeshData` helpers (both
+  // re-exported from the package root) and `@mapbox/martini`'s RTIN mesh simplifier,
+  // so the only genuinely new code is the ~1-line Terrarium decode formula itself.
+  const WORKER_SRC = `
+    // NOTE: deliberately NOT importing rgbTerrainToGrid/createQuantizedMeshData from
+    // '@macrostrat/cesium-martini' here, even though that package re-exports both.
+    // Importing that package pulls in the entire 'cesium' library as a transitive
+    // dependency, and Cesium assumes a DOM (window/document) throughout — which
+    // doesn't exist in a Worker context, and appears to crash the module at
+    // top-level import (observed as an opaque "worker error: undefined", which is
+    // how browsers report module-worker top-level failures). Both functions are
+    // small and pure, so they're inlined here instead, ported line-for-line from
+    // https://github.com/davenquinn/cesium-martini/blob/master/src/worker/worker-util.ts
+    // (as of v${MARTINI_VERSION}) — only the pixel-accessor shape changed, from the
+    // 'ndarray' package's .get(x,y,c) to a plain closure, to avoid a second
+    // unnecessary dependency inside the worker.
+    // @mapbox/martini@0.2.0, inlined verbatim (UMD wrapper stripped, otherwise
+    // untouched — no dependencies of its own) rather than imported from esm.sh.
+    // The worker.onerror this was crashing with came back as a content-free
+    // "opaque cross-origin script error", which browsers use specifically for
+    // failures inside a nested cross-origin import from a blob-sourced module
+    // worker — so rather than debug an error type designed to hide its cause,
+    // this removes the only remaining cross-origin import, making the whole
+    // worker a single same-origin (blob:) script with nothing left to sanitize.
+    // Source: https://unpkg.com/@mapbox/martini@0.2.0/martini.js
+    class Martini {
+      constructor(gridSize = 257) {
+        this.gridSize = gridSize;
+        const tileSize = gridSize - 1;
+        if (tileSize & (tileSize - 1)) throw new Error('Expected grid size to be 2^n+1, got ' + gridSize + '.');
+        this.numTriangles = tileSize * tileSize * 2 - 2;
+        this.numParentTriangles = this.numTriangles - tileSize * tileSize;
+        this.indices = new Uint32Array(this.gridSize * this.gridSize);
+        this.coords = new Uint16Array(this.numTriangles * 4);
+        for (let i = 0; i < this.numTriangles; i++) {
+          let id = i + 2;
+          let ax = 0, ay = 0, bx = 0, by = 0, cx = 0, cy = 0;
+          if (id & 1) { bx = by = cx = tileSize; } else { ax = ay = cy = tileSize; }
+          while ((id >>= 1) > 1) {
+            const mx = (ax + bx) >> 1, my = (ay + by) >> 1;
+            if (id & 1) { bx = ax; by = ay; ax = cx; ay = cy; } else { ax = bx; ay = by; bx = cx; by = cy; }
+            cx = mx; cy = my;
+          }
+          const k = i * 4;
+          this.coords[k] = ax; this.coords[k + 1] = ay; this.coords[k + 2] = bx; this.coords[k + 3] = by;
+        }
+      }
+      createTile(terrain) { return new Tile(terrain, this); }
+    }
+    class Tile {
+      constructor(terrain, martini) {
+        const size = martini.gridSize;
+        if (terrain.length !== size * size) throw new Error('Expected terrain data of length ' + (size * size) + ' (' + size + ' x ' + size + '), got ' + terrain.length + '.');
+        this.terrain = terrain;
+        this.martini = martini;
+        this.errors = new Float32Array(terrain.length);
+        this.update();
+      }
+      update() {
+        const { numTriangles, numParentTriangles, coords, gridSize: size } = this.martini;
+        const { terrain, errors } = this;
+        for (let i = numTriangles - 1; i >= 0; i--) {
+          const k = i * 4;
+          const ax = coords[k], ay = coords[k + 1], bx = coords[k + 2], by = coords[k + 3];
+          const mx = (ax + bx) >> 1, my = (ay + by) >> 1;
+          const cx = mx + my - ay, cy = my + ax - mx;
+          const interpolatedHeight = (terrain[ay * size + ax] + terrain[by * size + bx]) / 2;
+          const middleIndex = my * size + mx;
+          const middleError = Math.abs(interpolatedHeight - terrain[middleIndex]);
+          errors[middleIndex] = Math.max(errors[middleIndex], middleError);
+          if (i < numParentTriangles) {
+            const leftChildIndex = ((ay + cy) >> 1) * size + ((ax + cx) >> 1);
+            const rightChildIndex = ((by + cy) >> 1) * size + ((bx + cx) >> 1);
+            errors[middleIndex] = Math.max(errors[middleIndex], errors[leftChildIndex], errors[rightChildIndex]);
+          }
+        }
+      }
+      getMesh(maxError = 0) {
+        const { gridSize: size, indices } = this.martini;
+        const { errors } = this;
+        let numVertices = 0, numTriangles = 0;
+        const max = size - 1;
+        indices.fill(0);
+        function countElements(ax, ay, bx, by, cx, cy) {
+          const mx = (ax + bx) >> 1, my = (ay + by) >> 1;
+          if (Math.abs(ax - cx) + Math.abs(ay - cy) > 1 && errors[my * size + mx] > maxError) {
+            countElements(cx, cy, ax, ay, mx, my);
+            countElements(bx, by, cx, cy, mx, my);
+          } else {
+            indices[ay * size + ax] = indices[ay * size + ax] || ++numVertices;
+            indices[by * size + bx] = indices[by * size + bx] || ++numVertices;
+            indices[cy * size + cx] = indices[cy * size + cx] || ++numVertices;
+            numTriangles++;
+          }
+        }
+        countElements(0, 0, max, max, max, 0);
+        countElements(max, max, 0, 0, 0, max);
+        const vertices = new Uint16Array(numVertices * 2);
+        const triangles = new Uint32Array(numTriangles * 3);
+        let triIndex = 0;
+        function processTriangle(ax, ay, bx, by, cx, cy) {
+          const mx = (ax + bx) >> 1, my = (ay + by) >> 1;
+          if (Math.abs(ax - cx) + Math.abs(ay - cy) > 1 && errors[my * size + mx] > maxError) {
+            processTriangle(cx, cy, ax, ay, mx, my);
+            processTriangle(bx, by, cx, cy, mx, my);
+          } else {
+            const a = indices[ay * size + ax] - 1, b = indices[by * size + bx] - 1, c = indices[cy * size + cx] - 1;
+            vertices[2 * a] = ax; vertices[2 * a + 1] = ay;
+            vertices[2 * b] = bx; vertices[2 * b + 1] = by;
+            vertices[2 * c] = cx; vertices[2 * c + 1] = cy;
+            triangles[triIndex++] = a; triangles[triIndex++] = b; triangles[triIndex++] = c;
+          }
+        }
+        processTriangle(0, 0, max, max, max, 0);
+        processTriangle(max, max, 0, 0, 0, max);
+        return { vertices, triangles };
+      }
+    }
+
+    // Terrarium encoding: https://github.com/tilezen/joerd/blob/master/docs/formats.md
+    const decodeTerrarium = (r, g, b) => (r * 256 + g + b / 256) - 32768;
+
+    function rgbTerrainToGrid(getPixel, tileSize, decodeRgb) {
+      const gridSize = tileSize + 1;
+      const terrain = new Float32Array(gridSize * gridSize);
+      for (let y = 0; y < tileSize; y++) {
+        for (let x = 0; x < tileSize; x++) {
+          const r = getPixel(x, y, 0), g = getPixel(x, y, 1), b = getPixel(x, y, 2), a = getPixel(x, y, 3);
+          terrain[y * gridSize + x] = decodeRgb(r, g, b, a);
+        }
+      }
+      // backfill right and bottom borders (ported as-is from worker-util.ts)
+      for (let x = 0; x < gridSize - 1; x++) terrain[gridSize * (gridSize - 1) + x] = terrain[gridSize * (gridSize - 2) + x];
+      for (let y = 0; y < gridSize; y++) terrain[gridSize * y + gridSize - 1] = terrain[gridSize * y + gridSize - 2];
+      return terrain;
+    }
+
+    function createQuantizedMeshData(tile, mesh, tileSize, terrain) {
+      const xvals = [], yvals = [], heightMeters = [];
+      const northIndices = [], southIndices = [], eastIndices = [], westIndices = [];
+      let minimumHeight = Infinity, maximumHeight = -Infinity;
+      const scalar = 32768.0 / tileSize;
+      for (let ix = 0; ix < mesh.vertices.length / 2; ix++) {
+        const px = mesh.vertices[ix * 2], py = mesh.vertices[ix * 2 + 1];
+        const height = tile.terrain[py * (tileSize + 1) + px];
+        if (height > maximumHeight) maximumHeight = height;
+        if (height < minimumHeight) minimumHeight = height;
+        heightMeters.push(height);
+        if (py === 0) northIndices.push(ix);
+        if (py === tileSize) southIndices.push(ix);
+        if (px === 0) westIndices.push(ix);
+        if (px === tileSize) eastIndices.push(ix);
+        xvals.push(px * scalar);
+        yvals.push((tileSize - py) * scalar);
+      }
+      const heightRange = maximumHeight - minimumHeight;
+      const heights = heightMeters.map(d => heightRange < 1 ? 0 : (d - minimumHeight) * (32768.0 / heightRange));
+      return {
+        minimumHeight, maximumHeight,
+        quantizedVertices: new Uint16Array([...xvals, ...yvals, ...heights]),
+        indices: new Uint16Array(mesh.triangles),
+        westIndices, southIndices, eastIndices, northIndices,
+        quantizedHeights: terrain,
+      };
+    }
+
+    let martiniCache = {};
+    let loggedFirst = false;
+
+    self.onmessage = function (msg) {
+      const { id, payload } = msg.data;
+      if (id == null) return;
+      try {
+        const { imageData, tileSize = 256, errorLevel = 10, maxVertexDistance = 200 } = payload;
+        const pixelBytes = new Uint8Array(imageData);
+        const getPixel = (x, y, c) => pixelBytes[(y * tileSize + x) * 4 + c];
+        const terrain = rgbTerrainToGrid(getPixel, tileSize, decodeTerrarium);
+        martiniCache[tileSize] ??= new Martini(tileSize + 1);
+        const tile = martiniCache[tileSize].createTile(terrain);
+        const mesh = tile.getMesh(errorLevel, Math.min(maxVertexDistance, tileSize));
+        const res = createQuantizedMeshData(tile, mesh, tileSize, terrain);
+        if (!loggedFirst) {
+          loggedFirst = true;
+          // Visible in the browser console under this worker's own context —
+          // confirms the DEM→mesh pipeline is actually running, independent of
+          // whether the result ever makes it on screen.
+          console.log('[terrarium-worker] first tile decoded OK — elevation range', res.minimumHeight, '–', res.maximumHeight, 'm, vertices:', res.quantizedVertices.length / 3);
+        }
+        self.postMessage({ id, payload: res });
+      } catch (err) {
+        console.error('[terrarium-worker] decode failed:', err);
+        self.postMessage({ id, err: (err && err.message) || String(err) });
+      }
+    };
+  `;
+
+  function makeTerrainProvider(label) {
+    const workerUrl = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'application/javascript' }));
+    const worker = new Worker(workerUrl); // classic worker — no imports left in WORKER_SRC, so no need for type:'module'
+    worker.onerror = (e) => {
+      log(`[${label}] terrain worker error: ${e.message || '(no message — likely opaque cross-origin script error)'} ${e.filename ? `at ${e.filename}:${e.lineno}` : ''}`, true);
+      console.error(`[${label}] terrain worker error event:`, e);
+    };
+    worker.onmessageerror = (e) => log(`[${label}] terrain worker messageerror (structured-clone failure)`, true);
+    const decoder = new WorkerFarmTerrainDecoder({ worker, maxWorkers: 3 });
+    const resource = new DefaultHeightmapResource({
+      url: TERRARIUM_URL,
+      maxZoom: TERRARIUM_MAX_ZOOM,
+      tileSize: 256,
+    });
+
+    // Wrap the tile-pixel fetch so a failure (network/CORS/etc.) shows up directly
+    // on the page — we've had trouble getting DevTools console output relayed back,
+    // so this makes the most likely failure point self-reporting without it.
+    let tileAttempts = 0, tileSuccesses = 0, tileFailures = 0;
+    const origGetTilePixels = resource.getTilePixels.bind(resource);
+    resource.getTilePixels = (coords) => {
+      tileAttempts++;
+      const result = origGetTilePixels(coords);
+      if (!result) {
+        log(`[${label}] tile request z${coords.z}/${coords.x}/${coords.y}: resource returned undefined (skipped — busy or out of range)`, true);
+        return result;
+      }
+      result.then(
+        () => { tileSuccesses++; log(`[${label}] tile z${coords.z}/${coords.x}/${coords.y} fetched+decoded OK (${tileSuccesses} ok / ${tileAttempts} attempted)`); },
+        (err) => { tileFailures++; log(`[${label}] tile z${coords.z}/${coords.x}/${coords.y} FAILED: ${(err && (err.message || err.toString())) || err} (${tileFailures} failed / ${tileAttempts} attempted)`, true); }
+      );
+      return result;
+    };
+    setTimeout(() => {
+      if (tileSuccesses === 0) {
+        log(`[${label}] +6s: still 0 successful tiles (${tileAttempts} attempted, ${tileFailures} failed). If attempts=0, Cesium never asked for a tile (camera/tiling-scheme issue). If failed>0 with no visible reason above, likely a CORS failure on the Terrarium S3 fetch — those often throw with no useful .message.`, true);
+      }
+    }, 6000);
+
+    const provider = new MartiniTerrainProvider({ resource, decoder });
+    if (provider.errorEvent) {
+      provider.errorEvent.addEventListener((e) => log(`[${label}] terrain provider error: ${(e && e.message) || e}`, true));
+    }
+    return provider;
+  }
+
+  // ---- Performance instrumentation — same methodology as the MapLibre spikes ----
+  // (frames rendered over an 8s window + captured PerformanceObserver longtasks),
+  // for a direct apples-to-apples comparison against the recorded MapLibre numbers
+  // (14–24 frames/8s with terrain animated = broken; 476–482 = clean 60fps).
+  const perfEl = document.getElementById('perf-summary');
+  const latestPerf = {};
+  function renderPerfSummary() {
+    const lines = Object.keys(latestPerf).sort().map(k => latestPerf[k]);
+    perfEl.textContent = 'Perf (live, updates every 8s):\n' + lines.join('\n');
+  }
+
+  // Loops forever (not a one-shot 8s measurement) and writes into a fixed on-page
+  // readout instead of the scrolling log — easier to relay back than finding the
+  // right lines in a fast-scrolling tile-load log.
+  function instrumentPerf(label, durationMs = 8000) {
+    let frames = 0;
+    const longtasks = [];
+    let obs;
+    try {
+      obs = new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) longtasks.push(Math.round(e.duration));
+      });
+      obs.observe({ entryTypes: ['longtask'] });
+    } catch (e) {
+      log(`[${label}] PerformanceObserver longtask unsupported: ${e.message}`, true);
+    }
+    const start = performance.now();
+    function count() {
+      frames++;
+      if (performance.now() - start < durationMs) {
+        requestAnimationFrame(count);
+      } else {
+        if (obs) obs.disconnect();
+        const worst = longtasks.length ? Math.max(...longtasks) : 0;
+        latestPerf[label] = `[${label}] ${frames} frames / ${(durationMs / 1000).toFixed(0)}s — ${longtasks.length} longtasks (worst ${worst}ms)`;
+        renderPerfSummary();
+        instrumentPerf(label, durationMs); // re-arm for the next 8s window, indefinitely
+      }
+    }
+    requestAnimationFrame(count);
+  }
+
+  async function initFlyover(containerId, label, { camBackM, camHeightM, pitchDeg }) {
+    log(`[${label}] fetching GPX + building terrain provider…`);
+    const [gpxText] = await Promise.all([fetch(GPX_URL).then(r => r.text())]);
+    const points = decimate(parseGPX(gpxText));
+    const cum = buildCumulative(points);
+    const total = cum[cum.length - 1];
+    const durationMs = 14000;
+
+    const viewer = new Cesium.Viewer(containerId, {
+      terrainProvider: makeTerrainProvider(label),
+      baseLayer: false,
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      animation: false,
+      timeline: false,
+      fullscreenButton: false,
+      infoBox: false,
+      selectionIndicator: false,
+      shouldAnimate: false,
+    });
+    viewer.scene.globe.enableLighting = true; // shading only, no imagery texture — isolates terrain-perf question
+    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#8a9a78');
+    viewer.scene.skyAtmosphere.show = false;
+    viewer.scene.fog.enabled = false;
+    viewer.scene.skyBox.show = false; // rule out "camera pointed at empty space" — if terrain still doesn't show
+    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#2a3a2c'); // stand-in for the starfield so a still-blank screen is visually obvious, not mistakable for "working, just dark"
+
+    let loggedTiles = false;
+    viewer.scene.globe.tileLoadProgressEvent.addEventListener((remaining) => {
+      if (!loggedTiles) {
+        loggedTiles = true;
+        log(`[${label}] first tile-load-progress event, ${remaining} tiles pending`);
+      }
+    });
+    setTimeout(() => {
+      log(`[${label}] +3s check — globe.tilesLoaded=${viewer.scene.globe.tilesLoaded}, terrain provider ready=${viewer.terrainProvider.ready !== false}`);
+    }, 3000);
+
+    // Static route line — built once from the same decimated points, never touched
+    // per frame (matches the "draw once" pattern already used for the base line in
+    // gpxFlyover.js/HikeMap.jsx).
+    const positions = points.map(p => Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.ele + 3));
+    viewer.entities.add({
+      polyline: {
+        positions,
+        width: 3,
+        material: new Cesium.ColorMaterialProperty(Cesium.Color.WHITE.withAlpha(0.9)),
+        clampToGround: false,
+      },
+    });
+
+    const marker = viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, points[0].ele + 3),
+      point: { pixelSize: 10, color: Cesium.Color.ORANGE, outlineColor: Cesium.Color.WHITE, outlineWidth: 2 },
+    });
+
+    const center = { lat: (RATTLESNAKE_BBOX.minLat + RATTLESNAKE_BBOX.maxLat) / 2, lon: (RATTLESNAKE_BBOX.minLon + RATTLESNAKE_BBOX.maxLon) / 2 };
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, 2200),
+      orientation: { heading: 0, pitch: Cesium.Math.toRadians(-50), roll: 0 },
+    });
+
+    log(`[${label}] terrain provider attached, starting flythrough…`);
+
+    let startTime = null;
+    let perfStarted = false;
+    function frame(ts) {
+      if (startTime == null) startTime = ts;
+      const frac = ((ts - startTime) % durationMs) / durationMs;
+      const pos = positionAt(points, cum, total, frac);
+      const behind = destinationPoint(pos.lat, pos.lon, (pos.bearing + 180) % 360, camBackM);
+
+      marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, pos.ele + 3);
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(behind.lon, behind.lat, pos.ele + camHeightM),
+        orientation: {
+          heading: Cesium.Math.toRadians(pos.bearing),
+          pitch: Cesium.Math.toRadians(pitchDeg),
+          roll: 0,
+        },
+      });
+
+      if (!perfStarted && ts - startTime > 2000) {
+        // wait ~2s for initial tile loads to settle before measuring, same as the
+        // "cold vs pre-warmed" distinction the MapLibre isolation testing used
+        perfStarted = true;
+        instrumentPerf(label);
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  try {
+    await Promise.all([
+      initFlyover('cesium-card', 'card 413×310', { camBackM: 90, camHeightM: 140, pitchDeg: -28 }),
+      initFlyover('cesium-lightbox', 'lightbox 760×500', { camBackM: 130, camHeightM: 180, pitchDeg: -25 }),
+    ]);
+  } catch (err) {
+    log('Fatal init error: ' + (err && err.message ? err.message : err), true);
+    console.error(err);
+  }
+</script>
+</body>
+</html>

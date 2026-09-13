@@ -27,8 +27,22 @@ export function buildCumulative(points) {
   return cum;
 }
 
+// Great-circle initial bearing from a to b, in degrees (0-360). Extracted here
+// instead of left duplicated ad hoc in spikes/phase1b-flyover-test.html and
+// phase1c-cesium-terrain-spike.html, both of which needed it for camera heading.
+export function bearingBetween(a, b) {
+  const bearing = Math.atan2(
+    Math.sin((b.lon - a.lon) * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180),
+    Math.cos(a.lat * Math.PI / 180) * Math.sin(b.lat * Math.PI / 180) -
+      Math.sin(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.cos((b.lon - a.lon) * Math.PI / 180)
+  ) * 180 / Math.PI;
+  return (bearing + 360) % 360;
+}
+
 // Interpolates a lat/lon/ele position along the track at `frac` (0..1) of total distance.
 // `hint` (optional, mutable {i}) lets repeated calls with a nearby frac skip the linear scan.
+// `bearing` (direction of travel at this point, 0-360) is only used by the 3D terrain
+// flyover's camera heading — the 2D Leaflet flyover ignores it.
 export function positionAt(points, cum, total, frac, hint) {
   const targetDist = frac * total;
   let i = hint ? Math.min(Math.max(hint.i, 1), cum.length - 1) : 1;
@@ -43,7 +57,7 @@ export function positionAt(points, cum, total, frac, hint) {
   const ele = (p0.ele != null && p1.ele != null)
     ? p0.ele + (p1.ele - p0.ele) * segFrac
     : (p0.ele ?? p1.ele ?? null);
-  return { lat, lon, ele, idx: i };
+  return { lat, lon, ele, idx: i, bearing: bearingBetween(p0, p1) };
 }
 
 // Raw GPS-logged tracks can carry many thousands of points (a multi-hour hike logged
