@@ -67,7 +67,7 @@ export default function AdminPage() {
       {activeTab === 'gear' && <GearTab session={session} />}
       {activeTab === 'profile' && <ProfileTab session={session} />}
       {activeTab === 'merch' && <MerchTab session={session} />}
-      {activeTab === 'gpx' && <MapsTab session={session} />}
+      {activeTab === 'gpx' && <MapsTab session={session} pendingHikeIds={pendingHikeIds} />}
     </div>
   )
 }

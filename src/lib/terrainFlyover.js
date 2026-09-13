@@ -472,38 +472,39 @@ export class TerrainFlyover {
     // start/end markers. That case gets its own pair of static entities
     // instead — the animated lightbox flyover keeps just the one traveling
     // marker, since it's the hiker there, not a map legend.
+    // disableDepthTestDistance: a point clamped via RELATIVE_TO_GROUND gets
+    // its height from whatever terrain LOD happens to be loaded at the
+    // moment Cesium computes it — at a sharp peak, a finer-detail tile
+    // streaming in shortly after can resolve to genuinely taller terrain
+    // right at that spot than the point was clamped against, leaving the
+    // marker sitting just inside the mountain and hidden behind it (seen on
+    // the end/apex marker specifically, since summits are exactly where this
+    // LOD mismatch is largest — flatter ground barely moves between LODs).
+    // These are informational map pins, not physical objects, so always
+    // rendering on top regardless of depth is the correct fix, not just a
+    // workaround: Infinity here means "never depth-test against the scene."
+    const pinPoint = (color) => ({
+      pixelSize: 11,
+      color,
+      outlineColor: Cesium.Color.WHITE,
+      outlineWidth: 2,
+      heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    });
     if (topDownPreview) {
       const endPoint = this.cameraPoints[this.apexIdx];
       this.viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
-        point: {
-          pixelSize: 11,
-          color: Cesium.Color.fromCssColorString('#4CAF50'),
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-          heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-        },
+        point: pinPoint(Cesium.Color.fromCssColorString('#4CAF50')),
       });
       this.viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(endPoint.lon, endPoint.lat, 3),
-        point: {
-          pixelSize: 11,
-          color: Cesium.Color.fromCssColorString('#C0392B'),
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-          heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-        },
+        point: pinPoint(Cesium.Color.fromCssColorString('#C0392B')),
       });
     } else {
       this.marker = this.viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
-        point: {
-          pixelSize: 10,
-          color: Cesium.Color.ORANGE,
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-          heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-        },
+        point: { ...pinPoint(Cesium.Color.ORANGE), pixelSize: 10 },
       });
     }
 

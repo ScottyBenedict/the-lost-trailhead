@@ -1,15 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { hikes } from '../../data/hikes'
+import { unslugify, slugify } from '../../lib/adminUtils'
 
-export default function MapsTab({ session }) {
+export default function MapsTab({ session, pendingHikeIds = [] }) {
   const [gpxHikeId, setGpxHikeId] = useState('')
+  // A brand-new hike with no page, no photos, and no reports yet still has
+  // no id anywhere to pick from a dropdown — GPX can legitimately be the
+  // very first thing added for it. Mirrors LogTripTab's own "type a new
+  // hike name" input for exactly the same reason.
+  const [customHike, setCustomHike] = useState('')
   const [gpxFile, setGpxFile] = useState(null)
   const [gpxExistingUrl, setGpxExistingUrl] = useState(null)
   const [gpxSaving, setGpxSaving] = useState(false)
   const [gpxSaved, setGpxSaved] = useState(false)
   const [gpxError, setGpxError] = useState(null)
   const gpxFileInputRef = useRef()
+
+  const selectedGpxHikeId = gpxHikeId || slugify(customHike)
 
   const [dateHikeId, setDateHikeId] = useState('')
   const [dateValue, setDateValue] = useState('')
@@ -20,10 +28,10 @@ export default function MapsTab({ session }) {
   const [dateError, setDateError] = useState(null)
 
   useEffect(() => {
-    if (!gpxHikeId || !session) { setGpxExistingUrl(null); return }
-    supabase.from('hike_gpx').select('gpx_url').eq('hike_id', gpxHikeId).maybeSingle()
+    if (!selectedGpxHikeId || !session) { setGpxExistingUrl(null); return }
+    supabase.from('hike_gpx').select('gpx_url').eq('hike_id', selectedGpxHikeId).maybeSingle()
       .then(({ data }) => setGpxExistingUrl(data?.gpx_url || null))
-  }, [gpxHikeId, session])
+  }, [selectedGpxHikeId, session])
 
   useEffect(() => {
     if (!dateHikeId || !session) { setExistingDates([]); return }
@@ -32,15 +40,15 @@ export default function MapsTab({ session }) {
   }, [dateHikeId, session])
 
   async function handleGpxSave() {
-    if (!gpxHikeId || !gpxFile) return
+    if (!selectedGpxHikeId || !gpxFile) return
     setGpxSaving(true); setGpxError(null); setGpxSaved(false)
     try {
-      const path = `${gpxHikeId}.gpx`
+      const path = `${selectedGpxHikeId}.gpx`
       const { error: uploadError } = await supabase.storage.from('gpx-files').upload(path, gpxFile, { contentType: 'application/gpx+xml', upsert: true })
       if (uploadError) throw uploadError
       const gpx_url = supabase.storage.from('gpx-files').getPublicUrl(path).data.publicUrl
       const { error: upsertError } = await supabase.from('hike_gpx').upsert({
-        hike_id: gpxHikeId, gpx_url, uploaded_by: session.user.id, uploaded_at: new Date().toISOString(),
+        hike_id: selectedGpxHikeId, gpx_url, uploaded_by: session.user.id, uploaded_at: new Date().toISOString(),
       }, { onConflict: 'hike_id' })
       if (upsertError) throw upsertError
       setGpxExistingUrl(gpx_url); setGpxFile(null)
@@ -73,13 +81,41 @@ export default function MapsTab({ session }) {
     <main className="admin-main">
       <section className="admin-section">
         <label className="admin-label">UPLOAD GPX ROUTE</label>
-        <p className="admin-or">Select a hike, then upload its GPX file. This powers the interactive trail map on the hike page.</p>
-        <select className="admin-input" value={gpxHikeId} onChange={e => { setGpxHikeId(e.target.value); setGpxFile(null); setGpxError(null); setGpxSaved(false); setGpxExistingUrl(null) }}>
+        <p className="admin-or">
+          Type a new hike name, or select an existing one, then upload its GPX file. This powers the
+          interactive trail map on the hike page.
+        </p>
+        <input
+          className="admin-input"
+          type="text"
+          placeholder="New hike name…"
+          value={customHike}
+          onChange={e => { setCustomHike(e.target.value); setGpxHikeId(''); setGpxFile(null); setGpxError(null); setGpxSaved(false) }}
+        />
+        <p className="admin-or">or choose a hike that already exists</p>
+        <select
+          className="admin-input"
+          value={gpxHikeId}
+          onChange={e => { setGpxHikeId(e.target.value); setCustomHike(''); setGpxFile(null); setGpxError(null); setGpxSaved(false); setGpxExistingUrl(null) }}
+        >
           <option value="">— choose a hike —</option>
-          {hikes.map(h => <option key={h.id} value={h.supabaseId || h.id}>{h.name}</option>)}
+          <optgroup label="Published hikes">
+            {hikes.map(h => <option key={h.id} value={h.supabaseId || h.id}>{h.name}</option>)}
+          </optgroup>
+          {/* A hike doesn't need a page yet to have a real GPX route — this
+              was previously impossible to reach at all (the dropdown only
+              ever listed `hikes`, the published/static list), so a route
+              couldn't be attached until after publishing, backwards from how
+              the Pending tab's own Create Page flow actually wants it: GPX
+              uploaded first, page generated from what's already there. */}
+          {pendingHikeIds.length > 0 && (
+            <optgroup label="Needs a page">
+              {pendingHikeIds.map(id => <option key={id} value={id}>{unslugify(id)}</option>)}
+            </optgroup>
+          )}
         </select>
 
-        {gpxHikeId && (
+        {selectedGpxHikeId && (
           <>
             {gpxExistingUrl && (
               <div className="admin-flag admin-flag-info">
@@ -101,7 +137,7 @@ export default function MapsTab({ session }) {
 
         {gpxError && <p className="admin-error">{gpxError}</p>}
         {gpxSaved && <p className="admin-success">GPX uploaded!</p>}
-        {gpxHikeId && (
+        {selectedGpxHikeId && (
           <button className="admin-btn-primary" onClick={handleGpxSave} disabled={gpxSaving || !gpxFile} style={{ marginTop: '1rem' }}>
             {gpxSaving ? 'Uploading…' : 'Upload GPX'}
           </button>

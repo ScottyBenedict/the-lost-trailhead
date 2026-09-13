@@ -296,6 +296,21 @@ export const hikes = [
     galleryStart: 4,
   },
   {
+    id: 'little-si',
+    name: 'Little Si',
+    region: 'Mount Si NRCA · North Bend',
+    distance: '4.7 mi',
+    gain: '1,300 ft',
+    difficulty: 'Moderate',
+    season: 'Year-round',
+    description:
+      "A short, steep scramble to a rocky summit with surprisingly big views for such a modest hike — Mount Si looms directly across the valley, with Mount Washington and the Cedar River drainage beyond. The trail climbs fast through second-growth forest before breaking onto exposed rock near the top, popular with rock climbers as well as hikers. Low enough to stay open through the winter, it's one of the area's most reliable year-round leg-stretchers.",
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/little-si/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1780856102187_5.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+    galleryStart: 3,
+  },
+  {
     id: 'melakwa-lake',
     name: 'Melakwa Lake',
     region: 'Alpine Lakes Wilderness · Snoqualmie Pass',
