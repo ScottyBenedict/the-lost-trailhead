@@ -11,6 +11,22 @@ export async function computeHash(file) {
   return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+// Capture metadata from the ORIGINAL file, before any re-encoding strips EXIF.
+// This is what actually identifies a duplicate/edited-derivative reliably —
+// file_hash alone can't, since re-encoding (rotateImage below) always changes the bytes.
+export async function extractCaptureMetadata(file) {
+  const [tags, gps] = await Promise.all([
+    exifr.parse(file, ['DateTimeOriginal', 'SubSecTimeOriginal']).catch(() => null),
+    exifr.gps(file).catch(() => null),
+  ])
+  return {
+    captureDatetime: tags?.DateTimeOriginal ? new Date(tags.DateTimeOriginal).toISOString() : null,
+    captureSubsec: tags?.SubSecTimeOriginal != null ? String(tags.SubSecTimeOriginal) : null,
+    gpsLat: gps?.latitude ?? null,
+    gpsLng: gps?.longitude ?? null,
+  }
+}
+
 export function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '-')
 }
@@ -81,6 +97,7 @@ export async function processFiles(files, existingHashes = new Set()) {
     }
     const hash = await computeHash(file)
     const url = await rotateImage(workingFile)
-    return { file: workingFile, previewUrl: url, hash, isDuplicate: existingHashes.has(hash) }
+    const captureMeta = await extractCaptureMetadata(file)
+    return { file: workingFile, previewUrl: url, hash, isDuplicate: existingHashes.has(hash), ...captureMeta }
   }))
 }
