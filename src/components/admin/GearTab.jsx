@@ -3,6 +3,29 @@ import { supabase } from '../../lib/supabase'
 
 const GEAR_CATEGORIES = ['Footwear','Shell','Pack','Watch','Phone/Camera','Poles','Gaiters','Gloves','Headlamp','Sunglasses','Baselayer','Midlayer','Pants','Tent','Stove','Sleeping Bag','Pad','Navigation','Accessories']
 
+// Shared by the inline edit form (in the list) and the "add item" form below —
+// same four fields and save/cancel actions either way.
+function GearItemFields({ form, setForm, onSave, onCancel, saving, error, saveLabel }) {
+  return (
+    <>
+      <div className="admin-gear-form-row">
+        <select className="admin-input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+          <option value="">— Category —</option>
+          {GEAR_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <input className="admin-input" placeholder="Brand" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+      </div>
+      <input className="admin-input" placeholder="Model" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+      <textarea className="admin-textarea" rows={2} placeholder="Description (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+      {error && <p className="admin-error">{error}</p>}
+      <div className="admin-gear-form-actions">
+        <button className="admin-btn-primary" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : saveLabel}</button>
+        <button className="admin-btn-ghost" onClick={onCancel}>Cancel</button>
+      </div>
+    </>
+  )
+}
+
 export default function GearTab({ session }) {
   const [gearItems, setGearItems] = useState([])
   const [loadingGear, setLoadingGear] = useState(false)
@@ -103,20 +126,7 @@ export default function GearTab({ session }) {
                     </div>
                   ) : editingGearId === item.id ? (
                     <div className="admin-gear-form">
-                      <div className="admin-gear-form-row">
-                        <select className="admin-input" value={gearForm.category} onChange={e => setGearForm(f => ({ ...f, category: e.target.value }))}>
-                          <option value="">— Category —</option>
-                          {GEAR_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <input className="admin-input" placeholder="Brand" value={gearForm.brand} onChange={e => setGearForm(f => ({ ...f, brand: e.target.value }))} />
-                      </div>
-                      <input className="admin-input" placeholder="Model" value={gearForm.name} onChange={e => setGearForm(f => ({ ...f, name: e.target.value }))} />
-                      <textarea className="admin-textarea" rows={2} placeholder="Description (optional)" value={gearForm.description} onChange={e => setGearForm(f => ({ ...f, description: e.target.value }))} />
-                      {gearError && <p className="admin-error">{gearError}</p>}
-                      <div className="admin-gear-form-actions">
-                        <button className="admin-btn-primary" onClick={saveGearItem} disabled={gearSaving}>{gearSaving ? 'Saving…' : 'Save'}</button>
-                        <button className="admin-btn-ghost" onClick={closeGearForm}>Cancel</button>
-                      </div>
+                      <GearItemFields form={gearForm} setForm={setGearForm} onSave={saveGearItem} onCancel={closeGearForm} saving={gearSaving} error={gearError} saveLabel="Save" />
                     </div>
                   ) : (
                     <>
@@ -142,20 +152,7 @@ export default function GearTab({ session }) {
             {gearForm && !editingGearId && (
               <div className="admin-gear-form admin-gear-form-add">
                 <label className="admin-label">ADD ITEM</label>
-                <div className="admin-gear-form-row">
-                  <select className="admin-input" value={gearForm.category} onChange={e => setGearForm(f => ({ ...f, category: e.target.value }))}>
-                    <option value="">— Category —</option>
-                    {GEAR_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <input className="admin-input" placeholder="Brand" value={gearForm.brand} onChange={e => setGearForm(f => ({ ...f, brand: e.target.value }))} />
-                </div>
-                <input className="admin-input" placeholder="Model" value={gearForm.name} onChange={e => setGearForm(f => ({ ...f, name: e.target.value }))} />
-                <textarea className="admin-textarea" rows={2} placeholder="Description (optional)" value={gearForm.description} onChange={e => setGearForm(f => ({ ...f, description: e.target.value }))} />
-                {gearError && <p className="admin-error">{gearError}</p>}
-                <div className="admin-gear-form-actions">
-                  <button className="admin-btn-primary" onClick={saveGearItem} disabled={gearSaving}>{gearSaving ? 'Saving…' : 'Add Item'}</button>
-                  <button className="admin-btn-ghost" onClick={closeGearForm}>Cancel</button>
-                </div>
+                <GearItemFields form={gearForm} setForm={setGearForm} onSave={saveGearItem} onCancel={closeGearForm} saving={gearSaving} error={gearError} saveLabel="Add Item" />
               </div>
             )}
 

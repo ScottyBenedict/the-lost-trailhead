@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { processFiles, formatPrice } from '../../lib/adminUtils'
+import PhotoDropZone from './PhotoDropZone'
 
 export default function MerchTab() {
   const [merchProducts, setMerchProducts] = useState([])
@@ -13,7 +14,6 @@ export default function MerchTab() {
   const [merchError, setMerchError] = useState(null)
   const [showArchivedMerch, setShowArchivedMerch] = useState(false)
   const [merchDeleteConfirm, setMerchDeleteConfirm] = useState(null)
-  const merchImageInputRef = useRef()
 
   useEffect(() => {
     loadMerch()
@@ -39,12 +39,11 @@ export default function MerchTab() {
 
   function closeMerchForm() { setMerchForm(null); setEditingMerchId(null); setMerchImages([]); setMerchError(null) }
 
-  async function handleMerchImageSelect(e) {
+  async function handleMerchImageSelect(files) {
     try {
-      const processed = await processFiles(e.target.files)
+      const processed = await processFiles(files)
       setMerchImages(prev => [...prev, ...processed])
     } catch (err) { setMerchError(err.message) }
-    e.target.value = ''
   }
 
   function handleMerchDragEnter(e) { e.preventDefault(); setIsDragOverMerch(true) }
@@ -218,30 +217,17 @@ export default function MerchTab() {
                     </div>
                   </div>
                 )}
-                <div
-                  className={`admin-drop-zone${isDragOverMerch ? ' admin-drop-zone-active' : ''}${merchImages.length > 0 ? ' admin-drop-zone-has-photos' : ''}`}
-                  onDragEnter={handleMerchDragEnter} onDragOver={handleMerchDragOver} onDragLeave={handleMerchDragLeave} onDrop={handleMerchDrop}
-                  onClick={() => merchImageInputRef.current.click()}
-                >
-                  <input ref={merchImageInputRef} type="file" accept="image/*,.heic,.heif" multiple style={{ display: 'none' }} onChange={handleMerchImageSelect} />
-                  {merchImages.length === 0 ? (
-                    <><span className="admin-drop-icon">↑</span><p className="admin-drop-text">Drag images or <span className="admin-drop-link">click to browse</span></p></>
-                  ) : (
-                    <>
-                      <div className="admin-photo-grid" onClick={e => e.stopPropagation()}>
-                        {merchImages.map((img, i) => (
-                          <div key={i} className="admin-photo-thumb">
-                            <img src={img.previewUrl} alt="" />
-                            <div className="admin-photo-controls">
-                              <button className="admin-photo-ctrl admin-photo-ctrl-remove" onClick={e => { e.stopPropagation(); removeMerchImage(i) }}>×</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="admin-drop-add-more">Drop more or <span className="admin-drop-link">click to browse</span></p>
-                    </>
-                  )}
-                </div>
+                <PhotoDropZone
+                  photos={merchImages}
+                  onFilesSelected={handleMerchImageSelect}
+                  onRemove={removeMerchImage}
+                  isDragOver={isDragOverMerch}
+                  onDragEnter={handleMerchDragEnter}
+                  onDragOver={handleMerchDragOver}
+                  onDragLeave={handleMerchDragLeave}
+                  onDrop={handleMerchDrop}
+                  emptyText="Drag images"
+                />
 
                 {merchError && <p className="admin-error">{merchError}</p>}
                 <div className="admin-gear-form-actions">

@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { hikes } from '../../data/hikes'
 import { processFiles, slugify, unslugify, wordsMatch } from '../../lib/adminUtils'
+import PhotoDropZone from './PhotoDropZone'
+import HikeOptions from './HikeOptions'
 
 export default function LogTripTab({ session, pendingHikeIds }) {
   const [hikeId, setHikeId] = useState('')
@@ -20,7 +22,6 @@ export default function LogTripTab({ session, pendingHikeIds }) {
   const [hasExistingReport, setHasExistingReport] = useState(false)
   const [pendingMatch, setPendingMatch] = useState(null)
   const [knownMatch, setKnownMatch] = useState(null)
-  const fileInputRef = useRef()
 
   const selectedHikeId = hikeId || slugify(customHike)
 
@@ -53,12 +54,11 @@ export default function LogTripTab({ session, pendingHikeIds }) {
     loadHikeData()
   }, [selectedHikeId, isNewHike, session])
 
-  async function handlePhotoSelect(e) {
+  async function handlePhotoSelect(files) {
     try {
-      const processed = await processFiles(e.target.files, existingHashes)
+      const processed = await processFiles(files, existingHashes)
       setPhotos(prev => [...prev, ...processed])
     } catch (err) { setError(err.message) }
-    e.target.value = ''
   }
 
   function handleDragEnter(e) { e.preventDefault(); setIsDragOver(true) }
@@ -147,15 +147,7 @@ export default function LogTripTab({ session, pendingHikeIds }) {
         {isNewHike && <div className="admin-flag">⚠️ This hike doesn't have a page yet — flagged for development.</div>}
         <p className="admin-or">or add photos and reports to a previous hike</p>
         <select className="admin-input" value={hikeId} onChange={handleHikeSelect}>
-          <option value="">— choose a hike —</option>
-          <optgroup label="Published hikes">
-            {hikes.map(h => <option key={h.id} value={h.supabaseId || h.id}>{h.name}</option>)}
-          </optgroup>
-          {pendingHikeIds.length > 0 && (
-            <optgroup label="Needs a page">
-              {pendingHikeIds.map(id => <option key={id} value={id}>{unslugify(id)}</option>)}
-            </optgroup>
-          )}
+          <HikeOptions pendingHikeIds={pendingHikeIds} />
         </select>
       </section>
 
@@ -181,33 +173,18 @@ export default function LogTripTab({ session, pendingHikeIds }) {
             <span className="admin-lightbox-count">{lightboxIndex + 1} / {existingPhotos.length}</span>
           </div>
         )}
-        <div
-          className={`admin-drop-zone${isDragOver ? ' admin-drop-zone-active' : ''}${photos.length > 0 ? ' admin-drop-zone-has-photos' : ''}`}
-          onDragEnter={handleDragEnter} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
-          onClick={() => fileInputRef.current.click()}
-        >
-          <input ref={fileInputRef} type="file" accept="image/*,.heic,.heif" multiple style={{ display: 'none' }} onChange={handlePhotoSelect} />
-          {photos.length === 0 ? (
-            <><span className="admin-drop-icon">↑</span><p className="admin-drop-text">Drag photos here or <span className="admin-drop-link">click to browse</span></p></>
-          ) : (
-            <>
-              <div className="admin-photo-grid" onClick={e => e.stopPropagation()}>
-                {photos.map((p, i) => (
-                  <div key={i} className={`admin-photo-thumb${p.isDuplicate ? ' admin-photo-thumb-duplicate' : ''}`}>
-                    <img src={p.previewUrl} alt="" />
-                    {p.isDuplicate && <span className="admin-photo-duplicate-badge">Duplicate</span>}
-                    <div className="admin-photo-controls">
-                      <button className="admin-photo-ctrl" onClick={e => { e.stopPropagation(); rotatePhoto(i, 'ccw') }} title="Rotate left">↺</button>
-                      <button className="admin-photo-ctrl" onClick={e => { e.stopPropagation(); rotatePhoto(i, 'cw') }} title="Rotate right">↻</button>
-                      <button className="admin-photo-ctrl admin-photo-ctrl-remove" onClick={e => { e.stopPropagation(); removePhoto(i) }} title="Remove">×</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="admin-drop-add-more">Drop more or <span className="admin-drop-link">click to browse</span></p>
-            </>
-          )}
-        </div>
+        <PhotoDropZone
+          photos={photos}
+          onFilesSelected={handlePhotoSelect}
+          onRemove={removePhoto}
+          onRotate={rotatePhoto}
+          isDragOver={isDragOver}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          emptyText="Drag photos here"
+        />
       </section>
 
       <section className="admin-section">

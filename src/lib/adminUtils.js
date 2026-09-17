@@ -1,7 +1,31 @@
 import exifr from 'exifr'
 import heic2any from 'heic2any'
+import { hikes } from '../data/hikes'
+import { supabase } from './supabase'
 
 export const MAX_FILE_BYTES = 20 * 1024 * 1024 // 20 MB
+
+// Hikes already published to hikes.js, by both their slug id and (if set)
+// their separate Supabase id — anything else showing up in hike_reports/
+// hike_photos is a "pending" hike still waiting on a page.
+export function getKnownHikeIds() {
+  return new Set([...hikes.map(h => h.id), ...hikes.filter(h => h.supabaseId).map(h => h.supabaseId)])
+}
+
+// Shared by MapsTab (an already-published hike replacing/adding its GPX)
+// and PendingTab (a not-yet-published hike getting its first GPX as part of
+// setup) — same upload-then-upsert sequence either way.
+export async function uploadGpxFile(hikeId, file, userId) {
+  const path = `${hikeId}.gpx`
+  const { error: uploadError } = await supabase.storage.from('gpx-files').upload(path, file, { contentType: 'application/gpx+xml', upsert: true })
+  if (uploadError) throw uploadError
+  const gpx_url = supabase.storage.from('gpx-files').getPublicUrl(path).data.publicUrl
+  const { error: upsertError } = await supabase.from('hike_gpx').upsert({
+    hike_id: hikeId, gpx_url, uploaded_by: userId, uploaded_at: new Date().toISOString(),
+  }, { onConflict: 'hike_id' })
+  if (upsertError) throw upsertError
+  return gpx_url
+}
 
 const STOP_WORDS = new Set(['and', 'the', 'a', 'an', 'of', 'at', 'in'])
 

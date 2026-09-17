@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
-import { hikes } from '../data/hikes'
+import { getKnownHikeIds } from '../lib/adminUtils'
 import LogTripTab from '../components/admin/LogTripTab'
 import PendingTab from '../components/admin/PendingTab'
 import GearTab from '../components/admin/GearTab'
@@ -26,7 +26,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!session) return
     async function fetchPendingIds() {
-      const knownIds = new Set([...hikes.map(h => h.id), ...hikes.filter(h => h.supabaseId).map(h => h.supabaseId)])
+      const knownIds = getKnownHikeIds()
       const [{ data: reportData }, { data: photoData }] = await Promise.all([
         supabase.from('hike_reports').select('hike_id'),
         supabase.from('hike_photos').select('hike_id'),

@@ -5,8 +5,11 @@ const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 export const supabase = createClient(SUPABASE_URL, ANON_KEY)
 
-// Always uses anon key — for public pages that must not inherit the logged-in user's JWT
+// Always uses anon key — for public pages that must not inherit the logged-in user's JWT.
+// storageKey is distinct from the default client's even though persistSession is false:
+// without it, GoTrueClient still registers under the same default (URL-derived) storage
+// key as `supabase` above and logs a "Multiple GoTrueClient instances" warning.
 export const publicSupabase = createClient(SUPABASE_URL, ANON_KEY, {
   global: { headers: { Authorization: `Bearer ${ANON_KEY}` } },
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'sb-public-noop-auth' },
 })

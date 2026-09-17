@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { hikes } from '../../data/hikes'
-import { unslugify, slugify } from '../../lib/adminUtils'
+import { slugify, uploadGpxFile } from '../../lib/adminUtils'
+import GpxUploadControl from './GpxUploadControl'
+import HikeOptions from './HikeOptions'
 
 export default function MapsTab({ session, pendingHikeIds = [] }) {
   const [gpxHikeId, setGpxHikeId] = useState('')
@@ -15,7 +17,6 @@ export default function MapsTab({ session, pendingHikeIds = [] }) {
   const [gpxSaving, setGpxSaving] = useState(false)
   const [gpxSaved, setGpxSaved] = useState(false)
   const [gpxError, setGpxError] = useState(null)
-  const gpxFileInputRef = useRef()
 
   const selectedGpxHikeId = gpxHikeId || slugify(customHike)
 
@@ -45,14 +46,7 @@ export default function MapsTab({ session, pendingHikeIds = [] }) {
     if (!selectedGpxHikeId || !gpxFile) return
     setGpxSaving(true); setGpxError(null); setGpxSaved(false)
     try {
-      const path = `${selectedGpxHikeId}.gpx`
-      const { error: uploadError } = await supabase.storage.from('gpx-files').upload(path, gpxFile, { contentType: 'application/gpx+xml', upsert: true })
-      if (uploadError) throw uploadError
-      const gpx_url = supabase.storage.from('gpx-files').getPublicUrl(path).data.publicUrl
-      const { error: upsertError } = await supabase.from('hike_gpx').upsert({
-        hike_id: selectedGpxHikeId, gpx_url, uploaded_by: session.user.id, uploaded_at: new Date().toISOString(),
-      }, { onConflict: 'hike_id' })
-      if (upsertError) throw upsertError
+      const gpx_url = await uploadGpxFile(selectedGpxHikeId, gpxFile, session.user.id)
       setGpxExistingUrl(gpx_url); setGpxFile(null)
       setGpxSaved(true); setTimeout(() => setGpxSaved(false), 4000)
     } catch (err) { setGpxError(err.message) }
@@ -100,49 +94,25 @@ export default function MapsTab({ session, pendingHikeIds = [] }) {
           value={gpxHikeId}
           onChange={e => { setGpxHikeId(e.target.value); setCustomHike(''); setGpxFile(null); setGpxError(null); setGpxSaved(false); setGpxExistingUrl(null) }}
         >
-          <option value="">— choose a hike —</option>
-          <optgroup label="Published hikes">
-            {hikes.map(h => <option key={h.id} value={h.supabaseId || h.id}>{h.name}</option>)}
-          </optgroup>
           {/* A hike doesn't need a page yet to have a real GPX route — this
               was previously impossible to reach at all (the dropdown only
               ever listed `hikes`, the published/static list), so a route
               couldn't be attached until after publishing, backwards from how
               the Pending tab's own Create Page flow actually wants it: GPX
               uploaded first, page generated from what's already there. */}
-          {pendingHikeIds.length > 0 && (
-            <optgroup label="Needs a page">
-              {pendingHikeIds.map(id => <option key={id} value={id}>{unslugify(id)}</option>)}
-            </optgroup>
-          )}
+          <HikeOptions pendingHikeIds={pendingHikeIds} />
         </select>
 
         {selectedGpxHikeId && (
-          <>
-            {gpxExistingUrl && (
-              <div className="admin-flag admin-flag-info">
-                A GPX file already exists for this hike — uploading will replace it.
-              </div>
-            )}
-            <input
-              ref={gpxFileInputRef}
-              type="file"
-              accept=".gpx,application/gpx+xml"
-              style={{ display: 'none' }}
-              onChange={e => { setGpxFile(e.target.files[0] || null); e.target.value = '' }}
-            />
-            <button className="admin-btn-ghost" style={{ marginTop: '0.75rem' }} onClick={() => gpxFileInputRef.current.click()}>
-              {gpxFile ? gpxFile.name : 'Choose GPX file…'}
-            </button>
-          </>
-        )}
-
-        {gpxError && <p className="admin-error">{gpxError}</p>}
-        {gpxSaved && <p className="admin-success">GPX uploaded!</p>}
-        {selectedGpxHikeId && (
-          <button className="admin-btn-primary" onClick={handleGpxSave} disabled={gpxSaving || !gpxFile} style={{ marginTop: '1rem' }}>
-            {gpxSaving ? 'Uploading…' : 'Upload GPX'}
-          </button>
+          <GpxUploadControl
+            existingUrl={gpxExistingUrl}
+            file={gpxFile}
+            onChooseFile={setGpxFile}
+            onUpload={handleGpxSave}
+            uploading={gpxSaving}
+            saved={gpxSaved}
+            error={gpxError}
+          />
         )}
       </section>
 
