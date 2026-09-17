@@ -6,6 +6,15 @@ import HikeCard from '../components/HikeCard'
 export default function HomePage() {
   const [sortMode, setSortMode] = useState('az')
   const [hikeDates, setHikeDates] = useState(new Map())
+  // "Recent" sorts by hikeDates, fetched async — clicking it before this
+  // resolves silently falls back to alphabetical (every hike looks
+  // date-less), indistinguishable from A-Z. It self-corrects the instant
+  // the fetch lands, but on a slow connection that window is long enough
+  // for a real click to land in it and look completely broken (worse: since
+  // both modes then render the same list, toggling back to A-Z looks like
+  // it does nothing too). Disabling Recent until dates are in avoids the
+  // race outright instead of racing to fix the symptom.
+  const [datesLoaded, setDatesLoaded] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -18,6 +27,7 @@ export default function HomePage() {
         }
         setHikeDates(map)
       }
+      setDatesLoaded(true)
     }
     fetchData()
   }, [])
@@ -66,6 +76,8 @@ export default function HomePage() {
           <button
             className={`sort-btn${sortMode === 'recent' ? ' sort-btn-active' : ''}`}
             onClick={() => setSortMode('recent')}
+            disabled={!datesLoaded}
+            title={datesLoaded ? undefined : 'Loading hike dates…'}
           >
             Recent
           </button>
