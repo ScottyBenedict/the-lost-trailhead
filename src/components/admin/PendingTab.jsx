@@ -47,6 +47,13 @@ export default function PendingTab({ session }) {
   const [createSnippet, setCreateSnippet] = useState(null)
   const [snippetCopied, setSnippetCopied] = useState(false)
 
+  // AI-assisted field suggestions — calls the suggest-hike Edge Function
+  // (server-side, holds the Anthropic key) which researches the trail and
+  // returns draft values. These only ever pre-fill createFields; nothing
+  // here writes anywhere on its own — Generate/paste/commit stays manual.
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggestError, setSuggestError] = useState(null)
+
   useEffect(() => {
     if (!session) return
     async function fetchPending() {
@@ -87,6 +94,8 @@ export default function PendingTab({ session }) {
     setCreateFields(EMPTY_CREATE_FIELDS)
     setCreateSnippet(null)
     setSnippetCopied(false)
+    setSuggesting(false)
+    setSuggestError(null)
   }
 
   async function togglePendingExpand(hikeId) {
@@ -193,6 +202,27 @@ export default function PendingTab({ session }) {
       await navigator.clipboard.writeText(createSnippet)
       setSnippetCopied(true); setTimeout(() => setSnippetCopied(false), 3000)
     } catch { /* clipboard permission denied — the textarea's own content is still selectable/copyable manually */ }
+  }
+
+  async function handleSuggestFields(hikeId) {
+    const name = createFields.name || unslugify(hikeId)
+    setSuggesting(true); setSuggestError(null)
+    try {
+      const { data, error } = await supabase.functions.invoke('suggest-hike', { body: { name } })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      setCreateFields(prev => ({
+        ...prev,
+        name: prev.name || name,
+        region: data.region ?? prev.region,
+        distance: data.distance ?? prev.distance,
+        gain: data.gain ?? prev.gain,
+        difficulty: data.difficulty ?? prev.difficulty,
+        season: data.season ?? prev.season,
+        description: data.description ?? prev.description,
+      }))
+    } catch (err) { setSuggestError(err.message) }
+    finally { setSuggesting(false) }
   }
 
   return (
@@ -307,7 +337,10 @@ export default function PendingTab({ session }) {
                               className="admin-btn-primary"
                               disabled={!readyToCreate}
                               title={readyToCreate ? undefined : 'Pick both a Hero and 2nd photo first'}
-                              onClick={() => setCreateFormOpen(true)}
+                              onClick={() => {
+                                setCreateFormOpen(true)
+                                setCreateFields(prev => ({ ...prev, name: prev.name || unslugify(h.hike_id) }))
+                              }}
                             >
                               Create Page →
                             </button>
@@ -318,6 +351,15 @@ export default function PendingTab({ session }) {
                                 Fills in everything already known (photos, Hero/2nd, GPX) — these are the only
                                 fields nobody but you can write.
                               </p>
+                              <button
+                                className="admin-btn-ghost"
+                                onClick={() => handleSuggestFields(h.hike_id)}
+                                disabled={suggesting}
+                                style={{ marginTop: '0.5rem' }}
+                              >
+                                {suggesting ? 'Researching…' : 'Suggest with AI ✨'}
+                              </button>
+                              {suggestError && <p className="admin-error">{suggestError}</p>}
                               {[
                                 ['name', 'Name', 'e.g. Little Si'],
                                 ['region', 'Region', 'e.g. Mount Si NRCA · North Bend'],
@@ -358,7 +400,7 @@ export default function PendingTab({ session }) {
                               </div>
 
                               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                                <button className="admin-btn-ghost" onClick={() => { setCreateFormOpen(false); setCreateSnippet(null) }}>
+                                <button className="admin-btn-ghost" onClick={() => { setCreateFormOpen(false); setCreateSnippet(null); setSuggestError(null) }}>
                                   Cancel
                                 </button>
                                 <button
