@@ -23,6 +23,10 @@ import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
 // margin on both sides of that gap.
 const OUT_AND_BACK_MATCH_THRESHOLD_M = 40;
 
+// How far ahead of the hiker's real position the camera aims — see
+// applyFrame's comment. First cut, not yet tuned against real playback.
+const LOOKAHEAD_M = 150;
+
 // For a simple out-and-back hike, the return leg retraces the outbound leg —
 // drawing both draws two overlapping lines that look muddy, worst exactly
 // where the up and down overlap. Explicit, repeated product direction: only
@@ -285,6 +289,7 @@ export class TerrainFlyover {
     this.sessionStart = null;
     this.destroyed = false;
     this.posHint = { i: 1 };
+    this.aheadHint = { i: 1 }; // separate scan state for the look-ahead aim point — positionAt's hint assumes one monotonically-advancing frac sequence per hint, and this file now calls it twice a frame at two different fracs
 
     // Switched from OpenTopoMap (still used by the 2D flyover) to satellite
     // imagery — OpenTopoMap draws its own cartographic hiking-trail line
@@ -604,18 +609,30 @@ export class TerrainFlyover {
     // toward never changes in the first place.
     const bearing = (this.fixedBearing + this.camera.sideOffsetDeg + 360) % 360;
 
-    // Marker: relative height only — heightReference: RELATIVE_TO_GROUND (set
-    // where the entity was created) does the actual ground-clamping, via the
-    // same mechanism the line uses. Camera target: still this file's own
-    // smoothed groundHeightAt (needs a concrete absolute height — lookAt
-    // isn't an Entity, it has no heightReference to lean on) — a few meters
-    // of difference between what the camera aims at and where the marker
-    // visually sits doesn't change the framing at hundreds of meters of
-    // range, so this doesn't need to be the same value, just each internally
-    // consistent for its own purpose.
+    // Marker sits at the hiker's real, current position — always.
     this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, 3);
-    const groundHeight = this.groundHeightAt(pos.lat, pos.lon, pos.ele);
-    const targetPos = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, groundHeight + 3);
+
+    // camera.lookAt always puts its target dead-center in frame. Aiming it
+    // at the hiker's exact live position (as this used to) pins the marker
+    // to that one exact pixel for the whole flight — every real curve in the
+    // trail then reads as the world pivoting around a fixed point, which is
+    // exactly the "dead-center lock feels janky" complaint this project's
+    // own history already flagged twice (docs/roadmap-3d-flyover.md) without
+    // ever actually changing the aim target to fix it. Aiming a short real
+    // distance further down the already-smoothed path instead — the same
+    // "look ahead through the curve" a driver's eyes do on a winding road —
+    // puts the marker off-center (lower/behind frame) and gives the camera
+    // something closer to anticipatory motion than reactive pivoting.
+    // LOOKAHEAD_M is a first cut, not a tuned final value — watch it play
+    // before treating this number as settled.
+    const aheadFrac = Math.min((frac * this.total + LOOKAHEAD_M) / this.total, 1);
+    const aimAt = positionAt(this.cameraPoints, this.cum, this.total, aheadFrac, this.aheadHint);
+
+    // Camera target height: this file's own smoothed groundHeightAt (needs a
+    // concrete absolute height — lookAt isn't an Entity, it has no
+    // heightReference to lean on).
+    const groundHeight = this.groundHeightAt(aimAt.lat, aimAt.lon, aimAt.ele);
+    const targetPos = Cesium.Cartesian3.fromDegrees(aimAt.lon, aimAt.lat, groundHeight + 3);
 
     // camera.lookAt(target, HeadingPitchRange) positions the camera at the
     // given heading/pitch/range *from* target and points it at target — the
