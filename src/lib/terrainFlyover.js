@@ -12,6 +12,17 @@ import './terrainFlyoverOverrides.css';
 import { buildCumulative, flyoverDurationMs, positionAt, bearingBetween, haversineM } from './gpxFlyover';
 import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
 
+// findApexIndex's bestScore (below) doubles as out-and-back detection: it's
+// the average GPS deviation between the outbound and return legs at the
+// best-matching split point, so a real retrace scores low and a route that
+// never truly retraces (a loop) scores high no matter which split point it
+// picks. Verified against two real recordings before choosing this number:
+// Rattlesnake Ledge (a genuine out-and-back) scores 12.2m; Maple Pass Loop
+// (a genuine loop) scores 116.0m at its best candidate — nearly 10x worse,
+// because there's nothing to actually match there. 40m sits with real
+// margin on both sides of that gap.
+const OUT_AND_BACK_MATCH_THRESHOLD_M = 40;
+
 // For a simple out-and-back hike, the return leg retraces the outbound leg —
 // drawing both draws two overlapping lines that look muddy, worst exactly
 // where the up and down overlap. Explicit, repeated product direction: only
@@ -71,7 +82,7 @@ function findApexIndex(points, cum) {
       if (score < bestScore) { bestScore = score; bestIdx = i; }
     }
   }
-  return bestIdx;
+  return { bestIdx, bestScore };
 }
 
 // Chase-cam distance/angle from the marker. Replaces an earlier hand-rolled
@@ -192,35 +203,48 @@ export class TerrainFlyover {
 
     // Apex-finding needs the real, unsmoothed recording (findApexIndex's own
     // comment covers why) — done on full-resolution `points`, the real
-    // recording.
+    // recording. bestScore also decides whether this hike is an out-and-back
+    // at all — see OUT_AND_BACK_MATCH_THRESHOLD_M above.
     const fullCum = buildCumulative(points);
-    const rawApexIdx = findApexIndex(points, fullCum);
+    const { bestIdx: rawApexIdx, bestScore: apexScore } = findApexIndex(points, fullCum);
+    this.isOutAndBack = apexScore <= OUT_AND_BACK_MATCH_THRESHOLD_M;
 
-    // The descent retraces the exact same physical trail as the ascent — so
-    // rather than build the flowing path from the return leg's own separately
-    // recorded GPS (which can drift for reasons that have nothing to do with
-    // processing quality: tree cover, canyon walls, cliff faces near a
-    // "ledge" summit all degrade GPS accuracy in their own ways, and the
-    // return recording is a completely independent set of samples from the
-    // outbound one), the outbound leg's already-verified flowing path is
-    // simply walked forward then backward. This doesn't approximate "the
-    // descent follows the same trail as the ascent" — it makes that
-    // guaranteed and exact, the same way slicing the line from this same
-    // array (below) guarantees the line and the marker agree.
-    const outboundRawPoints = points.slice(0, rawApexIdx + 1);
-    // waypointCount is the actual smoothing knob here, not samplesPerSegment
-    // (which only controls how densely an already-fit curve is resampled for
-    // animation, not how tightly that curve follows the real GPS points).
-    // More waypoints means the Catmull-Rom spline is anchored to more of the
-    // real recording, so it rounds off less of the actual trail shape —
-    // bumped from 160 to 240, then to 320, across two rounds of feedback that
-    // the flowing path still felt a touch too smooth relative to the real
-    // route.
-    const outboundFlowing = buildFlowingPath(outboundRawPoints, { waypointCount: 320, samplesPerSegment: 12 });
-    this.cameraPoints = [...outboundFlowing, ...outboundFlowing.slice(0, -1).reverse()];
+    if (this.isOutAndBack) {
+      // The descent retraces the exact same physical trail as the ascent — so
+      // rather than build the flowing path from the return leg's own separately
+      // recorded GPS (which can drift for reasons that have nothing to do with
+      // processing quality: tree cover, canyon walls, cliff faces near a
+      // "ledge" summit all degrade GPS accuracy in their own ways, and the
+      // return recording is a completely independent set of samples from the
+      // outbound one), the outbound leg's already-verified flowing path is
+      // simply walked forward then backward. This doesn't approximate "the
+      // descent follows the same trail as the ascent" — it makes that
+      // guaranteed and exact, the same way slicing the line from this same
+      // array (below) guarantees the line and the marker agree.
+      const outboundRawPoints = points.slice(0, rawApexIdx + 1);
+      // waypointCount is the actual smoothing knob here, not samplesPerSegment
+      // (which only controls how densely an already-fit curve is resampled for
+      // animation, not how tightly that curve follows the real GPS points).
+      // More waypoints means the Catmull-Rom spline is anchored to more of the
+      // real recording, so it rounds off less of the actual trail shape —
+      // bumped from 160 to 240, then to 320, across two rounds of feedback that
+      // the flowing path still felt a touch too smooth relative to the real
+      // route.
+      const outboundFlowing = buildFlowingPath(outboundRawPoints, { waypointCount: 320, samplesPerSegment: 12 });
+      this.cameraPoints = [...outboundFlowing, ...outboundFlowing.slice(0, -1).reverse()];
+      this.apexIdx = outboundFlowing.length - 1;
+    } else {
+      // A loop never truly retraces itself, so there's nothing to collapse
+      // or mirror — per docs/roadmap-3d-flyover.md Decision 5, the full
+      // recorded route is drawn once and flown once, start to end. The line-
+      // draw and marker-placement code below both key off `apexIdx` as "the
+      // last index of what gets drawn/flown," which for a loop is simply the
+      // whole array — no separate branch needed past this point.
+      this.cameraPoints = buildFlowingPath(points, { waypointCount: 320, samplesPerSegment: 12 });
+      this.apexIdx = this.cameraPoints.length - 1;
+    }
     this.cum = buildCumulative(this.cameraPoints);
     this.total = this.cum[this.cum.length - 1];
-    this.apexIdx = outboundFlowing.length - 1;
 
     // ONE fixed camera bearing for the entire flight, computed once, here —
     // not per-leg, and not recomputed from wherever the hiker currently is.
@@ -236,7 +260,18 @@ export class TerrainFlyover {
     // camera filming a car driving out and back on the same road wouldn't
     // flip sides when the car turns around). Zero rotation anywhere, not
     // just a smaller one at the summit.
-    this.fixedBearing = bearingBetween(this.cameraPoints[0], this.cameraPoints[this.apexIdx]);
+    //
+    // For an out-and-back this points at the real turnaround (apexIdx). A
+    // loop has no turnaround — this instead points at the "far side" of the
+    // loop (the point half the total distance in), a first attempt at the
+    // same "camera sits on one consistent side" idea, not yet visually
+    // confirmed against real playback the way the out-and-back bearing was.
+    // Maple Pass Loop is the actual test of whether this reads correctly —
+    // treat this as a starting point, not a tuned final value.
+    const bearingTargetIdx = this.isOutAndBack
+      ? this.apexIdx
+      : this.cum.findIndex((d) => d >= this.total / 2);
+    this.fixedBearing = bearingBetween(this.cameraPoints[0], this.cameraPoints[bearingTargetIdx]);
     // Explicit `durationMs` overrides the length-derived default — HikeMapCard.jsx's
     // ambient preview intentionally uses a fixed duration regardless of hike length.
     this.durationMs = durationMs ?? flyoverDurationMs(this.total);
@@ -419,13 +454,15 @@ export class TerrainFlyover {
     // Static route line — built once, never touched per frame (same "draw once"
     // pattern as the base line in the 2D flyover / HikeMap.jsx).
     //
-    // Only the outbound leg (start → apex) is drawn, per explicit, repeated
-    // product direction — a literal slice of this.cameraPoints, the exact
-    // same array the marker/camera animate along for the entire flight
-    // (including the return leg, which it continues along past this slice).
-    // This is what actually guarantees the line and the marker agree over
-    // the portion covered: not two curves independently built to look
-    // similar, one array sliced in place.
+    // Out-and-back: only the outbound leg (start → apex) is drawn, per
+    // explicit, repeated product direction. Loop: apexIdx is the whole
+    // array, so this slice is the entire route. Either way it's a literal
+    // slice of this.cameraPoints, the exact same array the marker/camera
+    // animate along for the entire flight (for an out-and-back, including
+    // the return leg, which continues along past this slice). This is what
+    // actually guarantees the line and the marker agree over the portion
+    // covered: not two curves independently built to look similar, one
+    // array sliced in place.
     //
     // clampToGround: true, using only lon/lat (no GPX `ele`) — a raw GPS
     // elevation stream is much noisier than its lat/lon, which is invisible in
@@ -492,6 +529,10 @@ export class TerrainFlyover {
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     });
     if (topDownPreview) {
+      // Out-and-back: the real turnaround/summit. Loop: the last point of
+      // the full route, which for a true loop sits right on top of the
+      // start pin — correct, not a bug (a loop's start and end really are
+      // the same spot).
       const endPoint = this.cameraPoints[this.apexIdx];
       this.viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
