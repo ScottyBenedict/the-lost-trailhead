@@ -3,22 +3,31 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
-## ✅ STATUS (2026-09-13): Shipped, live in production — this doc is historical
+## ✅ STATUS (updated 2026-09-17): Shipped, but scope-gated to two test hikes — this doc is historical
 
 The MapLibre blocking finding below turned out to be the right call to revisit
 Cesium on (exactly as this doc predicted). **Cesium is what actually shipped.**
 Self-hosted (no Cesium ion — Terrarium DEM via a custom Worker + `MartiniTerrainProvider`,
-Esri World_Imagery satellite basemap), live behind `USE_TERRAIN_3D = true` (no
-longer a dev-only toggle in practice — both `HikeMap.jsx` and `HikeMapCard.jsx`
-run it) since commit `89aab98` (2026-09-12), with several follow-up commits since
-(`e4b25a9`, `2606253`) fixing camera framing, marker occlusion, admin GPX upload
-flow, and an invisible-button CSS bug. **The code is `src/lib/terrainFlyover.js`,
-`terrainFlyoverProvider.js`, `terrainFlyoverWorker.js`, `terrainFlyoverOverrides.css`
-— read that file's own inline comments for current camera/smoothing tuning
-rationale, which is now the authoritative source, not this doc.** Everything below
-this point (MapLibre findings, Phase 2+ planning against MapLibre, the deferred
-Three.js spike) is kept as historical record of *why* Cesium was chosen, not a
-live plan — none of it describes the shipped implementation.
+Esri World_Imagery satellite basemap) since commit `89aab98` (2026-09-12), with
+several follow-up commits since (`e4b25a9`, `2606253`) fixing camera framing,
+marker occlusion, admin GPX upload flow, and an invisible-button CSS bug.
+
+**Correction (2026-09-17):** an earlier version of this status line said
+`USE_TERRAIN_3D = true` was live sitewide. That was inaccurate even at the time —
+it was never authorized beyond Rattlesnake Ledge until bugs were squashed. PR #4
+fixed the code to match: `USE_TERRAIN_3D` is now computed per-hike from
+`src/lib/terrain3dTestHikes.js` (`TERRAIN_3D_TEST_HIKE_IDS`), currently
+`rattlesnake-ledge` and `maple-pass-loop` only. Every other hike still uses the
+original 2D `gpxFlyover.js`. Add a hike to that allowlist only after its camera
+behavior has actually been checked against it.
+
+**The code is `src/lib/terrainFlyover.js`, `terrainFlyoverProvider.js`,
+`terrainFlyoverWorker.js`, `terrainFlyoverOverrides.css` — read that file's own
+inline comments for current camera/smoothing tuning rationale, which is now the
+authoritative source, not this doc.** Everything below this point (MapLibre
+findings, Phase 2+ planning against MapLibre, the deferred Three.js spike) is
+kept as historical record of *why* Cesium was chosen, not a live plan — none of
+it describes the shipped implementation.
 
 Key differences from what this doc originally scoped:
 - Out-and-back path collapsing shipped as **apex-based line/camera-path slicing**
@@ -27,11 +36,21 @@ Key differences from what this doc originally scoped:
   Only the outbound leg is drawn; the descent literally retraces the same
   Catmull-Rom-smoothed array in reverse (not independently built from the
   return leg's own recording) — guarantees they can't visually diverge.
+- **Genuine loops/lollipops are now detected** (PR #5, 2026-09-17), not forced
+  through the out-and-back apex-split-and-mirror treatment. `findApexIndex`'s
+  best-match score doubles as the detector: a real retrace scores low, a route
+  that never truly retraces scores high regardless of split point. Maple Pass
+  Loop was published specifically as the real-loop test case for this.
 - Camera does **not** auto-tilt into turns or use a per-leg bearing — converged
   on a single fixed bearing for the entire flight after multiple rounds of "camera
   spins/pans too much" feedback. See `terrainFlyover.js`'s own comments for the
   full reasoning chain.
 - No server-side precomputation / Edge Function — runs entirely client-side.
+- **Camera smoothness through switchbacks is still open**, unrelated to the
+  MapLibre-vs-Cesium question this doc covers. See
+  `docs/handoff-imac-2026-09-17.md` for full history — current live baseline is
+  temporal smoothing only (`TARGET_SMOOTHING = 0.03`), safe but not yet the
+  fully decoupled camera track Scott actually asked for.
 
 ## ⚠️ Blocking finding (2026-09-11) — read before continuing this roadmap
 
