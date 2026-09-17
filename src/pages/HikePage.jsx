@@ -209,7 +209,7 @@ export default function HikePage() {
         {galleryItems.map((item, i) => {
           if (item.type === 'map') {
             return (
-              <HikeMapCard key={`map-${i}`} gpxUrl={gpxUrl} onOpen={() => setLightboxIndex(0)} />
+              <HikeMapCard key={`map-${i}`} gpxUrl={gpxUrl} hikeId={hike.id} onOpen={() => setLightboxIndex(0)} />
             )
           }
           if (item.type === 'report') {
@@ -263,7 +263,7 @@ export default function HikePage() {
               </svg>
             </button>
             {lightboxItems[lightboxIndex].type === 'map' ? (
-              <HikeMap gpxUrl={gpxUrl} hikeName={hike.name} hikeDistance={hike.distance} hikeGain={hike.gain} />
+              <HikeMap gpxUrl={gpxUrl} hikeName={hike.name} hikeDistance={hike.distance} hikeGain={hike.gain} hikeId={hike.id} />
             ) : (
               <img
                 src={lightboxItems[lightboxIndex].src}

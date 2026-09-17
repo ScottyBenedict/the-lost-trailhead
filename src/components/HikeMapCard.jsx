@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { parseGPX, buildCumulative, positionAt, growTravelLine, decimate } from '../lib/gpxFlyover';
+import { TERRAIN_3D_TEST_HIKE_IDS } from '../lib/terrain3dTestHikes';
 
 const PLAY_MS = 15210; // 9s base, slowed 30% then another 30% per feedback
 
-// Dev-only toggle — see the matching one in HikeMap.jsx and docs/roadmap-3d-flyover.md.
-const USE_TERRAIN_3D = true;
+export default function HikeMapCard({ gpxUrl, onOpen, hikeId }) {
+  // Only hikes explicitly under test get the 3D Cesium flyover (see
+  // terrain3dTestHikes.js) — everything else uses the shipped 2D flyover.
+  const USE_TERRAIN_3D = TERRAIN_3D_TEST_HIKE_IDS.has(hikeId);
 
-export default function HikeMapCard({ gpxUrl, onOpen }) {
   const rootRef = useRef(null);
   const mapDivRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -169,7 +171,7 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
         mapInstanceRef.current = null;
       }
     };
-  }, [gpxUrl]);
+  }, [gpxUrl, USE_TERRAIN_3D]);
 
   return (
     <div ref={rootRef} className="gallery-item map-card" onClick={onOpen}>
