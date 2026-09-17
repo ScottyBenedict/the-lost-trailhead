@@ -23,32 +23,18 @@ import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
 // margin on both sides of that gap.
 const OUT_AND_BACK_MATCH_THRESHOLD_M = 40;
 
-// How much each frame's camera aim target moves toward the (coarse-track)
-// position — see applyFrame's comment. First cut: lower = smoother/more
-// lag, higher = snappier.
-const TARGET_SMOOTHING = 0.035;
-
-// Waypoint count for the camera's own simplified track — see the
-// constructor's comment. Far fewer than the marker/line's 320. 28 (first
-// attempt) and even 90 (second) both still let a real, small-radius
-// switchback on Maple Pass Loop diverge from the coarse track by more than
-// the camera's fixed 750m offset/84° FOV could keep in frame — confirmed
-// directly against playback both times, marker fully off-screen. No fixed
-// waypoint count actually solves that: a tight enough real switchback will
-// always cut across a fixed simplified curve by some amount. MAX_TRACK_
-// DIVERGENCE_M below is what actually guarantees the subject stays in
-// frame; back down to 35 here for real smoothing on the rest of the route,
-// now that the clamp — not this number — is what's load-bearing at the
-// tight spots.
-const CAMERA_TRACK_WAYPOINTS = 35;
-
-// Hard cap, in meters, on how far the camera's aim target may diverge from
-// the hiker's actual real-time position — see applyFrame. Keeps the subject
-// in frame regardless of how tight a real switchback is, however aggressive
-// CAMERA_TRACK_WAYPOINTS is. Chosen with real margin under the ~750m·tan(42°)
-// ≈ 675m half-width the camera's range/FOV can theoretically hold, since the
-// pitched-down viewing angle also constrains the vertical extent.
-const MAX_TRACK_DIVERGENCE_M = 200;
+// How much each frame's camera aim target moves toward the hiker's real
+// position — see applyFrame's comment. Lower = smoother/more lag, higher =
+// snappier. Feedback on 0.05: "close, maybe needs a touch more smoothing."
+// A separate, more heavily simplified camera track (decoupled entirely from
+// the marker's exact path) was also tried — reverted: it could let the
+// marker leave the visible frame entirely on steep terrain, since a modest
+// lateral divergence there translates into a much larger effective
+// vertical/depth displacement than flat ground, and a straightforward
+// distance clamp on the divergence didn't fully close that out either.
+// Simple time-based lag on the exact real position doesn't have that
+// failure mode — this just leans further into it.
+const TARGET_SMOOTHING = 0.03;
 
 // For a simple out-and-back hike, the return leg retraces the outbound leg —
 // drawing both draws two overlapping lines that look muddy, worst exactly
@@ -260,13 +246,6 @@ export class TerrainFlyover {
       const outboundFlowing = buildFlowingPath(outboundRawPoints, { waypointCount: 320, samplesPerSegment: 12 });
       this.cameraPoints = [...outboundFlowing, ...outboundFlowing.slice(0, -1).reverse()];
       this.apexIdx = outboundFlowing.length - 1;
-
-      // Separate, much coarser fit of the exact same source points — see the
-      // full explanation below. Mirrored the same way as cameraPoints, for
-      // the same reason: the descent's camera track should retrace the
-      // ascent's, not be independently (and inconsistently) refit.
-      const outboundCoarse = buildFlowingPath(outboundRawPoints, { waypointCount: CAMERA_TRACK_WAYPOINTS, samplesPerSegment: 12 });
-      this.cameraTrackPoints = [...outboundCoarse, ...outboundCoarse.slice(0, -1).reverse()];
     } else {
       // A loop never truly retraces itself, so there's nothing to collapse
       // or mirror — per docs/roadmap-3d-flyover.md Decision 5, the full
@@ -276,32 +255,9 @@ export class TerrainFlyover {
       // whole array — no separate branch needed past this point.
       this.cameraPoints = buildFlowingPath(points, { waypointCount: 320, samplesPerSegment: 12 });
       this.apexIdx = this.cameraPoints.length - 1;
-
-      this.cameraTrackPoints = buildFlowingPath(points, { waypointCount: CAMERA_TRACK_WAYPOINTS, samplesPerSegment: 12 });
     }
     this.cum = buildCumulative(this.cameraPoints);
     this.total = this.cum[this.cum.length - 1];
-
-    // Feedback on the temporal-smoothing attempt: close, but still chasing
-    // a lagged copy of the exact same twisty line the marker walks, so it
-    // still reads as reacting to every real switchback, just a beat late.
-    // What was actually wanted: a separate, simplified camera track that
-    // follows the hike's broad shape — not constrained by individual
-    // switchbacks or small up/down wiggles — with the detailed marker/line
-    // path free to carry all the real trail detail on its own. Reusing
-    // buildFlowingPath at a far coarser waypoint count (28 vs. the 320 the
-    // marker uses) does exactly that: at ~28 waypoints over a several-mile
-    // hike, individual switchbacks (each far shorter than the resulting
-    // waypoint spacing) get absorbed into a single smooth curve segment
-    // instead of each one being its own kink in the fitted spline. Indexed
-    // by the same frac as the marker (below), so camera and marker stay
-    // paced together for the whole flight despite moving on two different
-    // curves. CAMERA_TRACK_WAYPOINTS is a first cut — fewer = broader/
-    // smoother track (following even less of the real shape), more = closer
-    // to the marker's own detailed path.
-    this.trackCum = buildCumulative(this.cameraTrackPoints);
-    this.trackTotal = this.trackCum[this.trackCum.length - 1];
-    this.trackHint = { i: 1 };
 
     // ONE fixed camera bearing for the entire flight, computed once, here —
     // not per-leg, and not recomputed from wherever the hiker currently is.
@@ -680,42 +636,19 @@ export class TerrainFlyover {
     // this reads as skippy even though each individual frame is technically
     // correct.
     //
-    // First attempt: exponentially smooth the aim target toward the hiker's
-    // *exact* real position, frame over frame. Close, but still chasing a
-    // lagged copy of the same twisty line the marker walks — still reacts
-    // to every real switchback, just a beat late. What was actually wanted:
-    // decouple the camera's path from the marker's entirely. this.cameraTrackPoints
-    // (built in the constructor) is a separately-fit, far coarser version of
-    // this same route — individual switchbacks get absorbed into one smooth
-    // curve segment instead of each being its own kink. Sampled at the same
-    // frac as the marker, so the two stay paced together.
-    const trackPos = positionAt(this.cameraTrackPoints, this.trackCum, this.trackTotal, frac, this.trackHint);
-
-    // Second attempt: use trackPos unconditionally. Also wrong — on a tight
-    // enough real switchback, the coarse curve cuts across by more than the
-    // camera can still hold the marker in frame for, no matter the waypoint
-    // count (confirmed directly at both 28 and 90). Clamp how far the aim
-    // target is allowed to diverge from the hiker's real position: within
-    // MAX_TRACK_DIVERGENCE_M, use the coarse track as-is (full smoothing
-    // benefit); beyond it, blend back toward the real position just enough
-    // to stay under the cap. Gentle curves (most of any real hike) never
-    // touch this; only the rare tight switchback does, and only there.
-    const divergenceM = haversineM(pos, trackPos);
-    const aimSource = divergenceM > MAX_TRACK_DIVERGENCE_M
-      ? {
-          lat: pos.lat + (trackPos.lat - pos.lat) * (MAX_TRACK_DIVERGENCE_M / divergenceM),
-          lon: pos.lon + (trackPos.lon - pos.lon) * (MAX_TRACK_DIVERGENCE_M / divergenceM),
-        }
-      : trackPos;
-
-    // Light exponential smoothing pass on top (lighter now — the input is
-    // already much smoother than the raw path was) removes the last bit of
-    // segment-to-segment faceting from the coarse curve itself.
+    // Fix: exponentially smooth the *aim target* toward the hiker's real
+    // position over time, instead of snapping to it — same technique
+    // groundHeightAt below already uses for height, now applied to lat/lon
+    // too. The marker itself is unaffected (still pinned to the real
+    // position above); only what the camera chases gets damped, so sharp
+    // path curvature arrives at the camera as a smooth glide instead of an
+    // instant re-aim. TARGET_SMOOTHING is a first cut — lower = smoother/
+    // more lag behind the marker, higher = snappier/closer to the raw path.
     if (this.smoothedTarget == null) {
-      this.smoothedTarget = { lat: aimSource.lat, lon: aimSource.lon };
+      this.smoothedTarget = { lat: pos.lat, lon: pos.lon };
     } else {
-      this.smoothedTarget.lat += (aimSource.lat - this.smoothedTarget.lat) * TARGET_SMOOTHING;
-      this.smoothedTarget.lon += (aimSource.lon - this.smoothedTarget.lon) * TARGET_SMOOTHING;
+      this.smoothedTarget.lat += (pos.lat - this.smoothedTarget.lat) * TARGET_SMOOTHING;
+      this.smoothedTarget.lon += (pos.lon - this.smoothedTarget.lon) * TARGET_SMOOTHING;
     }
 
     // Camera target height: this file's own smoothed groundHeightAt (needs a
@@ -802,7 +735,6 @@ export class TerrainFlyover {
   restart() {
     this.pause();
     this.posHint.i = 1;
-    this.trackHint.i = 1;
     this.smoothedGroundHeight = null; // jumping to a new track position shouldn't glide from the old one's height
     this.smoothedTarget = null; // same reasoning — snap the camera aim, don't glide it in from the previous run's end point
     this.applyFrame(0);
@@ -812,7 +744,6 @@ export class TerrainFlyover {
   scrubTo(frac) {
     this.pause();
     this.posHint.i = 1; // scrubbing can jump backward; reset rather than risk a stale search start
-    this.trackHint.i = 1;
     this.smoothedGroundHeight = null;
     this.smoothedTarget = null;
     this.applyFrame(Math.min(1, Math.max(0, frac)));
