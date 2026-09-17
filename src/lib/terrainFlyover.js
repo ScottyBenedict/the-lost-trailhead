@@ -29,8 +29,14 @@ const OUT_AND_BACK_MATCH_THRESHOLD_M = 40;
 const TARGET_SMOOTHING = 0.035;
 
 // Waypoint count for the camera's own simplified track — see the
-// constructor's comment. Far fewer than the marker/line's 320.
-const CAMERA_TRACK_WAYPOINTS = 28;
+// constructor's comment. Far fewer than the marker/line's 320, but not too
+// few: at 28 (first attempt), a tight real switchback on Maple Pass Loop
+// diverged from the coarse track by more than the camera's fixed 750m
+// offset/84° FOV could still keep in frame — the marker left the visible
+// frame entirely at that switchback, confirmed directly against real
+// playback. 90 keeps meaningfully smoother than the marker's own 320 while
+// staying close enough to the real trail that the subject stays on screen.
+const CAMERA_TRACK_WAYPOINTS = 90;
 
 // For a simple out-and-back hike, the return leg retraces the outbound leg —
 // drawing both draws two overlapping lines that look muddy, worst exactly
