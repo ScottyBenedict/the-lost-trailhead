@@ -534,28 +534,41 @@ export class TerrainFlyover {
     // These are informational map pins, not physical objects, so always
     // rendering on top regardless of depth is the correct fix, not just a
     // workaround: Infinity here means "never depth-test against the scene."
-    const pinPoint = (color) => ({
+    const GREEN = Cesium.Color.fromCssColorString('#4CAF50');
+    const RED = Cesium.Color.fromCssColorString('#C0392B');
+    const pinPoint = (color, outlineColor = Cesium.Color.WHITE) => ({
       pixelSize: 11,
       color,
-      outlineColor: Cesium.Color.WHITE,
+      outlineColor,
       outlineWidth: 2,
       heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     });
     if (topDownPreview) {
-      // Out-and-back: the real turnaround/summit. Loop: the last point of
-      // the full route, which for a true loop sits right on top of the
-      // start pin — correct, not a bug (a loop's start and end really are
-      // the same spot).
-      const endPoint = this.cameraPoints[this.apexIdx];
-      this.viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
-        point: pinPoint(Cesium.Color.fromCssColorString('#4CAF50')),
-      });
-      this.viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(endPoint.lon, endPoint.lat, 3),
-        point: pinPoint(Cesium.Color.fromCssColorString('#C0392B')),
-      });
+      if (this.isOutAndBack) {
+        // Start and the real turnaround/summit are genuinely different
+        // places — two full pins, one at each.
+        const endPoint = this.cameraPoints[this.apexIdx];
+        this.viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
+          point: pinPoint(GREEN),
+        });
+        this.viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(endPoint.lon, endPoint.lat, 3),
+          point: pinPoint(RED),
+        });
+      } else {
+        // A loop starts and finishes at the same physical spot (measured on
+        // Maple Pass Loop's real GPX: ~1m apart) — two full pins there just
+        // render on top of each other, which read as "the other one is
+        // missing," not as "this is a loop." One pin instead, green fill
+        // (start) with a red outline (also the finish) — delineates both
+        // without implying two different locations that don't exist.
+        this.viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
+          point: pinPoint(GREEN, RED),
+        });
+      }
     } else {
       this.marker = this.viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
