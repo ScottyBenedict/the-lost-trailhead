@@ -23,9 +23,10 @@ import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
 // margin on both sides of that gap.
 const OUT_AND_BACK_MATCH_THRESHOLD_M = 40;
 
-// How far ahead of the hiker's real position the camera aims — see
-// applyFrame's comment. First cut, not yet tuned against real playback.
-const LOOKAHEAD_M = 150;
+// How much each frame's camera aim target moves toward the hiker's real
+// position — see applyFrame's comment. First cut, not yet tuned against
+// real playback: lower = smoother/more lag, higher = snappier.
+const TARGET_SMOOTHING = 0.05;
 
 // For a simple out-and-back hike, the return leg retraces the outbound leg —
 // drawing both draws two overlapping lines that look muddy, worst exactly
@@ -289,7 +290,7 @@ export class TerrainFlyover {
     this.sessionStart = null;
     this.destroyed = false;
     this.posHint = { i: 1 };
-    this.aheadHint = { i: 1 }; // separate scan state for the look-ahead aim point — positionAt's hint assumes one monotonically-advancing frac sequence per hint, and this file now calls it twice a frame at two different fracs
+    this.smoothedTarget = null; // camera aim target — see applyFrame
 
     // Switched from OpenTopoMap (still used by the 2D flyover) to satellite
     // imagery — OpenTopoMap draws its own cartographic hiking-trail line
@@ -612,27 +613,41 @@ export class TerrainFlyover {
     // Marker sits at the hiker's real, current position — always.
     this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, 3);
 
-    // camera.lookAt always puts its target dead-center in frame. Aiming it
-    // at the hiker's exact live position (as this used to) pins the marker
-    // to that one exact pixel for the whole flight — every real curve in the
-    // trail then reads as the world pivoting around a fixed point, which is
-    // exactly the "dead-center lock feels janky" complaint this project's
-    // own history already flagged twice (docs/roadmap-3d-flyover.md) without
-    // ever actually changing the aim target to fix it. Aiming a short real
-    // distance further down the already-smoothed path instead — the same
-    // "look ahead through the curve" a driver's eyes do on a winding road —
-    // puts the marker off-center (lower/behind frame) and gives the camera
-    // something closer to anticipatory motion than reactive pivoting.
-    // LOOKAHEAD_M is a first cut, not a tuned final value — watch it play
-    // before treating this number as settled.
-    const aheadFrac = Math.min((frac * this.total + LOOKAHEAD_M) / this.total, 1);
-    const aimAt = positionAt(this.cameraPoints, this.cum, this.total, aheadFrac, this.aheadHint);
+    // Tried aiming a fixed real distance ahead on the path instead of at the
+    // exact current position (a "look through the curve" attempt at fixing
+    // dead-center-lock jank) — made it worse: a raw, still-unsmoothed point
+    // further down the path swings through switchbacks just as hard as the
+    // current position does, sometimes harder, so nothing was actually
+    // smoothed, only relocated. Reverted.
+    //
+    // The real problem: camera.lookAt recomputes the camera's entire
+    // position from scratch every frame from wherever the target currently
+    // is — with zero memory of previous frames, so the camera reproduces the
+    // trail's own curvature exactly, switchbacks included, however sharp
+    // they are. Feedback ("skippy on direction/elevation changes") confirms
+    // this reads as skippy even though each individual frame is technically
+    // correct.
+    //
+    // Fix: exponentially smooth the *aim target* toward the hiker's real
+    // position over time, instead of snapping to it — same technique
+    // groundHeightAt below already uses for height, now applied to lat/lon
+    // too. The marker itself is unaffected (still pinned to the real
+    // position above); only what the camera chases gets damped, so sharp
+    // path curvature arrives at the camera as a smooth glide instead of an
+    // instant re-aim. TARGET_SMOOTHING is a first cut — lower = smoother/
+    // more lag behind the marker, higher = snappier/closer to the raw path.
+    if (this.smoothedTarget == null) {
+      this.smoothedTarget = { lat: pos.lat, lon: pos.lon };
+    } else {
+      this.smoothedTarget.lat += (pos.lat - this.smoothedTarget.lat) * TARGET_SMOOTHING;
+      this.smoothedTarget.lon += (pos.lon - this.smoothedTarget.lon) * TARGET_SMOOTHING;
+    }
 
     // Camera target height: this file's own smoothed groundHeightAt (needs a
     // concrete absolute height — lookAt isn't an Entity, it has no
-    // heightReference to lean on).
-    const groundHeight = this.groundHeightAt(aimAt.lat, aimAt.lon, aimAt.ele);
-    const targetPos = Cesium.Cartesian3.fromDegrees(aimAt.lon, aimAt.lat, groundHeight + 3);
+    // heightReference to lean on), sampled at the already-smoothed lat/lon.
+    const groundHeight = this.groundHeightAt(this.smoothedTarget.lat, this.smoothedTarget.lon, pos.ele);
+    const targetPos = Cesium.Cartesian3.fromDegrees(this.smoothedTarget.lon, this.smoothedTarget.lat, groundHeight + 3);
 
     // camera.lookAt(target, HeadingPitchRange) positions the camera at the
     // given heading/pitch/range *from* target and points it at target — the
@@ -713,6 +728,7 @@ export class TerrainFlyover {
     this.pause();
     this.posHint.i = 1;
     this.smoothedGroundHeight = null; // jumping to a new track position shouldn't glide from the old one's height
+    this.smoothedTarget = null; // same reasoning — snap the camera aim, don't glide it in from the previous run's end point
     this.applyFrame(0);
     this.play();
   }
@@ -721,6 +737,7 @@ export class TerrainFlyover {
     this.pause();
     this.posHint.i = 1; // scrubbing can jump backward; reset rather than risk a stale search start
     this.smoothedGroundHeight = null;
+    this.smoothedTarget = null;
     this.applyFrame(Math.min(1, Math.max(0, frac)));
   }
 
