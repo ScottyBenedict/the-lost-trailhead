@@ -103,7 +103,16 @@ export default function HikePage() {
   const galleryItems = useMemo(() => {
     const n = allPhotos.length
     const photoItems = allPhotos.map((src, photoIdx) => ({ type: 'photo', src, photoIdx }))
-    if (reports.length === 0) return photoItems
+    // This early-return path forgot to unshift the map card (below, in the
+    // normal path) — invisible until a hike with zero trip reports got
+    // published (Maple Pass Loop, first one ever to skip Log Trip before
+    // publish), which made the map card vanish from the grid entirely while
+    // still being reachable via the lightbox carousel (built from a separate,
+    // correct gpxUrl check in lightboxItems below).
+    if (reports.length === 0) {
+      if (gpxUrl) photoItems.unshift({ type: 'map' })
+      return photoItems
+    }
 
     // Insertion position = index in photoItems BEFORE which to insert a report card.
     // pos === n means append after all photos.
