@@ -356,6 +356,21 @@ export const hikes = [
     photos: [],
   },
   {
+    id: 'maple-pass-loop',
+    name: 'Maple Pass Loop',
+    region: 'Okanogan-Wenatchee National Forest · Rainy Pass',
+    distance: '7.2 mi',
+    gain: '2,020 ft',
+    difficulty: 'Strenuous',
+    season: 'Jul – Oct',
+    description:
+      'The Heather–Maple Pass Loop climbs out of Rainy Pass through wildflower meadows before topping out above 6,600 feet, where the North Cascades open up in every direction — Black Peak, Corteo Peak, and Frisco Mountain stacked across the skyline. The trail circles Lake Ann far below and threads a narrow, exposed ridge before dropping back through larch groves that turn gold in early October, drawing crowds that rival any trail in the state. The North Cascades Highway only stays open a few months a year, which keeps the whole loop\'s season compressed into a short, intense window — wildflowers in July and August, or the larches in fall if you don\'t mind company.',
+    cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/maple-pass-loop/4d781942-cee2-4a99-ba03-aeb06eef81d1/1789660058065_10.jpg',
+    coverPosition: 'center 50%',
+    photos: [],
+    galleryStart: 8,
+  },
+  {
     id: 'mt-baldy',
     name: 'Mt. Baldy',
     region: 'Okanogan-Wenatchee National Forest · Snoqualmie Pass',
