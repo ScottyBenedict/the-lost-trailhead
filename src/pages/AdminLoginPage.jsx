@@ -19,10 +19,13 @@ export default function AdminLoginPage() {
   const [resetSent, setResetSent] = useState(false)
 
   useEffect(() => {
-    const hash = window.location.hash
-    if (hash.includes('type=invite') || hash.includes('type=recovery')) {
-      setIsSettingPassword(true)
+    function checkForPasswordSetupLink() {
+      const hash = window.location.hash
+      if (hash.includes('type=invite') || hash.includes('type=recovery')) {
+        setIsSettingPassword(true)
+      }
     }
+    checkForPasswordSetupLink()
   }, [])
 
   useEffect(() => {

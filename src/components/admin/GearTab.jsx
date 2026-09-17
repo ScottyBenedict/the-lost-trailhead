@@ -12,8 +12,12 @@ export default function GearTab({ session }) {
   const [gearError, setGearError] = useState(null)
   const [gearDeleteConfirm, setGearDeleteConfirm] = useState(null)
 
+  // Deliberately run once on mount only: loadGear is a plain (non-memoized)
+  // function recreated every render, so including it here would re-fire this
+  // effect on every render it triggers via setGearItems/setLoadingGear.
   useEffect(() => {
     loadGear()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadGear() {

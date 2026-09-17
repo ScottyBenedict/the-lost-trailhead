@@ -205,6 +205,11 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
     setFlying(false);
   }, [USE_TERRAIN_3D]);
 
+  // stepRef holds the latest `step` so the rAF recursion below can call
+  // forward to it without referencing `step` before its own declaration
+  // finishes (which also means each render's recursion always resumes with
+  // that render's applyFrame/stopFlyover, not a stale closure).
+  const stepRef = useRef(null);
   const step = useCallback((ts) => {
     const d = flyDataRef.current;
     if (!d) return;
@@ -213,11 +218,14 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
     const frac = Math.min(1, elapsed / d.durationMs);
     applyFrame(frac);
     if (frac < 1) {
-      rafRef.current = requestAnimationFrame(step);
+      rafRef.current = requestAnimationFrame(stepRef.current);
     } else {
       stopFlyover();
     }
   }, [applyFrame, stopFlyover]);
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
 
   const playFlyover = useCallback(() => {
     if (USE_TERRAIN_3D) {
@@ -433,7 +441,12 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
             <span style={styles.loadingText}>Unable to load map: {error}</span>
           </div>
         )}
-        <div ref={mapRef} style={{ ...styles.map, opacity: loading || error ? 0 : 1 }} />
+        <div
+          ref={mapRef}
+          role="img"
+          aria-label={hikeName ? `${hikeName} route map` : 'Route map'}
+          style={{ ...styles.map, opacity: loading || error ? 0 : 1 }}
+        />
 
         {stats && !loading && !error && (
           <div style={styles.flyBar}>

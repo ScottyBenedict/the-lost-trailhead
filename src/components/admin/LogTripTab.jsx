@@ -25,8 +25,11 @@ export default function LogTripTab({ session, pendingHikeIds }) {
   const selectedHikeId = hikeId || slugify(customHike)
 
   useEffect(() => {
-    if (!selectedHikeId || isNewHike || !session) {
+    function resetHikeFields() {
       setReportText(''); setHotTake(''); setExistingPhotos([]); setExistingHashes(new Set()); setHasExistingReport(false)
+    }
+    if (!selectedHikeId || isNewHike || !session) {
+      resetHikeFields()
       return
     }
     async function loadHikeData() {

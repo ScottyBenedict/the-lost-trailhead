@@ -6,6 +6,23 @@ import TLTLogo from '../components/TLTLogo'
 import HikeMap from '../components/HikeMap'
 import HikeMapCard from '../components/HikeMapCard'
 
+// Deterministic seeded PRNG (mulberry32) so report-card placement below is a
+// pure function of (hike id, report count) instead of calling Math.random()
+// during render — React's rules require render (including useMemo bodies) to
+// be pure. Same seed always produces the same placement, which as a side
+// effect also means a hike's report card lands in the same spot across
+// reloads instead of reshuffling.
+function seededRandom(seed) {
+  let s = 0
+  for (let i = 0; i < seed.length; i++) s = (Math.imul(s, 31) + seed.charCodeAt(i)) | 0
+  return function next() {
+    s = (s + 0x6d2b79f5) | 0
+    let t = Math.imul(s ^ (s >>> 15), 1 | s)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 export default function HikePage() {
   const { slug } = useParams()
   const hike = hikes.find((h) => h.id === slug)
@@ -74,22 +91,16 @@ export default function HikePage() {
       }
     }
     fetchContent()
-  }, [hike])
-
-  if (!hike) {
-    return (
-      <div className="not-found">
-        <p>Hike not found.</p>
-        <Link to="/">← Back to all hikes</Link>
-      </div>
-    )
-  }
+  }, [hike, supabaseId])
 
   // Memoized so this array keeps a stable reference across unrelated re-renders (e.g.
   // opening/closing the lightbox). Without that, galleryItems below — which depends on
-  // this by reference and picks the report card's position with Math.random() — recomputed
-  // on every render and reshuffled the report card to a new spot each time.
+  // this by reference and picks the report card's position with a seeded pseudo-random
+  // draw — recomputed on every render and reshuffled the report card to a new spot each time.
+  // Guards internally (rather than bailing out above the hook) because every hook in this
+  // component must run on every render, including when `hike` is not found.
   const allPhotos = useMemo(() => {
+    if (!hike) return []
     const hidden = new Set(hike.hiddenPhotos || [])
     const start = hike.galleryStart ?? 0
     const filtered = uploadedPhotos.filter(url => !hidden.has(url))
@@ -101,6 +112,8 @@ export default function HikePage() {
   }, [hike, uploadedPhotos])
 
   const galleryItems = useMemo(() => {
+    if (!hike) return []
+    const rand = seededRandom(hike.id)
     const n = allPhotos.length
     const photoItems = allPhotos.map((src, photoIdx) => ({ type: 'photo', src, photoIdx }))
     // This early-return path forgot to unshift the map card (below, in the
@@ -118,20 +131,20 @@ export default function HikePage() {
     // pos === n means append after all photos.
     let insertions
     if (reports.length === 1) {
-      const pos = n > 1 ? Math.floor(Math.random() * (n - 1)) + 1 : n
+      const pos = n > 1 ? Math.floor(rand() * (n - 1)) + 1 : n
       insertions = [{ pos, ri: 0 }]
     } else {
       const MIN_GAP = 3
       let pos1, pos2
       if (n > MIN_GAP + 1) {
-        pos1 = Math.floor(Math.random() * (n - MIN_GAP)) + 1
+        pos1 = Math.floor(rand() * (n - MIN_GAP)) + 1
         const lo = pos1 + MIN_GAP
-        pos2 = lo + Math.floor(Math.random() * (n - lo + 1))
+        pos2 = lo + Math.floor(rand() * (n - lo + 1))
       } else {
         pos1 = Math.max(1, Math.floor(n / 3))
         pos2 = Math.min(n, pos1 + Math.max(1, n - pos1))
       }
-      const [r0, r1] = Math.random() < 0.5 ? [0, 1] : [1, 0]
+      const [r0, r1] = rand() < 0.5 ? [0, 1] : [1, 0]
       insertions = [{ pos: pos1, ri: r0 }, { pos: pos2, ri: r1 }].sort((a, b) => a.pos - b.pos)
     }
 
@@ -148,7 +161,7 @@ export default function HikePage() {
     }
     if (gpxUrl) result.unshift({ type: 'map' })
     return result
-  }, [allPhotos, reports, gpxUrl])
+  }, [hike, allPhotos, reports, gpxUrl])
 
   // Lightbox carousel: map slide (if present) is index 0, followed by all photos —
   // lets the flyover be reached both by clicking its grid card and by arrowing
@@ -170,6 +183,15 @@ export default function HikePage() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
+
+  if (!hike) {
+    return (
+      <div className="not-found">
+        <p>Hike not found.</p>
+        <Link to="/">← Back to all hikes</Link>
+      </div>
+    )
+  }
 
   return (
     <div className="hike-page">

@@ -28,13 +28,15 @@ export default function MapsTab({ session, pendingHikeIds = [] }) {
   const [dateError, setDateError] = useState(null)
 
   useEffect(() => {
-    if (!selectedGpxHikeId || !session) { setGpxExistingUrl(null); return }
+    function clearGpxUrl() { setGpxExistingUrl(null) }
+    if (!selectedGpxHikeId || !session) { clearGpxUrl(); return }
     supabase.from('hike_gpx').select('gpx_url').eq('hike_id', selectedGpxHikeId).maybeSingle()
       .then(({ data }) => setGpxExistingUrl(data?.gpx_url || null))
   }, [selectedGpxHikeId, session])
 
   useEffect(() => {
-    if (!dateHikeId || !session) { setExistingDates([]); return }
+    function clearDates() { setExistingDates([]) }
+    if (!dateHikeId || !session) { clearDates(); return }
     supabase.from('hike_dates').select('id, hike_date, notes').eq('hike_id', dateHikeId).order('hike_date', { ascending: false })
       .then(({ data }) => setExistingDates(data || []))
   }, [dateHikeId, session])

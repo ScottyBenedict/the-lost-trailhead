@@ -22,9 +22,9 @@ export default function HikeMapCard({ gpxUrl, onOpen, hikeId }) {
   useEffect(() => {
     if (!gpxUrl) return;
     let cancelled = false;
-    setFinished(false);
 
     async function init() {
+      setFinished(false);
       try {
         const res = await fetch(gpxUrl);
         if (!res.ok) return;
@@ -145,7 +145,7 @@ export default function HikeMapCard({ gpxUrl, onOpen, hikeId }) {
         playRef.current = play;
         play();
 
-      } catch (_) { /* silent */ }
+      } catch { /* silent */ }
     }
 
     init();
