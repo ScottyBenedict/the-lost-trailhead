@@ -29,14 +29,26 @@ const OUT_AND_BACK_MATCH_THRESHOLD_M = 40;
 const TARGET_SMOOTHING = 0.035;
 
 // Waypoint count for the camera's own simplified track — see the
-// constructor's comment. Far fewer than the marker/line's 320, but not too
-// few: at 28 (first attempt), a tight real switchback on Maple Pass Loop
-// diverged from the coarse track by more than the camera's fixed 750m
-// offset/84° FOV could still keep in frame — the marker left the visible
-// frame entirely at that switchback, confirmed directly against real
-// playback. 90 keeps meaningfully smoother than the marker's own 320 while
-// staying close enough to the real trail that the subject stays on screen.
-const CAMERA_TRACK_WAYPOINTS = 90;
+// constructor's comment. Far fewer than the marker/line's 320. 28 (first
+// attempt) and even 90 (second) both still let a real, small-radius
+// switchback on Maple Pass Loop diverge from the coarse track by more than
+// the camera's fixed 750m offset/84° FOV could keep in frame — confirmed
+// directly against playback both times, marker fully off-screen. No fixed
+// waypoint count actually solves that: a tight enough real switchback will
+// always cut across a fixed simplified curve by some amount. MAX_TRACK_
+// DIVERGENCE_M below is what actually guarantees the subject stays in
+// frame; back down to 35 here for real smoothing on the rest of the route,
+// now that the clamp — not this number — is what's load-bearing at the
+// tight spots.
+const CAMERA_TRACK_WAYPOINTS = 35;
+
+// Hard cap, in meters, on how far the camera's aim target may diverge from
+// the hiker's actual real-time position — see applyFrame. Keeps the subject
+// in frame regardless of how tight a real switchback is, however aggressive
+// CAMERA_TRACK_WAYPOINTS is. Chosen with real margin under the ~750m·tan(42°)
+// ≈ 675m half-width the camera's range/FOV can theoretically hold, since the
+// pitched-down viewing angle also constrains the vertical extent.
+const MAX_TRACK_DIVERGENCE_M = 200;
 
 // For a simple out-and-back hike, the return leg retraces the outbound leg —
 // drawing both draws two overlapping lines that look muddy, worst exactly
@@ -676,16 +688,34 @@ export class TerrainFlyover {
     // (built in the constructor) is a separately-fit, far coarser version of
     // this same route — individual switchbacks get absorbed into one smooth
     // curve segment instead of each being its own kink. Sampled at the same
-    // frac as the marker, so the two stay paced together. A light
-    // exponential smoothing pass on top (lighter now — the input is already
-    // much smoother than the raw path was) removes the last bit of
-    // segment-to-segment faceting from the coarse curve itself.
+    // frac as the marker, so the two stay paced together.
     const trackPos = positionAt(this.cameraTrackPoints, this.trackCum, this.trackTotal, frac, this.trackHint);
+
+    // Second attempt: use trackPos unconditionally. Also wrong — on a tight
+    // enough real switchback, the coarse curve cuts across by more than the
+    // camera can still hold the marker in frame for, no matter the waypoint
+    // count (confirmed directly at both 28 and 90). Clamp how far the aim
+    // target is allowed to diverge from the hiker's real position: within
+    // MAX_TRACK_DIVERGENCE_M, use the coarse track as-is (full smoothing
+    // benefit); beyond it, blend back toward the real position just enough
+    // to stay under the cap. Gentle curves (most of any real hike) never
+    // touch this; only the rare tight switchback does, and only there.
+    const divergenceM = haversineM(pos, trackPos);
+    const aimSource = divergenceM > MAX_TRACK_DIVERGENCE_M
+      ? {
+          lat: pos.lat + (trackPos.lat - pos.lat) * (MAX_TRACK_DIVERGENCE_M / divergenceM),
+          lon: pos.lon + (trackPos.lon - pos.lon) * (MAX_TRACK_DIVERGENCE_M / divergenceM),
+        }
+      : trackPos;
+
+    // Light exponential smoothing pass on top (lighter now — the input is
+    // already much smoother than the raw path was) removes the last bit of
+    // segment-to-segment faceting from the coarse curve itself.
     if (this.smoothedTarget == null) {
-      this.smoothedTarget = { lat: trackPos.lat, lon: trackPos.lon };
+      this.smoothedTarget = { lat: aimSource.lat, lon: aimSource.lon };
     } else {
-      this.smoothedTarget.lat += (trackPos.lat - this.smoothedTarget.lat) * TARGET_SMOOTHING;
-      this.smoothedTarget.lon += (trackPos.lon - this.smoothedTarget.lon) * TARGET_SMOOTHING;
+      this.smoothedTarget.lat += (aimSource.lat - this.smoothedTarget.lat) * TARGET_SMOOTHING;
+      this.smoothedTarget.lon += (aimSource.lon - this.smoothedTarget.lon) * TARGET_SMOOTHING;
     }
 
     // Camera target height: this file's own smoothed groundHeightAt (needs a
