@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate } from '../lib/gpxFlyover';
-
-// Dev-only toggle for comparing the 3D Cesium terrain flyover against the shipped
-// 2D Leaflet one on the same hike — not a shipped user-facing setting. See
-// docs/roadmap-3d-flyover.md for current status/known issues (camera feel not
-// tuned, a tile-fetch-count question not yet resolved) before flipping this on
-// for anything beyond local testing.
-const USE_TERRAIN_3D = true;
+import { TERRAIN_3D_TEST_HIKE_IDS } from '../lib/terrain3dTestHikes';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -124,7 +118,11 @@ function drawIndicator(ctx, scale, frac, eleM) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
+export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hikeId }) {
+  // Only hikes explicitly under test get the 3D Cesium flyover (see
+  // terrain3dTestHikes.js) — everything else uses the shipped 2D flyover.
+  const USE_TERRAIN_3D = TERRAIN_3D_TEST_HIKE_IDS.has(hikeId);
+
   // Curated distance (e.g. "4.0 mi"), converted once to meters so the live
   // progress readout during playback can scale against it — see onProgress
   // below and the matching DISTANCE stat fix further down.
@@ -205,7 +203,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
       rafRef.current = null;
     }
     setFlying(false);
-  }, []);
+  }, [USE_TERRAIN_3D]);
 
   const step = useCallback((ts) => {
     const d = flyDataRef.current;
@@ -234,7 +232,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
     startTimeRef.current = performance.now() - startFrac * d.durationMs;
     setFlying(true);
     rafRef.current = requestAnimationFrame(step);
-  }, [progressPct, step]);
+  }, [progressPct, step, USE_TERRAIN_3D]);
 
   const restartFlyover = useCallback(() => {
     if (USE_TERRAIN_3D) {
@@ -247,7 +245,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
     setProgressPct(0);
     applyFrame(0, { force: true });
     playFlyover();
-  }, [applyFrame, playFlyover]);
+  }, [applyFrame, playFlyover, USE_TERRAIN_3D]);
 
   const scrub = useCallback((pct) => {
     if (USE_TERRAIN_3D) {
@@ -259,7 +257,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
     if (flying) stopFlyover();
     setProgressPct(pct);
     applyFrame(pct / 100, { force: true });
-  }, [flying, stopFlyover, applyFrame]);
+  }, [flying, stopFlyover, applyFrame, USE_TERRAIN_3D]);
 
   useEffect(() => {
     if (!gpxUrl) return;
@@ -418,7 +416,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
         mapInstanceRef.current = null;
       }
     };
-  }, [gpxUrl, updateUiThrottled]);
+  }, [gpxUrl, updateUiThrottled, USE_TERRAIN_3D, hikeDistanceMeters]);
 
   return (
     <section style={styles.section}>
