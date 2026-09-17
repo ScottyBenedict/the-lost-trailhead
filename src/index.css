@@ -804,6 +804,15 @@ a   { color: inherit; text-decoration: none; }
   overflow-x: hidden;
   border-radius: 14px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  /* Hides the scrollbar chrome without removing scroll — content taller
+     than 88vh (elevation profile, stats) is still reachable via
+     wheel/trackpad/touch/keyboard, just without the visible track/thumb. */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+
+.gallery-lightbox-frame-map::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, current Edge */
 }
 
 .gallery-lightbox-controls {
