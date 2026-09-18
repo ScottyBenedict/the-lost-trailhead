@@ -1,6 +1,31 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate } from '../lib/gpxFlyover';
 
+// Trailing "drone following behind" camera (see terrainFlyover.js) — under
+// test on one hike before any wider rollout. Placement from offline
+// simulation against Cascade's real GPX and terrain:
+//  - 50ft back / 100ft up (the original ask) lost the hiker from frame 61%
+//    of the flight; 100m / 200m (same 63° angle) kept them but read as far
+//    too fast and too top-down to show the surrounding terrain.
+//  - Shallow ~30° trailing angles went into the mountain on the descent
+//    (behind the hiker is uphill there) and lost the hiker behind ridges on
+//    up to 38% of frames.
+//  - 900m range at 38° down is the shallowest angle that clears Cascade's
+//    slopes everywhere, never loses the hiker, and slides/jerks the image
+//    less than the default side-on camera does.
+//  - Descending, the camera looks down a slope falling away from it, and the
+//    switchback stack's on-screen height dropped to less than half the
+//    ascent's (0.06 vs 0.13 of the frame) — legs blurring together. Rising
+//    to 60° during the summit orbit recovers most of it (0.11).
+//  - closeRange: the opening shot (and, after the camera comes back around,
+//    the closing one) — the flight pulls back from it to `range` as it starts.
+const TRAILING_CAMERA_TEST = {
+  'cascade-pass-sahale-arm': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  // A loop: no turnaround, so no descent pitch — the camera trails the
+  // direction of travel all the way round.
+  'maple-pass-loop': { range: 900, closeRange: 400, pitchDeg: -38 },
+};
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function computeStats(points) {
@@ -117,7 +142,7 @@ function drawIndicator(ctx, scale, frac, eleM) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
+export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hikeId }) {
   // 2026-09-17: rolled out to every hike after camera behavior (including
   // loop-shaped routes like Maple Pass Loop) was confirmed working —
   // previously gated to a small allowlist (terrain3dTestHikes.js, now
@@ -323,6 +348,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
             // was throwing away real resolution the drawn track needs.
             points,
             durationMs: flyoverDurationMs(total3d),
+            camera: TRAILING_CAMERA_TEST[hikeId] ? { trailing: TRAILING_CAMERA_TEST[hikeId] } : undefined,
             onProgress: ({ frac, ele, distM }) => {
               drawIndicator(flyDataRef.current?.indicatorCtx, flyDataRef.current?.scale, frac, ele);
               // Scaled against the same curated hike distance shown in the stats
@@ -425,7 +451,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
         mapInstanceRef.current = null;
       }
     };
-  }, [gpxUrl, updateUiThrottled, USE_TERRAIN_3D, hikeDistanceMeters]);
+  }, [gpxUrl, updateUiThrottled, USE_TERRAIN_3D, hikeDistanceMeters, hikeId]);
 
   return (
     <section style={styles.section}>

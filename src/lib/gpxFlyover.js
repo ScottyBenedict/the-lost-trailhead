@@ -8,7 +8,13 @@ export function parseGPX(text) {
     const lon = parseFloat(pt.getAttribute('lon'));
     const eleEl = pt.querySelector('ele');
     const ele = eleEl ? parseFloat(eleEl.textContent) : null;
-    if (!isNaN(lat) && !isNaN(lon)) points.push({ lat, lon, ele });
+    // Timestamp and the watch's own (Doppler) speed, when recorded — used by
+    // terrainFlyover.js to tell standing still apart from walking.
+    const timeEl = pt.querySelector('time');
+    const t = timeEl ? Date.parse(timeEl.textContent) : null;
+    const speedEl = pt.querySelector('speed');
+    const speed = speedEl ? parseFloat(speedEl.textContent) : null;
+    if (!isNaN(lat) && !isNaN(lon)) points.push({ lat, lon, ele, t: Number.isNaN(t) ? null : t, speed: Number.isNaN(speed) ? null : speed });
   });
   return points;
 }
