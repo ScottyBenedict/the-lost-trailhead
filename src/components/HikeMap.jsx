@@ -306,13 +306,13 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
           // tag the way the no-build-step spike required.
           window.CESIUM_BASE_URL = '/cesium/';
           const { TerrainFlyover } = await import('../lib/terrainFlyover');
-          // The standard duration formula (shared with the 2D flyover, which
-          // stays fixed) felt too fast for the 3D version specifically — a
-          // close-in, ground-level camera covering the same real-world
-          // distance reads as much faster motion than a flat top-down 2D
-          // view does, on top of the actual complaint (camera turn rate) this
-          // and the rate-limiter above both address. 1.6x is a starting point,
-          // not a carefully tuned final number.
+          // Previously ran ×1.6, then ×2.0, slower than the plain shared
+          // formula here specifically — a close-in, ground-level camera
+          // covering the same real-world distance read as faster motion than
+          // the flat top-down 2D view at the same duration. That extra
+          // slowdown is now baked into flyoverDurationMs itself (2026-09-17,
+          // explicit direction that this pace is the standard for every
+          // hike flyover, not a 3D-only special case) — no multiplier here.
           const total3d = buildCumulative(points).at(-1);
           flyoverRef.current = new TerrainFlyover(mapRef.current, {
             // Full-precision points, not the decimated renderPoints used below for
@@ -321,7 +321,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
             // doesn't apply to Cesium's one-time static WebGL line; using it here
             // was throwing away real resolution the drawn track needs.
             points,
-            durationMs: flyoverDurationMs(total3d) * 1.6,
+            durationMs: flyoverDurationMs(total3d),
             onProgress: ({ frac, ele, distM }) => {
               drawIndicator(flyDataRef.current?.indicatorCtx, flyDataRef.current?.scale, frac, ele);
               // Scaled against the same curated hike distance shown in the stats

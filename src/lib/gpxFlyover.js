@@ -74,8 +74,13 @@ export function decimate(points, maxPoints = 500) {
   return out;
 }
 
+// 2026-09-17: ×2.0 baked in here (was a one-off ×1.6, then ×2.0, applied only
+// at the 3D terrain flyover's call site in HikeMap.jsx) — explicit direction
+// that this slower pace is now the standard for every hike flyover, 2D
+// included, not just the two 3D test hikes. Locked into the shared function
+// itself rather than left as a multiplier at each call site.
 export function flyoverDurationMs(totalMeters) {
-  return Math.min(24000, Math.max(8000, 8000 + (totalMeters / 1000) * 1200));
+  return 2.0 * Math.min(24000, Math.max(8000, 8000 + (totalMeters / 1000) * 1200));
 }
 
 // Grows `line` incrementally (Leaflet polyline) as `idx` advances past `state.committedIdx`,

@@ -203,6 +203,59 @@ function buildFlowingPath(points, { waypointCount = 80, samplesPerSegment = 12 }
       });
     }
   }
+  return deloop(out);
+}
+
+// Catmull-Rom can overshoot into a small self-crossing loop where the real
+// trail turns sharply relative to how far apart its anchors landed (verified
+// directly against Rattlesnake Ledge's real GPX — confirmed present even
+// fit in a single pass straight off raw points, and confirmed absent from
+// the raw recording itself, so this is the curve fit's own artifact, not
+// real trail shape or GPS noise). Neither reparameterizing the spline
+// (tried: centripetal Catmull-Rom) nor limiting tangent magnitude at sharp
+// turns meaningfully reduced it — whatever specific 3-4 real anchors cause
+// this, a smooth curve through them loops regardless of those adjustments.
+// This instead finds any place the finished curve crosses back near itself
+// and replaces just that stretch with a straight line between its two
+// endpoints — a straight segment between two points can't loop by
+// construction, so this guarantees the result regardless of why the spline
+// misbehaved at that specific spot, on this hike or any other.
+function deloop(curve, { minGapM = 20, maxGapM = 200, closeM = 8 } = {}) {
+  const cum = buildCumulative(curve);
+  const crossings = [];
+  for (let i = 0; i < curve.length; i++) {
+    for (let j = i + 1; j < curve.length; j++) {
+      const gap = cum[j] - cum[i];
+      if (gap < minGapM) continue;
+      if (gap > maxGapM) break;
+      if (haversineM(curve[i], curve[j]) < closeM) crossings.push([i, j]);
+    }
+  }
+  if (!crossings.length) return curve;
+
+  // Adjacent/overlapping crossing pairs describe the same loop — merge them
+  // into one repair span per real loop rather than patching piecemeal.
+  crossings.sort((a, b) => a[0] - b[0]);
+  const spans = [];
+  let [spanStart, spanEnd] = crossings[0];
+  for (const [i, j] of crossings.slice(1)) {
+    if (i <= spanEnd) spanEnd = Math.max(spanEnd, j);
+    else { spans.push([spanStart, spanEnd]); [spanStart, spanEnd] = [i, j]; }
+  }
+  spans.push([spanStart, spanEnd]);
+
+  const out = curve.slice();
+  for (const [i, j] of spans) {
+    const a = curve[i], b = curve[j];
+    for (let k = i; k <= j; k++) {
+      const t = (k - i) / (j - i);
+      out[k] = {
+        lat: a.lat + (b.lat - a.lat) * t,
+        lon: a.lon + (b.lon - a.lon) * t,
+        ele: (a.ele ?? 0) + ((b.ele ?? 0) - (a.ele ?? 0)) * t,
+      };
+    }
+  }
   return out;
 }
 
@@ -240,10 +293,10 @@ export class TerrainFlyover {
       // animation, not how tightly that curve follows the real GPS points).
       // More waypoints means the Catmull-Rom spline is anchored to more of the
       // real recording, so it rounds off less of the actual trail shape —
-      // bumped from 160 to 240, then to 320, across two rounds of feedback that
-      // the flowing path still felt a touch too smooth relative to the real
-      // route.
-      const outboundFlowing = buildFlowingPath(outboundRawPoints, { waypointCount: 320, samplesPerSegment: 12 });
+      // bumped from 160 to 240, to 320, then to 368 (2026-09-17, +15% per
+      // direct feedback), across three rounds of feedback that the flowing
+      // path still felt a touch too smooth relative to the real route.
+      const outboundFlowing = buildFlowingPath(outboundRawPoints, { waypointCount: 368, samplesPerSegment: 12 });
       this.cameraPoints = [...outboundFlowing, ...outboundFlowing.slice(0, -1).reverse()];
       this.apexIdx = outboundFlowing.length - 1;
     } else {
@@ -253,7 +306,7 @@ export class TerrainFlyover {
       // draw and marker-placement code below both key off `apexIdx` as "the
       // last index of what gets drawn/flown," which for a loop is simply the
       // whole array — no separate branch needed past this point.
-      this.cameraPoints = buildFlowingPath(points, { waypointCount: 320, samplesPerSegment: 12 });
+      this.cameraPoints = buildFlowingPath(points, { waypointCount: 368, samplesPerSegment: 12 });
       this.apexIdx = this.cameraPoints.length - 1;
     }
     this.cum = buildCumulative(this.cameraPoints);
