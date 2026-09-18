@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { parseGPX, buildCumulative, positionAt, growTravelLine, decimate } from '../lib/gpxFlyover';
-import { TERRAIN_3D_TEST_HIKE_IDS } from '../lib/terrain3dTestHikes';
 
 const PLAY_MS = 15210; // 9s base, slowed 30% then another 30% per feedback
 
-export default function HikeMapCard({ gpxUrl, onOpen, hikeId }) {
-  // Only hikes explicitly under test get the 3D Cesium flyover (see
-  // terrain3dTestHikes.js) — everything else uses the shipped 2D flyover.
-  const USE_TERRAIN_3D = TERRAIN_3D_TEST_HIKE_IDS.has(hikeId);
+export default function HikeMapCard({ gpxUrl, onOpen }) {
+  // 2026-09-17: rolled out to every hike after camera behavior (including
+  // loop-shaped routes like Maple Pass Loop) was confirmed working —
+  // previously gated to a small allowlist (terrain3dTestHikes.js, now
+  // removed) while that was still being tested.
+  const USE_TERRAIN_3D = true;
 
   const rootRef = useRef(null);
   const mapDivRef = useRef(null);

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate } from '../lib/gpxFlyover';
-import { TERRAIN_3D_TEST_HIKE_IDS } from '../lib/terrain3dTestHikes';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -118,10 +117,12 @@ function drawIndicator(ctx, scale, frac, eleM) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hikeId }) {
-  // Only hikes explicitly under test get the 3D Cesium flyover (see
-  // terrain3dTestHikes.js) — everything else uses the shipped 2D flyover.
-  const USE_TERRAIN_3D = TERRAIN_3D_TEST_HIKE_IDS.has(hikeId);
+export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain }) {
+  // 2026-09-17: rolled out to every hike after camera behavior (including
+  // loop-shaped routes like Maple Pass Loop) was confirmed working —
+  // previously gated to a small allowlist (terrain3dTestHikes.js, now
+  // removed) while that was still being tested.
+  const USE_TERRAIN_3D = true;
 
   // Curated distance (e.g. "4.0 mi"), converted once to meters so the live
   // progress readout during playback can scale against it — see onProgress

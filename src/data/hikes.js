@@ -525,7 +525,7 @@ export const hikes = [
     id: 'subway-cave',
     name: 'Subway Cave',
     region: 'Red Rock-Secret Mountain Wilderness · Sedona',
-    distance: '3.8 mi',
+    distance: '5.7 mi',
     gain: '350 ft',
     difficulty: 'Easy–Moderate',
     season: 'Year-round',

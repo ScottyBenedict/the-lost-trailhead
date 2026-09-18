@@ -16,12 +16,15 @@ import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
 // the average GPS deviation between the outbound and return legs at the
 // best-matching split point, so a real retrace scores low and a route that
 // never truly retraces (a loop) scores high no matter which split point it
-// picks. Verified against two real recordings before choosing this number:
-// Rattlesnake Ledge (a genuine out-and-back) scores 12.2m; Maple Pass Loop
-// (a genuine loop) scores 116.0m at its best candidate — nearly 10x worse,
-// because there's nothing to actually match there. 40m sits with real
-// margin on both sides of that gap.
-const OUT_AND_BACK_MATCH_THRESHOLD_M = 40;
+// picks. Originally set at 40 from two data points (Rattlesnake Ledge 12.2m,
+// Maple Pass Loop 116.0m) — raised to 70 (2026-09-17) once the site-wide
+// rollout turned up a third: Colchuck Lake, a real out-and-back (start/end
+// GPS points only 2.5m apart) scoring 62.3m, past the old threshold —
+// misclassified as a loop, which drew its full round trip as one line
+// instead of just the outbound leg, muddying the overlap exactly the way
+// out-and-back handling exists to avoid. 70 still leaves real margin below
+// Maple's 116.0.
+const OUT_AND_BACK_MATCH_THRESHOLD_M = 70;
 
 // How much each frame's camera aim target moves toward the hiker's real
 // position — see applyFrame's comment. Lower = smoother/more lag, higher =
