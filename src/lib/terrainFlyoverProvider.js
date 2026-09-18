@@ -5,7 +5,7 @@ import { MartiniTerrainProvider, DefaultHeightmapResource, WorkerFarmTerrainDeco
 // decision 1). Confirmed capped at zoom 15 — z16/z17 404 directly against the
 // bucket.
 const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
-const TERRARIUM_MAX_ZOOM = 15;
+export const TERRARIUM_MAX_ZOOM = 15;
 
 // Creates a self-hosted (no Cesium ion) terrain provider that decodes Terrarium
 // raster-DEM tiles into quantized-mesh terrain on the fly, off the main thread.

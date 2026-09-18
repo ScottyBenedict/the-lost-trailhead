@@ -11,6 +11,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './terrainFlyoverOverrides.css';
 import { buildCumulative, flyoverDurationMs, positionAt, bearingBetween, haversineM } from './gpxFlyover';
 import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
+import { createTerrainTrail } from './trailPolyline';
 
 // findApexIndex's bestScore (below) doubles as out-and-back detection: it's
 // the average GPS deviation between the outbound and return legs at the
@@ -133,133 +134,312 @@ function findApexIndex(points, cum) {
 // of a top-down aerial that would lose the "ride-along with the hiker" feel.
 const DEFAULT_CAMERA = { range: 750, pitchDeg: -34, sideOffsetDeg: 75 };
 
-// Fits a Catmull-Rom spline through `t` (0..1) between p1 and p2, using p0/p3
-// as the neighboring control points that shape the curve's tangents there.
-function catmullRom(p0, p1, p2, p3, t) {
-  const t2 = t * t, t3 = t2 * t;
-  return 0.5 * (
-    2 * p1 +
-    (p2 - p0) * t +
-    (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
-    (3 * p1 - p0 - 3 * p2 + p3) * t3
-  );
-}
+// Trailing ("drone following behind") camera — opt-in per hike via
+// `camera: { trailing: { range, pitchDeg, descentPitchDeg } }`, under test on Cascade Pass
+// only (see HikeMap.jsx). Deliberately re-ties the camera to direction of
+// travel, which the fixed bearing above exists to avoid.
+//
+// Unlike the default camera, nothing here chases the hiker frame by frame.
+// Playback is fully deterministic (known path, known duration), so the whole
+// camera track — aim point and heading — is computed once up front with
+// *centered* smoothing, which looks as far ahead as behind: no lag behind the
+// hiker, and no lurch at switchback corners. (A per-frame exponential chase
+// like TARGET_SMOOTHING both lags and changes its acceleration abruptly
+// wherever the hiker turns a corner, which reads as a small hitch at each
+// switchback.) Values tuned offline against Cascade Pass's real GPX and the
+// real Terrarium DEM, measuring on-screen motion rather than judging by eye:
+//
+// targetSigmaS — seconds of flight the aim point is averaged over.
+// headingSigmaM — meters of trail the direction of travel is averaged over.
+//   Averaging *positions* (not a chord between two points) is what survives
+//   switchback stacks: kilometers of zigzag cover only a few hundred meters
+//   of real progress, so a chord's endpoints land at arbitrary points in the
+//   zigzag (up to 146°/s of turning on Cascade even with a 3km window).
+// headingSigmaS — seconds the resulting heading is then eased over.
+// orbitS — an out-and-back reverses at the turnaround, so a trailing camera
+//   has to come around to the other side; this is how long that orbit takes.
+// introS — the flight opens in close on the hiker (closeRange) and pulls back
+//   to the tracking range over this long.
+// outroS — over the flight's last seconds the camera comes back around and in
+//   to exactly the opening shot, so it ends where it began.
+const TRAILING_RIG = { targetSigmaS: 2.5, headingSigmaM: 1500, headingSigmaS: 2, orbitS: 14, introS: 5, outroS: 9 };
 
-// gpxFlyover.js's decimate() picks waypoints evenly by *array index* — fine
-// when recording density is roughly constant, but real hiking pace varies a
-// lot (faster on flat/easy stretches, slower climbing or picking through a
-// technical section), and this GPX logs at a roughly constant *time*
-// interval, not distance. So index-based decimation gives noticeably uneven
-// real-world spacing: verified directly against this site's real Rattlesnake
-// Ledge GPX, several waypoint gaps clustered right near the end of the
-// descent were 90-108m apart (vs. a ~43m average elsewhere) — plenty of room
-// for a spline to visibly cut across real terrain instead of following the
-// trail through that stretch, which is exactly what "jumps off the path"
-// looks like. Decimating by real distance instead keeps spacing uniform
-// (same real data: worst case drops to ~54m, and every gap lands within a
-// couple meters of the target) regardless of how fast the recording moved
-// through any given stretch.
-function decimateByDistance(points, targetSpacingM) {
-  const out = [points[0]];
-  let lastEmitted = points[0];
-  for (let i = 1; i < points.length; i++) {
-    if (haversineM(lastEmitted, points[i]) >= targetSpacingM) {
-      out.push(points[i]);
-      lastEmitted = points[i];
-    }
+// Gaussian smoothing with odd-reflection padding (v[-k] = 2v[0] - v[k]), so
+// the ends keep their real position and slope instead of being pulled inward.
+function gaussianSmooth(values, sigmaSamples) {
+  const n = values.length;
+  if (sigmaSamples < 0.5 || n < 3) return values.slice();
+  const half = Math.ceil(3 * sigmaSamples);
+  const weights = [];
+  for (let k = -half; k <= half; k++) weights.push(Math.exp(-(k * k) / (2 * sigmaSamples * sigmaSamples)));
+  const at = (i) => {
+    if (i < 0) return 2 * values[0] - values[Math.min(n - 1, -i)];
+    if (i >= n) return 2 * values[n - 1] - values[Math.max(0, 2 * (n - 1) - i)];
+    return values[i];
+  };
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    let sum = 0, wsum = 0;
+    for (let k = -half; k <= half; k++) { const w = weights[k + half]; sum += w * at(i + k); wsum += w; }
+    out[i] = sum / wsum;
   }
-  if (out[out.length - 1] !== points[points.length - 1]) out.push(points[points.length - 1]);
   return out;
 }
 
-// Turns a raw, jittery GPS recording into a deliberately flowing curve: the
-// point of this feature is a visual recreation of the hike, not a pixel-exact
-// GPS trace (explicit product direction, following several rounds of trying
-// to reactively filter noise out of the raw track instead of just replacing
-// it with a real curve). Reduces to a small number of evenly-spaced-by-
-// distance key waypoints first, then fits a Catmull-Rom spline through them
-// and densely re-samples it — used for both the drawn line and the camera/
-// marker path (a prior version used different point sets for each, which is
-// exactly how "the camera isn't following the same route as the line"
-// happens; building both from the same spline makes that impossible by
-// construction).
-function buildFlowingPath(points, { waypointCount = 80, samplesPerSegment = 12 } = {}) {
-  const cum = buildCumulative(points);
-  const targetSpacingM = cum[cum.length - 1] / Math.max(1, Math.min(waypointCount, points.length) - 1);
-  const waypoints = decimateByDistance(points, targetSpacingM);
-  const n = waypoints.length;
-  if (n < 4) return waypoints;
+// Precomputes the trailing camera's aim point, heading, pitch, and range as
+// functions of s = distance flown along `pathPoints` (the same array the
+// marker follows). Headings are unwrapped (never jump between 359° and 0°),
+// so they can be interpolated directly.
+//
+// shot: { range, closeRange, pitchDeg, descentPitchDeg } (see HikeMap.jsx).
+// descentPitchDeg: on an out-and-back's return leg, "behind the hiker" is
+// uphill, so the camera looks *down* a slope that falls away from it and sees
+// the switchbacks at a grazing angle, where they flatten into each other. The
+// camera rises to this steeper angle during the summit orbit and holds it for
+// the descent.
+function buildTrailingRig(pathPoints, pathCum, apexIdx, isOutAndBack, speedMps, shot, rig = TRAILING_RIG) {
+  const { range, closeRange, pitchDeg, descentPitchDeg } = shot;
+  const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+  const step = 5;
+  const total = pathCum[pathCum.length - 1];
+  const lat0 = pathPoints[0].lat, lon0 = pathPoints[0].lon;
+  const mPerDegLat = 111320, mPerDegLon = mPerDegLat * Math.cos((lat0 * Math.PI) / 180);
+  const sample = (pts, cum, len) => {
+    const hint = { i: 1 }, xs = [], ys = [];
+    for (let d = 0; d <= len; d += step) {
+      const p = positionAt(pts, cum, len, d / len, hint);
+      xs.push((p.lon - lon0) * mPerDegLon); ys.push((p.lat - lat0) * mPerDegLat);
+    }
+    return { xs, ys };
+  };
+  const lerp = (arr, f) => {
+    const x = Math.min(arr.length - 1, Math.max(0, f)), i = Math.floor(x);
+    return i >= arr.length - 1 ? arr[i] : arr[i] + (arr[i + 1] - arr[i]) * (x - i);
+  };
+  const tangentDeg = (xs, ys) => {
+    const h = xs.map((_, i) => {
+      const a = Math.max(0, i - 1), b = Math.min(xs.length - 1, i + 1);
+      return (Math.atan2(xs[b] - xs[a], ys[b] - ys[a]) * 180) / Math.PI;
+    });
+    for (let i = 1; i < h.length; i++) h[i] = h[i - 1] + ((((h[i] - h[i - 1]) % 360) + 540) % 360) - 180;
+    return h;
+  };
 
+  // Aim point: the hiker's own path, centered-smoothed over time.
+  const flight = sample(pathPoints, pathCum, total);
+  const aimSigma = (rig.targetSigmaS * speedMps) / step;
+  const aimX = gaussianSmooth(flight.xs, aimSigma), aimY = gaussianSmooth(flight.ys, aimSigma);
+
+  // Heading: direction of travel along the (outbound) leg, from positions
+  // smoothed over headingSigmaM of trail.
+  const legLen = pathCum[apexIdx];
+  const leg = isOutAndBack ? sample(pathPoints.slice(0, apexIdx + 1), pathCum.slice(0, apexIdx + 1), legLen) : flight;
+  const legSigma = rig.headingSigmaM / step;
+  const legHeading = tangentDeg(gaussianSmooth(leg.xs, legSigma), gaussianSmooth(leg.ys, legSigma));
+  let heading, pitch;
+  if (isOutAndBack) {
+    // Past the turnaround the hiker walks the outbound trail backwards, so the
+    // camera wants the outbound heading +180°, eased in as one orbit — and
+    // rises to descentPitchDeg over the same orbit.
+    const orbitHalf = Math.min((rig.orbitS / 2) * speedMps, legLen / 3);
+    const orbit = (s) => ease((s - (legLen - orbitHalf)) / (2 * orbitHalf));
+    heading = flight.xs.map((_, j) => {
+      const s = j * step;
+      return lerp(legHeading, Math.min(s, 2 * legLen - s) / step) + 180 * orbit(s);
+    });
+    pitch = flight.xs.map((_, j) => pitchDeg + (descentPitchDeg - pitchDeg) * orbit(j * step));
+  } else {
+    heading = legHeading;
+    pitch = flight.xs.map(() => pitchDeg);
+  }
+  const easeSigma = (rig.headingSigmaS * speedMps) / step;
+  heading = gaussianSmooth(heading, easeSigma);
+  pitch = gaussianSmooth(pitch, easeSigma);
+
+  // Bookends (introS/outroS), applied after the smoothing above so both ends
+  // land exactly. The aim point needs nothing extra: an out-and-back ends at
+  // its first point, so matching heading, pitch, and range to the opening
+  // frame's is what makes the last frame the same shot.
+  const outroM = Math.min(rig.outroS * speedMps, total / 3);
+  const outro = flight.xs.map((_, j) => ease((j * step - (total - outroM)) / outroM));
+  const h0 = heading[0], p0 = pitch[0], hEnd = heading[heading.length - 1];
+  // An out-and-back keeps turning the way the summit orbit did, so the camera
+  // circles once over the whole flight instead of swinging back; a loop just
+  // takes the shorter way around.
+  const turns = isOutAndBack ? Math.ceil((hEnd - h0) / 360) : Math.round((hEnd - h0) / 360);
+  heading = heading.map((h, j) => h + (h0 + 360 * turns - h) * outro[j]);
+  pitch = pitch.map((p, j) => p + (p0 - p) * outro[j]);
+  const introM = Math.min(rig.introS * speedMps, total / 3);
+  const rangeM = flight.xs.map((_, j) => closeRange + (range - closeRange) * ease((j * step) / introM) * (1 - outro[j]));
+
+  return {
+    aimAt: (s) => ({ lat: lat0 + lerp(aimY, s / step) / mPerDegLat, lon: lon0 + lerp(aimX, s / step) / mPerDegLon }),
+    headingAt: (s) => lerp(heading, s / step),
+    pitchAt: (s) => lerp(pitch, s / step),
+    rangeAt: (s) => lerp(rangeM, s / step),
+  };
+}
+
+// Trail line / marker path, built from the raw GPS in three steps — each
+// verified by plotting against the raw tracks of five real hikes on this site
+// (Cascade Pass, Rattlesnake Ledge, Colchuck Lake, Snow Lake, Maple Pass Loop):
+//
+// 1. Stops collapse to one point. Standing at a viewpoint, GPS wanders into a
+//    scribble of tangled loops. Stops come from the watch's own recorded
+//    (Doppler) speed, not from net movement — a hairpin shows little net
+//    movement at full walking speed, and a net-movement test chopped hairpin
+//    tips off. Stop fragments split by a few seconds of shuffling close by
+//    (stop / few steps / stop, typical at a viewpoint) count as one stop.
+// 2. Detours are cut. Where the path comes back to where it already was, still
+//    heading the same way at the same elevation, the stretch in between was a
+//    step off the trail. Switchback legs head the opposite way and climb, so
+//    they never match.
+// 3. Light smoothing *along* the trail removes GPS jitter and rounds hairpins,
+//    but is too narrow to pull neighboring switchback legs together.
+// 4. Crossed hairpins are untangled. With a hairpin's legs only a few meters
+//    apart, GPS noise often swaps them just below the tip, so the line crosses
+//    itself (16 times on Cascade's way up). See untangleHairpins.
+//
+// Replaced a Catmull-Rom spline through anchors thinned to ~21m apart —
+// coarser than Cascade's switchback legs (5-10m apart), so it skipped whole
+// legs and cut straight chords across them — plus a loop "repair" that
+// straightened any stretch returning within 8m of itself, which also matched
+// every tight hairpin tip.
+const TRAIL = {
+  stopSpeedMps: 0.3, minStopS: 10, stopMergeGapS: 20, stopMergeRadiusM: 20,
+  detourRejoinM: 6, detourMinM: 12, detourMaxM: 250, detourHeadingTolDeg: 50, detourEleTolM: 6,
+  smoothSigmaM: 5, spacingM: 2,
+  // Longest crossed loop measured on Cascade was 74m of trail; much longer
+  // would mean two different switchback legs crossing, where reversing the
+  // stretch between them would send the hiker up a leg backwards.
+  untangleMaxM: 120,
+};
+
+function collapseStops(points) {
+  if (points.some((p) => p.t == null)) return points;
+  const speed = points.map((p, i) => {
+    if (p.speed != null && p.speed >= 0) return p.speed;
+    const a = points[Math.max(0, i - 2)], b = points[Math.min(points.length - 1, i + 2)];
+    const dt = (b.t - a.t) / 1000;
+    return dt > 0 ? haversineM(a, b) / dt : Infinity;
+  });
+  const centroid = (run) => ({
+    lat: run.reduce((s, p) => s + p.lat, 0) / run.length,
+    lon: run.reduce((s, p) => s + p.lon, 0) / run.length,
+    ele: run.reduce((s, p) => s + (p.ele ?? 0), 0) / run.length,
+  });
+  const runs = [];
+  for (let i = 0; i < points.length; ) {
+    if (speed[i] < TRAIL.stopSpeedMps) {
+      let j = i;
+      while (j + 1 < points.length && speed[j + 1] < TRAIL.stopSpeedMps) j++;
+      runs.push([i, j]);
+      i = j + 1;
+    } else i++;
+  }
+  const merged = [];
+  for (const run of runs) {
+    const last = merged[merged.length - 1];
+    if (last && (points[run[0]].t - points[last[1]].t) / 1000 <= TRAIL.stopMergeGapS) {
+      const span = points.slice(last[0], run[1] + 1), c = centroid(span);
+      if (span.every((p) => haversineM(p, c) <= TRAIL.stopMergeRadiusM)) { last[1] = run[1]; continue; }
+    }
+    merged.push([...run]);
+  }
   const out = [];
-  for (let i = 0; i < n - 1; i++) {
-    const p0 = waypoints[Math.max(0, i - 1)];
-    const p1 = waypoints[i];
-    const p2 = waypoints[i + 1];
-    const p3 = waypoints[Math.min(n - 1, i + 2)];
-    const steps = i === n - 2 ? samplesPerSegment + 1 : samplesPerSegment; // include the final point exactly once
-    for (let s = 0; s < steps; s++) {
-      const t = s / samplesPerSegment;
-      out.push({
-        lat: catmullRom(p0.lat, p1.lat, p2.lat, p3.lat, t),
-        lon: catmullRom(p0.lon, p1.lon, p2.lon, p3.lon, t),
-        ele: catmullRom(p0.ele ?? 0, p1.ele ?? 0, p2.ele ?? 0, p3.ele ?? 0, t),
-      });
-    }
+  let k = 0;
+  for (const [a, b] of merged) {
+    if ((points[b].t - points[a].t) / 1000 < TRAIL.minStopS) continue;
+    while (k < a) out.push(points[k++]);
+    out.push(centroid(points.slice(a, b + 1)));
+    k = b + 1;
   }
-  return deloop(out);
+  while (k < points.length) out.push(points[k++]);
+  return out;
 }
 
-// Catmull-Rom can overshoot into a small self-crossing loop where the real
-// trail turns sharply relative to how far apart its anchors landed (verified
-// directly against Rattlesnake Ledge's real GPX — confirmed present even
-// fit in a single pass straight off raw points, and confirmed absent from
-// the raw recording itself, so this is the curve fit's own artifact, not
-// real trail shape or GPS noise). Neither reparameterizing the spline
-// (tried: centripetal Catmull-Rom) nor limiting tangent magnitude at sharp
-// turns meaningfully reduced it — whatever specific 3-4 real anchors cause
-// this, a smooth curve through them loops regardless of those adjustments.
-// This instead finds any place the finished curve crosses back near itself
-// and replaces just that stretch with a straight line between its two
-// endpoints — a straight segment between two points can't loop by
-// construction, so this guarantees the result regardless of why the spline
-// misbehaved at that specific spot, on this hike or any other.
-function deloop(curve, { minGapM = 20, maxGapM = 200, closeM = 8 } = {}) {
-  const cum = buildCumulative(curve);
-  const crossings = [];
-  for (let i = 0; i < curve.length; i++) {
-    for (let j = i + 1; j < curve.length; j++) {
-      const gap = cum[j] - cum[i];
-      if (gap < minGapM) continue;
-      if (gap > maxGapM) break;
-      if (haversineM(curve[i], curve[j]) < closeM) crossings.push([i, j]);
+function resampleByArc(xs, ys, es, step) {
+  const n = xs.length, cum = [0];
+  for (let i = 1; i < n; i++) cum.push(cum[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]));
+  const X = [], Y = [], E = [];
+  let k = 1;
+  for (let d = 0; d <= cum[n - 1]; d += step) {
+    while (k < n - 1 && cum[k] < d) k++;
+    const f = cum[k] > cum[k - 1] ? (d - cum[k - 1]) / (cum[k] - cum[k - 1]) : 0;
+    X.push(xs[k - 1] + (xs[k] - xs[k - 1]) * f);
+    Y.push(ys[k - 1] + (ys[k] - ys[k - 1]) * f);
+    E.push(es[k - 1] + (es[k] - es[k - 1]) * f);
+  }
+  X.push(xs[n - 1]); Y.push(ys[n - 1]); E.push(es[n - 1]);
+  return { X, Y, E };
+}
+
+// Keep-mask over 1m samples with each detour's interior cleared (see step 2).
+function findDetours(X, Y, E) {
+  const keep = new Array(X.length).fill(true);
+  const heading = (a, b) => Math.atan2(X[b] - X[a], Y[b] - Y[a]);
+  const angleDeg = (a, b) => { const d = Math.abs(a - b) % (2 * Math.PI); return ((d > Math.PI ? 2 * Math.PI - d : d) * 180) / Math.PI; };
+  for (let i = 0; i < X.length; ) {
+    let rejoin = -1;
+    for (let j = Math.min(X.length - 1, i + TRAIL.detourMaxM); j >= i + TRAIL.detourMinM; j--) {
+      if (Math.hypot(X[j] - X[i], Y[j] - Y[i]) > TRAIL.detourRejoinM) continue;
+      if (Math.abs(E[j] - E[i]) > TRAIL.detourEleTolM) continue;
+      const arriving = heading(Math.max(0, i - 6), i), leaving = heading(j, Math.min(X.length - 1, j + 6));
+      if (angleDeg(arriving, leaving) > TRAIL.detourHeadingTolDeg) continue;
+      rejoin = j;
+      break;
+    }
+    if (rejoin > 0) { for (let k = i + 1; k < rejoin; k++) keep[k] = false; i = rejoin; } else i++;
+  }
+  return keep;
+}
+
+function buildSmoothTrail(points) {
+  const base = collapseStops(points);
+  const lat0 = base[0].lat, lon0 = base[0].lon;
+  const mPerDegLat = 111320, mPerDegLon = mPerDegLat * Math.cos((lat0 * Math.PI) / 180);
+  let { X, Y, E } = resampleByArc(
+    base.map((p) => (p.lon - lon0) * mPerDegLon),
+    base.map((p) => (p.lat - lat0) * mPerDegLat),
+    base.map((p) => p.ele ?? 0),
+    1
+  );
+  // light pre-smooth so detour headings reflect the trail, not GPS jitter
+  X = gaussianSmooth(X, 2); Y = gaussianSmooth(Y, 2); E = gaussianSmooth(E, 8);
+  const keep = findDetours(X, Y, E);
+  ({ X, Y, E } = resampleByArc(X.filter((_, i) => keep[i]), Y.filter((_, i) => keep[i]), E.filter((_, i) => keep[i]), 1));
+  const remainingSigma = Math.sqrt(Math.max(0, TRAIL.smoothSigmaM ** 2 - 4)); // 2m already applied
+  X = gaussianSmooth(X, remainingSigma); Y = gaussianSmooth(Y, remainingSigma);
+  const idx = [];
+  for (let i = 0; i < X.length; i += TRAIL.spacingM) idx.push(i);
+  if ((X.length - 1) % TRAIL.spacingM !== 0) idx.push(X.length - 1);
+  const pts = idx.map((i) => ({ x: X[i], y: Y[i], ele: E[i] }));
+  untangleHairpins(pts);
+  return pts.map((p) => ({ lat: lat0 + p.y / mPerDegLat, lon: lon0 + p.x / mPerDegLon, ele: p.ele }));
+}
+
+// Step 4 (see above): wherever the path crosses itself within
+// TRAIL.untangleMaxM of trail, reverses the stretch between the two crossing
+// segments. At a hairpin whose legs GPS has swapped just below the tip, that
+// turns the α back into a U without removing any of it. Each reversal
+// shortens the path, so repeating until nothing crosses always ends. In place.
+function untangleHairpins(pts) {
+  const cross = (o, p, q) => (p.x - o.x) * (q.y - o.y) - (p.y - o.y) * (q.x - o.x);
+  const intersects = (a, b, c, d) => {
+    const d1 = cross(c, d, a), d2 = cross(c, d, b), d3 = cross(a, b, c), d4 = cross(a, b, d);
+    return d1 * d2 < 0 && d3 * d4 < 0;
+  };
+  const maxSpan = Math.round(TRAIL.untangleMaxM / TRAIL.spacingM);
+  for (let pass = 0, changed = true; changed && pass < 20; pass++) {
+    changed = false;
+    for (let i = 0; i < pts.length - 1; i++) {
+      for (let j = i + 2; j < Math.min(pts.length - 1, i + maxSpan); j++) {
+        if (!intersects(pts[i], pts[i + 1], pts[j], pts[j + 1])) continue;
+        for (let a = i + 1, b = j; a < b; a++, b--) [pts[a], pts[b]] = [pts[b], pts[a]];
+        changed = true;
+      }
     }
   }
-  if (!crossings.length) return curve;
-
-  // Adjacent/overlapping crossing pairs describe the same loop — merge them
-  // into one repair span per real loop rather than patching piecemeal.
-  crossings.sort((a, b) => a[0] - b[0]);
-  const spans = [];
-  let [spanStart, spanEnd] = crossings[0];
-  for (const [i, j] of crossings.slice(1)) {
-    if (i <= spanEnd) spanEnd = Math.max(spanEnd, j);
-    else { spans.push([spanStart, spanEnd]); [spanStart, spanEnd] = [i, j]; }
-  }
-  spans.push([spanStart, spanEnd]);
-
-  const out = curve.slice();
-  for (const [i, j] of spans) {
-    const a = curve[i], b = curve[j];
-    for (let k = i; k <= j; k++) {
-      const t = (k - i) / (j - i);
-      out[k] = {
-        lat: a.lat + (b.lat - a.lat) * t,
-        lon: a.lon + (b.lon - a.lon) * t,
-        ele: (a.ele ?? 0) + ((b.ele ?? 0) - (a.ele ?? 0)) * t,
-      };
-    }
-  }
-  return out;
 }
 
 // Renders a 3D terrain flyover into `containerEl` for the given already-parsed
@@ -291,15 +471,7 @@ export class TerrainFlyover {
       // guaranteed and exact, the same way slicing the line from this same
       // array (below) guarantees the line and the marker agree.
       const outboundRawPoints = points.slice(0, rawApexIdx + 1);
-      // waypointCount is the actual smoothing knob here, not samplesPerSegment
-      // (which only controls how densely an already-fit curve is resampled for
-      // animation, not how tightly that curve follows the real GPS points).
-      // More waypoints means the Catmull-Rom spline is anchored to more of the
-      // real recording, so it rounds off less of the actual trail shape —
-      // bumped from 160 to 240, to 320, then to 368 (2026-09-17, +15% per
-      // direct feedback), across three rounds of feedback that the flowing
-      // path still felt a touch too smooth relative to the real route.
-      const outboundFlowing = buildFlowingPath(outboundRawPoints, { waypointCount: 368, samplesPerSegment: 12 });
+      const outboundFlowing = buildSmoothTrail(outboundRawPoints);
       this.cameraPoints = [...outboundFlowing, ...outboundFlowing.slice(0, -1).reverse()];
       this.apexIdx = outboundFlowing.length - 1;
     } else {
@@ -309,7 +481,7 @@ export class TerrainFlyover {
       // draw and marker-placement code below both key off `apexIdx` as "the
       // last index of what gets drawn/flown," which for a loop is simply the
       // whole array — no separate branch needed past this point.
-      this.cameraPoints = buildFlowingPath(points, { waypointCount: 368, samplesPerSegment: 12 });
+      this.cameraPoints = buildSmoothTrail(points);
       this.apexIdx = this.cameraPoints.length - 1;
     }
     this.cum = buildCumulative(this.cameraPoints);
@@ -347,6 +519,11 @@ export class TerrainFlyover {
     this.onProgress = onProgress;
     this.onFinish = onFinish;
     this.camera = { ...DEFAULT_CAMERA, ...camera };
+    if (camera?.trailing) {
+      const { range, closeRange = range, pitchDeg, descentPitchDeg = pitchDeg } = camera.trailing;
+      const speedMps = this.total / (this.durationMs / 1000);
+      this.trailingRig = buildTrailingRig(this.cameraPoints, this.cum, this.apexIdx, this.isOutAndBack, speedMps, { range, closeRange, pitchDeg, descentPitchDeg });
+    }
 
     this.flying = false;
     this.frac = 0;
@@ -389,7 +566,18 @@ export class TerrainFlyover {
       shouldAnimate: false,
     });
     this.viewer.scene.globe.enableLighting = true;
+    // FXAA smooths edge stair-stepping (the trail line's edges especially).
+    // Rendering at the display's full pixel density
+    // (useBrowserRecommendedResolution = false) was tried alongside it for
+    // sharper terrain on Retina screens — up to 4x the pixels, plus finer
+    // tiles streaming in — and made playback visibly jittery, so Cesium's
+    // default resolution stays.
+    this.viewer.scene.postProcessStages.fxaa.enabled = true;
     this.viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#8a9a78');
+    // Off by default in Cesium, which draws lines and points over the terrain
+    // no matter what's in front of them — the trail line showed through
+    // ridges between it and the camera.
+    this.viewer.scene.globe.depthTestAgainstTerrain = true;
     // Left at Cesium's own default (2) rather than the more aggressive 1 tried
     // earlier — that was forcing noticeably more detail/geometry per frame,
     // which is real suspect #1 for the jank reported once it was in place. The
@@ -534,33 +722,15 @@ export class TerrainFlyover {
     // covered: not two curves independently built to look similar, one
     // array sliced in place.
     //
-    // clampToGround: true, using only lon/lat (no GPX `ele`) — a raw GPS
-    // elevation stream is much noisier than its lat/lon, which is invisible in
-    // the 2D flyover's flat top-down view (no Z-axis at all) but shows up as a
-    // visible zigzag/"scribble" along the line once elevation becomes actual
-    // vertical position in 3D. Draping onto the real terrain surface instead
-    // fixes that and also avoids the line floating above/sinking below the
-    // rendered terrain wherever GPS elevation and DEM elevation disagree (a
-    // known, common mismatch between the two).
-    const linePositions = this.cameraPoints.slice(0, this.apexIdx + 1).map((p) => Cesium.Cartesian3.fromDegrees(p.lon, p.lat));
-    this.viewer.entities.add({
-      polyline: {
-        positions: linePositions,
-        width: 4,
-        // A plain white line loses contrast — and reads as visually thinner
-        // or broken — over whatever happens to be underneath it: dark forest
-        // shadow, a lake, a lighter dirt patch. PolylineOutlineMaterialProperty
-        // adds a dark outline around the white fill so the line stays legible
-        // against any terrain/imagery color, not just the ones it happened to
-        // look fine against before.
-        material: new Cesium.PolylineOutlineMaterialProperty({
-          color: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK.withAlpha(0.6),
-          outlineWidth: 2,
-        }),
-        clampToGround: true,
-      },
-    });
+    // See trailPolyline.js for how it's drawn (terrain-sampled 3D polyline,
+    // width set from distance to the camera). The top-down card sits far
+    // enough up that the whole line hits the minimum width — thin enough to
+    // wash out over snow at card size — so it gets a heavier floor.
+    this.trail = createTerrainTrail(
+      this.viewer,
+      this.cameraPoints.slice(0, this.apexIdx + 1),
+      topDownPreview ? { minWidthPx: 2 } : undefined
+    );
 
     // heightReference: RELATIVE_TO_GROUND makes Cesium clamp this point to the
     // terrain itself (offsetting the position's height above that clamp) —
@@ -680,12 +850,12 @@ export class TerrainFlyover {
     this.frac = frac;
     const pos = positionAt(this.cameraPoints, this.cum, this.total, frac, this.posHint);
 
-    // Camera heading = this.fixedBearing (see the constructor) rotated by
-    // sideOffsetDeg — constant for the entire flight, both legs. No per-frame
-    // computation, no smoothing state, nothing to reset on restart/scrub:
-    // there's nothing left to smooth once the value it would be smoothing
-    // toward never changes in the first place.
-    const bearing = (this.fixedBearing + this.camera.sideOffsetDeg + 360) % 360;
+    // Default: heading = this.fixedBearing (see the constructor) rotated by
+    // sideOffsetDeg — constant for the entire flight, both legs, nothing to
+    // smooth. Trailing mode reads its precomputed heading (buildTrailingRig).
+    const bearing = this.trailingRig
+      ? this.trailingRig.headingAt(frac * this.total)
+      : (this.fixedBearing + this.camera.sideOffsetDeg + 360) % 360;
 
     // Marker sits at the hiker's real, current position — always.
     this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, 3);
@@ -713,18 +883,27 @@ export class TerrainFlyover {
     // path curvature arrives at the camera as a smooth glide instead of an
     // instant re-aim. TARGET_SMOOTHING is a first cut — lower = smoother/
     // more lag behind the marker, higher = snappier/closer to the raw path.
-    if (this.smoothedTarget == null) {
-      this.smoothedTarget = { lat: pos.lat, lon: pos.lon };
+    //
+    // Trailing mode skips this chase entirely and reads its precomputed,
+    // centered-smoothed aim point instead (see buildTrailingRig).
+    let aim;
+    if (this.trailingRig) {
+      aim = this.trailingRig.aimAt(frac * this.total);
     } else {
-      this.smoothedTarget.lat += (pos.lat - this.smoothedTarget.lat) * TARGET_SMOOTHING;
-      this.smoothedTarget.lon += (pos.lon - this.smoothedTarget.lon) * TARGET_SMOOTHING;
+      if (this.smoothedTarget == null) {
+        this.smoothedTarget = { lat: pos.lat, lon: pos.lon };
+      } else {
+        this.smoothedTarget.lat += (pos.lat - this.smoothedTarget.lat) * TARGET_SMOOTHING;
+        this.smoothedTarget.lon += (pos.lon - this.smoothedTarget.lon) * TARGET_SMOOTHING;
+      }
+      aim = this.smoothedTarget;
     }
 
     // Camera target height: this file's own smoothed groundHeightAt (needs a
     // concrete absolute height — lookAt isn't an Entity, it has no
     // heightReference to lean on), sampled at the already-smoothed lat/lon.
-    const groundHeight = this.groundHeightAt(this.smoothedTarget.lat, this.smoothedTarget.lon, pos.ele);
-    const targetPos = Cesium.Cartesian3.fromDegrees(this.smoothedTarget.lon, this.smoothedTarget.lat, groundHeight + 3);
+    const groundHeight = this.groundHeightAt(aim.lat, aim.lon, pos.ele);
+    const targetPos = Cesium.Cartesian3.fromDegrees(aim.lon, aim.lat, groundHeight + 3);
 
     // camera.lookAt(target, HeadingPitchRange) positions the camera at the
     // given heading/pitch/range *from* target and points it at target — the
@@ -734,8 +913,8 @@ export class TerrainFlyover {
       targetPos,
       new Cesium.HeadingPitchRange(
         Cesium.Math.toRadians(bearing),
-        Cesium.Math.toRadians(this.camera.pitchDeg),
-        this.camera.range
+        Cesium.Math.toRadians(this.trailingRig ? this.trailingRig.pitchAt(frac * this.total) : this.camera.pitchDeg),
+        this.trailingRig ? this.trailingRig.rangeAt(frac * this.total) : this.camera.range
       )
     );
 
@@ -822,6 +1001,7 @@ export class TerrainFlyover {
     this.destroyed = true;
     this.pause();
     this.topDownResizeObserver?.disconnect();
+    this.trail?.destroy();
     if (!this.viewer.isDestroyed()) this.viewer.destroy();
   }
 }
