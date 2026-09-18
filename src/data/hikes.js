@@ -70,12 +70,12 @@ export const hikes = [
     id: 'cascade-pass-sahale-arm',
     name: 'Cascade Pass & Sahale Arm',
     region: 'North Cascades National Park',
-    distance: '12.0 mi',
-    gain: '3,700 ft',
+    distance: '8.6 mi',
+    gain: '2,600 ft',
     difficulty: 'Strenuous',
     season: 'Jul – Oct',
     description:
-      'One of the great hikes in the North Cascades, Cascade Pass delivers a sweeping alpine panorama from its saddle — and that\'s just the beginning. The Sahale Arm continues upward through open heather slopes and past Doubtful Lake before reaching the moraine above Sahale Glacier. The fall color here is extraordinary: crimson and gold blueberry fields spreading across the high ridges, with glaciated peaks in every direction.',
+      'One of the great hikes in the North Cascades, Cascade Pass delivers a sweeping alpine panorama from its saddle — and that\'s just the beginning. Past the pass, the Sahale Arm climbs steeply through open heather slopes to a rounded shoulder above 6,000 feet, where Doubtful Lake appears 800 feet below and the arm keeps rising toward Sahale Glacier. The fall color here is extraordinary: crimson and gold blueberry fields spreading across the high ridges, with glaciated peaks in every direction.',
     cover: '/photos/IMG_2427.jpeg',
     coverPosition: 'center 40%',
     photos: [
