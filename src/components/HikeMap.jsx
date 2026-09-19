@@ -362,9 +362,17 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
               // mismatch already fixed for the stats footer itself (see the stats
               // array below).
               const scaledDistM = hikeDistanceMeters != null ? frac * hikeDistanceMeters : distM;
-              updateUiThrottled(frac, ele, scaledDistM);
+              // Forced at 0: the reset on finish (below) lands in the same
+              // instant as the final frame's update and would be throttled,
+              // leaving the readout stuck at the end.
+              updateUiThrottled(frac, ele, scaledDistM, { force: frac === 0 });
             },
-            onFinish: () => setFlying(false),
+            // At the end, go back to the opening frame, ready to play again,
+            // rather than holding on the last frame with a restart button.
+            onFinish: () => {
+              flyoverRef.current?.scrubTo(0);
+              setFlying(false);
+            },
           });
           // Only the elevation-chart fields are needed in the 3D path — the
           // setTimeout block below (shared with the 2D path) fills these in.
