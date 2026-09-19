@@ -457,7 +457,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
     <section style={styles.section}>
       <p style={styles.sectionLabel}>Trail Map &amp; Flyover</p>
 
-      <div style={styles.mapWrapper}>
+      <div className="hike-map-viewport" style={styles.mapWrapper}>
         {loading && (
           <div style={styles.loading}>
             <span style={styles.loadingText}>Loading trail data…</span>
@@ -562,13 +562,10 @@ const styles = {
     margin: 0,
   },
   mapWrapper: {
-    // Was 420px, briefly 560px alongside a widened .gallery-lightbox-frame-map
-    // (index.css) — both reverted, then explicitly increased again (taller)
-    // paired with a narrower frame this time, a portrait-leaning shape rather
-    // than matching the photo lightbox's landscape one.
+    // Height lives in index.css (.hike-map-viewport): it's capped to the
+    // screen with an svh/vh fallback pair, which an inline style can't hold.
     position: 'relative',
     width: '100%',
-    height: '660px',
   },
   map: {
     position: 'absolute',

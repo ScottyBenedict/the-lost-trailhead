@@ -800,6 +800,10 @@ a   { color: inherit; text-decoration: none; }
      original, not just reverted back to it. */
   width: min(700px, 90vw);
   max-height: 88vh;
+  /* svh = the viewport with a phone browser's toolbars showing; plain vh
+     there is the taller toolbars-hidden height, so the frame's bottom could
+     sit behind the toolbar. vh above is the fallback. */
+  max-height: 88svh;
   overflow-y: auto;
   overflow-x: hidden;
   border-radius: 14px;
@@ -813,6 +817,20 @@ a   { color: inherit; text-decoration: none; }
 
 .gallery-lightbox-frame-map::-webkit-scrollbar {
   display: none; /* Chrome, Safari, current Edge */
+}
+
+/* The flyover map inside that frame (HikeMap.jsx). Was 420px, briefly 560px
+   alongside a widened frame — both reverted, then explicitly increased again
+   (taller) paired with a narrower frame, a portrait-leaning shape rather than
+   the photo lightbox's landscape one. Capped to the screen so the whole map,
+   including the play bar along its bottom, fits in the frame under the
+   ~64px "Trail Map & Flyover" header, with the stats peeking out below. At a
+   fixed 660px, a phone showed the map with its play bar below the fold, and
+   no way to scroll to it by swiping the map. Unchanged at 660px on any
+   screen taller than ~870px. */
+.hike-map-viewport {
+  height: min(660px, calc(88vh - 105px));
+  height: min(660px, calc(88svh - 105px));
 }
 
 .gallery-lightbox-controls {
