@@ -86,7 +86,7 @@ export default function AboutPage() {
           <div className="about-range-col">
             <h3 className="about-range-heading">Where We've Been</h3>
             <div className="about-range-tags">
-              {hikes.map((hike) => (
+              {[...hikes].sort((a, b) => a.name.localeCompare(b.name)).map((hike) => (
                 <Link key={hike.id} to={`/hikes/${hike.id}`} className="about-range-tag about-range-tag-link">{hike.name}</Link>
               ))}
             </div>
@@ -96,7 +96,7 @@ export default function AboutPage() {
             <div className="about-range-tags">
               {[
                 'Mt. Washington', 'Lake Ann', 'Sourdough Mountain',
-                'Minotaur Lake', 'Maple Pass', 'Robin Lakes', 'Green Mountain',
+                'Minotaur Lake', 'Robin Lakes', 'Green Mountain',
                 'Vesper Peak', 'Smutwood Peak, Alberta', 'Mt. Pilchuck',
                 'Mt. Dickerman', 'Sahale Glacier', 'Eagle Lake — Sawtooths',
               ].map(h => (
