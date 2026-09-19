@@ -16,7 +16,7 @@ export const hikes = [
   {
     id: 'bandera-mountain',
     name: 'Bandera Mountain',
-    region: 'Olallie State Park · I-90 Corridor',
+    region: 'Mt. Baker-Snoqualmie National Forest · I-90 Corridor',
     distance: '7.8 mi',
     gain: '2,900 ft',
     difficulty: 'Strenuous',
@@ -37,7 +37,7 @@ export const hikes = [
   {
     id: 'blanca-lake',
     name: 'Blanca Lake',
-    region: 'Henry M. Jackson Wilderness · North Cascades',
+    region: 'Henry M. Jackson Wilderness · Stevens Pass',
     distance: '8.0 mi',
     gain: '3,500 ft',
     difficulty: 'Strenuous',
@@ -116,9 +116,9 @@ export const hikes = [
   {
     id: 'dirty-harrys-balcony',
     name: "Dirty Harry's Balcony",
-    region: 'Olallie State Park · North Bend',
+    region: 'Washington DNR · North Bend',
     distance: '4.4 mi',
-    gain: '1,600 ft',
+    gain: '1,300 ft',
     difficulty: 'Moderate',
     season: 'Apr – Nov',
     description:
@@ -267,7 +267,7 @@ export const hikes = [
   {
     id: 'lake-22',
     name: 'Lake Twenty-Two',
-    region: 'Wild Sky Wilderness · Granite Falls',
+    region: 'Mt. Baker-Snoqualmie National Forest · Mountain Loop Highway',
     distance: '5.4 mi',
     gain: '1,400 ft',
     difficulty: 'Moderate',
@@ -283,7 +283,7 @@ export const hikes = [
   {
     id: 'lake-valhalla',
     name: 'Lake Valhalla',
-    region: 'Alpine Lakes Wilderness · Stevens Pass',
+    region: 'Henry M. Jackson Wilderness · Stevens Pass',
     distance: '6.3 mi',
     gain: '1,364 ft',
     difficulty: 'Moderate',
@@ -329,7 +329,7 @@ export const hikes = [
   {
     id: 'mailbox-old-trail',
     name: 'Mailbox Peak — Old Trail',
-    region: 'Mt. Baker-Snoqualmie National Forest · North Bend',
+    region: 'Middle Fork Snoqualmie Natural Resources Conservation Area · North Bend',
     distance: '9.4 mi',
     gain: '4,000 ft',
     difficulty: 'Strenuous',
@@ -344,7 +344,7 @@ export const hikes = [
   {
     id: 'manastash',
     name: 'Manastash Ridge',
-    region: 'Okanogan-Wenatchee National Forest · Ellensburg',
+    region: 'Wenas Wildlife Area · Ellensburg',
     distance: '3.7 mi',
     gain: '1,600 ft',
     difficulty: 'Strenuous',
@@ -373,7 +373,7 @@ export const hikes = [
   {
     id: 'mt-baldy',
     name: 'Mt. Baldy',
-    region: 'Okanogan-Wenatchee National Forest · Snoqualmie Pass',
+    region: 'Okanogan-Wenatchee National Forest · Easton',
     distance: '7.6 mi',
     gain: '3,175 ft',
     difficulty: 'Strenuous',
@@ -448,7 +448,7 @@ export const hikes = [
   {
     id: 'red-top-lookout',
     name: 'Red Top Lookout',
-    region: 'Teanaway · Wenatchee National Forest',
+    region: 'Okanogan-Wenatchee National Forest · Blewett Pass',
     distance: '1.5 mi',
     gain: '350 ft',
     difficulty: 'Easy',
@@ -463,13 +463,13 @@ export const hikes = [
   {
     id: 'silver-peak',
     name: 'Silver Peak',
-    region: 'Alpine Lakes Wilderness · Snoqualmie Pass',
+    region: 'Okanogan-Wenatchee National Forest · Snoqualmie Pass',
     distance: '5.6 mi',
     gain: '2,100 ft',
     difficulty: 'Strenuous',
     season: 'Jul – Nov',
     description:
-      'Silver Peak sits at 5,605 feet on the southern wall of Snoqualmie Pass — overlooked by most hikers who come to the area for bigger names, which means the summit is often empty when it shouldn\'t be. The Cold Creek Trail climbs through second-growth forest before breaking out onto open slopes where the views start arriving: Kecheelus Lake below, the Alpine Lakes stretching north, and Mount Rainier hard on the southern horizon. The final pitch is steep and exposed, requiring hands in places — a short scramble that earns the summit fast. What\'s waiting is a panoramic view in every direction with almost no one else around.',
+      'Silver Peak sits at 5,605 feet on the southern wall of Snoqualmie Pass — overlooked by most hikers who come to the area for bigger names, which means the summit is often empty when it shouldn\'t be. The Cold Creek Trail climbs through second-growth forest before breaking out onto open slopes where the views start arriving: Keechelus Lake below, the Alpine Lakes stretching north, and Mount Rainier hard on the southern horizon. The final pitch is steep and exposed, requiring hands in places — a short scramble that earns the summit fast. What\'s waiting is a panoramic view in every direction with almost no one else around.',
     cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/silver-peak/dd5d9dfd-2613-46d9-962a-e116bf5ba145/1780696039073_0.jpg',
     coverPosition: 'center 50%',
     photos: [],
@@ -477,7 +477,7 @@ export const hikes = [
   {
     id: 'snow-lake',
     name: 'Snow Lake',
-    region: 'Alpine Lakes Wilderness',
+    region: 'Alpine Lakes Wilderness · Snoqualmie Pass',
     distance: '7.2 mi',
     gain: '1,800 ft',
     difficulty: 'Moderate',
