@@ -171,7 +171,7 @@ export const hikes = [
     id: 'granite-mountain',
     name: 'Granite Mountain',
     region: 'Mt. Baker-Snoqualmie National Forest · I-90 Corridor',
-    distance: '8.1 mi',
+    distance: '8.4 mi',
     gain: '3,704 ft',
     difficulty: 'Strenuous',
     season: 'Jun – Oct',
