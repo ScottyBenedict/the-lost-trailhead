@@ -1,0 +1,7 @@
+{
+  "name": "tlt-flyover-check",
+  "private": true,
+  "type": "module",
+  "description": "Dev-only checks for hike GPX stats and 3D flyovers. Not part of the site build.",
+  "dependencies": { "playwright-core": "^1.63.0" }
+}
