@@ -90,8 +90,11 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
       );
       const casings = new Cesium.PolylineCollection();
       const fills = new Cesium.PolylineCollection();
-      const casingMaterial = Cesium.Material.fromType('Color', { color: CASING });
-      const fillMaterial = Cesium.Material.fromType('Color', { color: FILL });
+      // One Material per polyline, never shared: a polyline destroys its
+      // material along with itself, so a shared one throws on the second
+      // polyline's destroy — which blanked the whole page on closing the
+      // flyover. Same type and color still batch into one draw call.
+      const color = (c) => Cesium.Material.fromType('Color', { color: c });
       let start = 0;
       let run = 0;
       for (let i = 1; i < positions.length; i++) {
@@ -100,8 +103,8 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
         // Neighboring chunks share their end vertex, so there's no gap.
         const slice = positions.slice(start, i + 1);
         chunks.push({
-          casing: casings.add({ positions: slice, width: 1, material: casingMaterial }),
-          fill: fills.add({ positions: slice, width: 1, material: fillMaterial }),
+          casing: casings.add({ positions: slice, width: 1, material: color(CASING) }),
+          fill: fills.add({ positions: slice, width: 1, material: color(FILL) }),
           center: Cesium.BoundingSphere.fromPoints(slice).center,
         });
         start = i;
