@@ -3,32 +3,37 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
-## ✅ STATUS (updated 2026-09-18): Live on every hike; trailing camera rolling out hike by hike
+## ✅ STATUS (updated 2026-09-19): Live on every hike; trailing camera on 17 hikes
 
-Supersedes the 2026-09-17 status below, which is kept as history.
+**Start with `docs/handoff-2026-09-19.md` for open work.** This doc is the flyover's
+status and history. The 2026-09-18 and 2026-09-17 status blocks below and everything
+under them are kept as history.
 
 - **3D flyover is on every hike.** The `terrain3dTestHikes.js` allowlist was removed
   on 2026-09-17 (`USE_TERRAIN_3D = true` in `HikeMap.jsx` and `HikeMapCard.jsx`).
 - **Trailing ("drone behind the hiker") camera is per hike**, via
-  `TRAILING_CAMERA_TEST` in `HikeMap.jsx`: Cascade Pass & Sahale Arm, Maple Pass
-  Loop, Rattlesnake Ledge, Rachel & Rampart Lakes, Lake Serene. It replaced the old fixed-bearing
-  chase camera's switchback problem, so `docs/handoff-imac-2026-09-17.md` is resolved.
+  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 17: Cascade Pass
+  & Sahale Arm, Maple Pass Loop, Rattlesnake Ledge, Rachel & Rampart Lakes, Lake
+  Serene, Hidden Lake, Colchuck Lake, Lake Ingalls, Kendall Katwalk, Granite Mountain,
+  Melakwa Lake, Dirty Harry's Balcony, Garfield Ledges (+ Winter), Hex Mountain —
+  Winter, Lake Valhalla, Mt. Baldy. Remaining hikes are listed in the handoff.
   Out-and-backs use `{ range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 }`;
-  loops drop `descentPitchDeg`. The rig has no terrain-clearance check of its own
-  (placement was tuned on Cascade's slopes), so **check each new hike in playback**
-  (hiker in view, camera above terrain) before enabling it, and check the GPX's
-  distance/gain against the page while you're there.
-- **Shipped 2026-09-18 (PRs #16-#26):** trail line rebuilt as a terrain-sampled 3D
-  polyline (`trailPolyline.js`); fix for the page going blank after closing the
-  flyover; green start / red end dots that only show while the camera can actually
-  see them (per-frame `globe.pick` line of sight); mobile fix (map height capped to
-  the screen, `touch-action` handed back to the browser); the hike page's map card
-  redrawn as recolored Esri shaded relief (one stitched image, see
-  `createReliefLayer` in `terrainFlyover.js`), white end dots and a frosted caption band.
+  loops drop `descentPitchDeg`. Kendall alone adds `maxAimOffset: 0.3` and a 64s
+  flight (`FLIGHT_SECONDS`). The rig has no terrain-clearance check of its own, so
+  **check each new hike in playback** and check the GPX's distance/gain against the
+  page. The checklist and tools are in `scripts/flyover-check/README.md`.
+- **Stats rule:** hike distance comes from the 15s-smoothed GPX ("the trip we
+  hiked"); raw GPS reads 4-27% long. Regions must match WTA's land manager.
+- **Shipped 2026-09-18 to 09-19 (PRs #16-#38):** trailing camera; trail line rebuilt
+  as a terrain-sampled 3D polyline (`trailPolyline.js`); blank-page-after-closing fix;
+  green start / red end dots hidden behind terrain; mobile fixes; the map card redrawn
+  as recolored Esri shaded relief (`createReliefLayer` in `terrainFlyover.js`) with
+  white end dots and a frosted caption band; reset to the opening frame when playback
+  ends; regions audited against WTA; `scripts/flyover-check/` saved to the repo.
 - **Known, deferred:** jumping the paused slider from 0% to roughly 4-20% can put the
   camera underground. Normal playback is fine.
 
-## ✅ STATUS (updated 2026-09-17): Shipped, but scope-gated to two test hikes — this doc is historical
+## 🕓 HISTORY — status as of 2026-09-17 (superseded): Shipped, but scope-gated to two test hikes — this doc is historical
 
 The MapLibre blocking finding below turned out to be the right call to revisit
 Cesium on (exactly as this doc predicted). **Cesium is what actually shipped.**
@@ -71,11 +76,9 @@ Key differences from what this doc originally scoped:
   spins/pans too much" feedback. See `terrainFlyover.js`'s own comments for the
   full reasoning chain.
 - No server-side precomputation / Edge Function — runs entirely client-side.
-- **Camera smoothness through switchbacks is still open**, unrelated to the
-  MapLibre-vs-Cesium question this doc covers. See
-  `docs/handoff-imac-2026-09-17.md` for full history — current live baseline is
-  temporal smoothing only (`TARGET_SMOOTHING = 0.03`), safe but not yet the
-  fully decoupled camera track Scott actually asked for.
+- **Camera smoothness through switchbacks was open at this point; it was resolved
+  on 2026-09-18 by the trailing camera** (see the current status above). The full
+  history is in `docs/handoff-imac-2026-09-17.md`.
 
 ## ⚠️ Blocking finding (2026-09-11) — read before continuing this roadmap
 
