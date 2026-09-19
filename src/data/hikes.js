@@ -234,7 +234,7 @@ export const hikes = [
     id: 'lake-ingalls',
     name: 'Lake Ingalls',
     region: 'Teanaway · Alpine Lakes Wilderness',
-    distance: '9.0 mi',
+    distance: '9.8 mi',
     gain: '2,900 ft',
     difficulty: 'Strenuous',
     season: 'Jul – Oct',

@@ -30,6 +30,7 @@ const TRAILING_CAMERA_TEST = {
   'lake-serene': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'hidden-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'colchuck-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'lake-ingalls': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

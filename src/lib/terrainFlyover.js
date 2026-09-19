@@ -394,6 +394,44 @@ function findDetours(X, Y, E) {
   return keep;
 }
 
+// A recording gap on the way in (the watch paused or lost signal, so two
+// consecutive points sit far apart) would draw as one straight chord across
+// whatever the trail actually did. On an out-and-back the way back usually
+// walks the same stretch, so the gap is filled with that stretch of the
+// return leg, reversed. Lake Ingalls: 64 unrecorded minutes between Ingalls
+// Pass and Headlight Basin left an 887m straight jump across the basin,
+// where the trail (and the way back) walks a 1.5km crescent. The filled
+// points keep their own recorded speed, so they don't read as a stop, and
+// get times spread evenly across the gap, so time still runs forward.
+const GAP_FILL = { minGapM: 150, maxMatchM: 40 };
+function fillOutboundGaps(outbound, returnLeg) {
+  const nearestOnReturn = (p) => {
+    let best = -1, bestD = Infinity;
+    for (let k = 0; k < returnLeg.length; k++) {
+      const d = haversineM(p, returnLeg[k]);
+      if (d < bestD) { bestD = d; best = k; }
+    }
+    return bestD <= GAP_FILL.maxMatchM ? best : -1;
+  };
+  const out = [outbound[0]];
+  for (let i = 1; i < outbound.length; i++) {
+    const a = outbound[i - 1], b = outbound[i];
+    if (haversineM(a, b) >= GAP_FILL.minGapM) {
+      // The way back passes b's end of the gap first, then a's.
+      const ib = nearestOnReturn(b), ia = nearestOnReturn(a);
+      if (ib >= 0 && ia > ib + 1) {
+        const fill = returnLeg.slice(ib + 1, ia).reverse();
+        fill.forEach((p, k) => out.push({
+          ...p,
+          t: a.t != null && b.t != null ? a.t + ((b.t - a.t) * (k + 1)) / (fill.length + 1) : null,
+        }));
+      }
+    }
+    out.push(b);
+  }
+  return out;
+}
+
 function buildSmoothTrail(points) {
   const base = collapseStops(points);
   const lat0 = base[0].lat, lon0 = base[0].lon;
@@ -582,7 +620,7 @@ export class TerrainFlyover {
       // descent follows the same trail as the ascent" — it makes that
       // guaranteed and exact, the same way slicing the line from this same
       // array (below) guarantees the line and the marker agree.
-      const outboundRawPoints = points.slice(0, rawApexIdx + 1);
+      const outboundRawPoints = fillOutboundGaps(points.slice(0, rawApexIdx + 1), points.slice(rawApexIdx));
       const outboundFlowing = buildSmoothTrail(outboundRawPoints);
       this.cameraPoints = [...outboundFlowing, ...outboundFlowing.slice(0, -1).reverse()];
       this.apexIdx = outboundFlowing.length - 1;
