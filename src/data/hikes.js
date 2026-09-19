@@ -118,7 +118,7 @@ export const hikes = [
     name: "Dirty Harry's Balcony",
     region: 'Olallie State Park · North Bend',
     distance: '4.4 mi',
-    gain: '1,600 ft',
+    gain: '1,300 ft',
     difficulty: 'Moderate',
     season: 'Apr – Nov',
     description:
@@ -373,7 +373,7 @@ export const hikes = [
   {
     id: 'mt-baldy',
     name: 'Mt. Baldy',
-    region: 'Okanogan-Wenatchee National Forest · Snoqualmie Pass',
+    region: 'Okanogan-Wenatchee National Forest · Easton',
     distance: '7.6 mi',
     gain: '3,175 ft',
     difficulty: 'Strenuous',

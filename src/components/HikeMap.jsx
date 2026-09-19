@@ -36,6 +36,12 @@ const TRAILING_CAMERA_TEST = {
   'kendall-katwalk': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60, maxAimOffset: 0.3 },
   'granite-mountain': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'melakwa-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'dirty-harrys-balcony': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'garfield-ledges': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'garfield-ledges-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'hex-mountain-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'lake-valhalla': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'mt-baldy': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
