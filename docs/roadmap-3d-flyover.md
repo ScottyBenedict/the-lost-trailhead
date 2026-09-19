@@ -3,6 +3,31 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
+## ✅ STATUS (updated 2026-09-18): Live on every hike; trailing camera rolling out hike by hike
+
+Supersedes the 2026-09-17 status below, which is kept as history.
+
+- **3D flyover is on every hike.** The `terrain3dTestHikes.js` allowlist was removed
+  on 2026-09-17 (`USE_TERRAIN_3D = true` in `HikeMap.jsx` and `HikeMapCard.jsx`).
+- **Trailing ("drone behind the hiker") camera is per hike**, via
+  `TRAILING_CAMERA_TEST` in `HikeMap.jsx`: Cascade Pass & Sahale Arm, Maple Pass
+  Loop, Rattlesnake Ledge, Rachel & Rampart Lakes. It replaced the old fixed-bearing
+  chase camera's switchback problem, so `docs/handoff-imac-2026-09-17.md` is resolved.
+  Out-and-backs use `{ range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 }`;
+  loops drop `descentPitchDeg`. The rig has no terrain-clearance check of its own
+  (placement was tuned on Cascade's slopes), so **check each new hike in playback**
+  (hiker in view, camera above terrain) before enabling it, and check the GPX's
+  distance/gain against the page while you're there.
+- **Shipped 2026-09-18 (PRs #16-#24):** trail line rebuilt as a terrain-sampled 3D
+  polyline (`trailPolyline.js`); fix for the page going blank after closing the
+  flyover; green start / red end dots that only show while the camera can actually
+  see them (per-frame `globe.pick` line of sight); mobile fix (map height capped to
+  the screen, `touch-action` handed back to the browser); the hike page's map card
+  redrawn as recolored Esri shaded relief (one stitched image, see
+  `createReliefLayer` in `terrainFlyover.js`), white end dots and a frosted caption band.
+- **Known, deferred:** jumping the paused slider from 0% to roughly 4-20% can put the
+  camera underground. Normal playback is fine.
+
 ## ✅ STATUS (updated 2026-09-17): Shipped, but scope-gated to two test hikes — this doc is historical
 
 The MapLibre blocking finding below turned out to be the right call to revisit

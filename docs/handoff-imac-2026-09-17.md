@@ -1,5 +1,10 @@
 # Handoff: 3D Flyover Camera Tracking — 2026-09-17
 
+> **✅ RESOLVED 2026-09-18.** The switchback problem this doc hands off was solved by
+> the trailing camera (PR #16), now enabled per hike via `TRAILING_CAMERA_TEST` in
+> `src/components/HikeMap.jsx`. Current state lives in the 2026-09-18 status at the
+> top of `docs/roadmap-3d-flyover.md`. Kept below as history.
+
 Written at the end of a long session (Claude Sonnet 5, Claude Code) that shipped a lot on
 the 3D flyover today. This doc is specifically about the one thread left unresolved:
 **camera smoothness through switchbacks.** Read this before touching `src/lib/terrainFlyover.js`.
