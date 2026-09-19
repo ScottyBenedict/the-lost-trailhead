@@ -22,6 +22,7 @@ Output goes to `out/`; downloads are cached in `.cache/` (both gitignored).
 | `python3 wbsearch.py <hike_id>` | Newest snow-free Esri Wayback capture + its source date/resolution vs current |
 | `node scan.mjs <hike_id>` then `python3 hikerscan.py <hike_id>` | Plays the flyover; reports any moment the hiker leaves the frame and the tightest edge margin |
 | `node card.mjs <hike_id>...` | Screenshot of the hike page's map card |
+| `node range.mjs [name]` | Screenshot of the About page's range map, plus a check that the page scrolls over it |
 
 ## Adding the trailing camera to a hike (the checklist)
 

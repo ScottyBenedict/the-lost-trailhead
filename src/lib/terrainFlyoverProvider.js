@@ -4,7 +4,7 @@ import { MartiniTerrainProvider, DefaultHeightmapResource, WorkerFarmTerrainDeco
 // commercial/non-commercial license boundary (see docs/roadmap-3d-flyover.md,
 // decision 1). Confirmed capped at zoom 15 — z16/z17 404 directly against the
 // bucket.
-const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+export const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
 export const TERRARIUM_MAX_ZOOM = 15;
 
 // Creates a self-hosted (no Cesium ion) terrain provider that decodes Terrarium

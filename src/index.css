@@ -752,6 +752,44 @@ a   { color: inherit; text-decoration: none; }
   margin: 0;
 }
 
+/* The About page's range map: the hike card's map card (.map-card, its caption
+   band and title above), full width of the section instead of a gallery cell. */
+.range-map {
+  height: min(78vh, 760px);
+  min-height: 460px;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  text-align: left;
+}
+
+@media (max-width: 680px) {
+  .range-map { height: 420px; min-height: 0; }
+}
+
+/* Hike name shown while hovering a pin: the caption band's frosted look. */
+.range-map-tip {
+  position: absolute;
+  z-index: 502;
+  transform: translate(-50%, calc(-100% - 14px));
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  background: rgba(20, 28, 22, 0.78);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  color: var(--white);
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.about-regions-section > p.range-map-note {
+  max-width: none;
+  margin: 0.75rem auto 3rem;
+  font-size: 0.85rem;
+}
+
 /* ── Gallery Lightbox ────────────────────────────────── */
 .gallery-lightbox {
   position: fixed;

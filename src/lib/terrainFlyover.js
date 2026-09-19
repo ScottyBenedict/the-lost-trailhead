@@ -10,7 +10,7 @@ import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './terrainFlyoverOverrides.css';
 import { buildCumulative, flyoverDurationMs, positionAt, bearingBetween, haversineM } from './gpxFlyover';
-import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
+import { createTerrariumTerrainProvider, TERRARIUM_URL } from './terrainFlyoverProvider';
 import { createTerrainTrail, CASING as TRAIL_CASING } from './trailPolyline';
 
 // findApexIndex's bestScore (below) doubles as out-and-back detection: it's
@@ -519,7 +519,7 @@ const RELIEF_STOPS = [
   [0.96, [111, 143, 120]],
   [1, [126, 158, 136]], // --stone
 ];
-const RELIEF_LUT = Array.from({ length: 256 }, (_, v) => {
+export const RELIEF_LUT = Array.from({ length: 256 }, (_, v) => {
   const t = v / 255;
   if (t <= RELIEF_STOPS[0][0]) return RELIEF_STOPS[0][1];
   for (let i = 1; i < RELIEF_STOPS.length; i++) {
@@ -553,6 +553,167 @@ function recolorRelief(ctx, width, height) {
   ctx.putImageData(pixels, 0, 0);
 }
 
+// Borders for the range map: solid white, kept off any stretch that runs along
+// or through water. A stretch is a coastline (or a strait) when there is water
+// within BORDER_PROBE_M to either side of it; a border that follows a river
+// (the Columbia) has land on both sides at that distance, so it stays.
+const BORDER_PROBE_M = 2500;
+function drawBorders(ctx, cover, rings, toPx, widthPx, probePx) {
+  const W = ctx.canvas.width;
+  const H = ctx.canvas.height;
+  const wet = (x, y) => {
+    const px = Math.floor(x), py = Math.floor(y);
+    return px >= 0 && py >= 0 && px < W && py < H && cover?.[(py * W + px) * 4 + 3] > 128;
+  };
+  const STEP = 6;
+  ctx.beginPath();
+  for (const ring of rings) {
+    const pts = ring.map(toPx);
+    let pen = false;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i];
+      const [bx, by] = pts[i + 1];
+      const len = Math.hypot(bx - ax, by - ay);
+      if (!len) continue;
+      const nx = -(by - ay) / len;
+      const ny = (bx - ax) / len;
+      const steps = Math.max(1, Math.ceil(len / STEP));
+      for (let k = 0; k < steps; k++) {
+        const [t0, t1] = [k / steps, (k + 1) / steps];
+        const mx = ax + (bx - ax) * (t0 + t1) / 2;
+        const my = ay + (by - ay) * (t0 + t1) / 2;
+        if (wet(mx + nx * probePx, my + ny * probePx) || wet(mx - nx * probePx, my - ny * probePx)) {
+          pen = false;
+          continue;
+        }
+        if (!pen) {
+          ctx.moveTo(ax + (bx - ax) * t0, ay + (by - ay) * t0);
+          pen = true;
+        }
+        ctx.lineTo(ax + (bx - ax) * t1, ay + (by - ay) * t1);
+      }
+    }
+  }
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.lineWidth = widthPx;
+  ctx.stroke();
+}
+
+// Square-window dilate (grow) or erode of a 0/1 mask by `r` pixels, in place.
+function spread(bits, w, h, r, grow) {
+  const tmp = new Uint8Array(bits.length);
+  const run = (src, dst, len, stride, lines, lineStride) => {
+    for (let l = 0; l < lines; l++) {
+      const base = l * lineStride;
+      for (let i = 0; i < len; i++) {
+        let v = grow ? 0 : 1;
+        for (let k = -r; k <= r; k++) {
+          const j = Math.min(len - 1, Math.max(0, i + k));
+          if (grow) v |= src[base + j * stride];
+          else v &= src[base + j * stride];
+        }
+        dst[base + i * stride] = v;
+      }
+    }
+  };
+  run(bits, tmp, w, 1, h, w);
+  run(tmp, bits, h, w, w, 1);
+}
+const closeMask = (bits, w, h, r) => { spread(bits, w, h, r, true); spread(bits, w, h, r, false); };
+const openMask = (bits, w, h, r) => { spread(bits, w, h, r, false); spread(bits, w, h, r, true); };
+
+// The colors the USGS hydro tiles draw water in (lake and river fill, outline).
+// Everything else on them is label text, which is left out.
+const HYDRO_COLORS = [[203, 230, 255], [213, 235, 255], [120, 176, 240]];
+const isHydroWater = (r, g, b, a) =>
+  a >= 100 && HYDRO_COLORS.some(([hr, hg, hb]) => (r - hr) ** 2 + (g - hg) ** 2 + (b - hb) ** 2 <= 900);
+
+// Water for the range map: on the stitched relief's tile grid, at one zoom
+// level coarser. Two sources, unioned: Terrarium elevation at or just above
+// sea level (soft edge), and the USGS National Hydrography Dataset's cached
+// tiles (transparent PNG: anything drawn is water, lakes filled, rivers as
+// lines; US only, so the Canadian side is elevation alone). The mask is
+// upscaled with smoothing, which rounds the coastline instead of stair-
+// stepping it. Returns the upscaled mask (RGBA, water in alpha).
+const HYDRO_URL = (z, y, x) =>
+  `https://basemap.nationalmap.gov/arcgis/rest/services/USGSHydroCached/MapServer/tile/${z}/${y}/${x}`;
+async function paintWater(ctx, width, height, level, x0, x1, y0, y1, rgb) {
+  const z = level - 1;
+  const [mx0, mx1, my0, my1] = [x0 >> 1, x1 >> 1, y0 >> 1, y1 >> 1];
+  const size = [(mx1 - mx0 + 1) * 256, (my1 - my0 + 1) * 256];
+  const layer = () => {
+    const c = document.createElement('canvas');
+    [c.width, c.height] = size;
+    return c;
+  };
+  const elevation = layer();
+  const hydro = layer();
+  const draws = [];
+  for (let y = my0; y <= my1; y++) {
+    for (let x = mx0; x <= mx1; x++) {
+      for (const [canvas, url] of [
+        [elevation, TERRARIUM_URL.replace('{z}', z).replace('{x}', x).replace('{y}', y)],
+        [hydro, HYDRO_URL(z, y, x)],
+      ]) {
+        draws.push(
+          fetch(url)
+            .then((res) => res.blob())
+            .then((blob) => createImageBitmap(blob))
+            .then((img) => canvas.getContext('2d', { willReadFrequently: true }).drawImage(img, (x - mx0) * 256, (y - my0) * 256))
+            .catch(() => {})
+        );
+      }
+    }
+  }
+  await Promise.all(draws);
+  const e = elevation.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, size[0], size[1]).data;
+  const h = hydro.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, size[0], size[1]).data;
+  const mask = layer();
+  const mctx = mask.getContext('2d', { willReadFrequently: true });
+  const px = mctx.createImageData(size[0], size[1]);
+  const d = px.data;
+  // USGS water: labels dropped by color, the holes their text leaves inside
+  // lakes and wide rivers closed, then anything under ~3 px wide (streams,
+  // hairlines) opened away, so lakes and the big rivers are what's left.
+  const lakes = new Uint8Array(size[0] * size[1]);
+  for (let p = 0, i = 0; p < lakes.length; p++, i += 4) lakes[p] = isHydroWater(h[i], h[i + 1], h[i + 2], h[i + 3]) ? 1 : 0;
+  closeMask(lakes, size[0], size[1], 2);
+  openMask(lakes, size[0], size[1], 1);
+  const low = new Uint8Array(size[0] * size[1]);
+  for (let p = 0, i = 0; p < low.length; p++, i += 4) {
+    // A tile that failed is transparent: no water from that source there.
+    const w = e[i + 3] === 0 ? 0 : Math.min(1, Math.max(0, (3 - (e[i] * 256 + e[i + 1] + e[i + 2] / 256 - 32768)) / 2.5));
+    d[i + 3] = Math.round(Math.max(w, lakes[p]) * 255);
+    low[p] = d[i + 3] > 127 ? 1 : 0;
+  }
+  // Seams a pixel or two wide in the data (a land-looking row across open
+  // water) are closed.
+  closeMask(low, size[0], size[1], 1);
+  for (let p = 0, i = 0; p < low.length; p++, i += 4) if (low[p]) d[i + 3] = 255;
+  mctx.putImageData(px, 0, 0);
+
+  const scaled = document.createElement('canvas');
+  scaled.width = width;
+  scaled.height = height;
+  const sctx = scaled.getContext('2d', { willReadFrequently: true });
+  sctx.imageSmoothingQuality = 'high';
+  sctx.drawImage(mask, (x0 / 2 - mx0) * 256, (y0 / 2 - my0) * 256, width / 2, height / 2, 0, 0, width, height);
+  const cover = sctx.getImageData(0, 0, width, height).data;
+  const img = ctx.getImageData(0, 0, width, height);
+  const out = img.data;
+  for (let i = 0; i < out.length; i += 4) {
+    const a = cover[i + 3] / 255;
+    if (a === 0) continue;
+    out[i] += (rgb[0] - out[i]) * a;
+    out[i + 1] += (rgb[1] - out[i + 1]) * a;
+    out[i + 2] += (rgb[2] - out[i + 2]) * a;
+  }
+  ctx.putImageData(img, 0, 0);
+  return cover;
+}
+
 // The card's relief as ONE image: every Esri tile at one zoom level over the
 // given area, stitched onto a canvas, recolored in one pass, and handed to
 // Cesium as a single image. Left to Cesium's normal tile-by-tile loading, the
@@ -563,18 +724,35 @@ function recolorRelief(ctx, width, height) {
 // anything. Esri's Web Mercator tiles are placed on Cesium's lat/lon grid as
 // one rectangle; over a card-sized area the two projections differ by a few
 // centimeters.
-async function createReliefLayer({ west, south, east, north }, level) {
+//
+// `reproject` (the range map only): the stitched image is linear in Web
+// Mercator's y but Cesium places it linearly in latitude. Over a card-sized
+// area that is a few centimeters; over a whole state it is kilometers, enough
+// to slide the shading off its own pins, so the range map resamples it row by
+// row into latitude first. Off by default: the hike cards are untouched.
+//
+// `water` (the range map only): { rgb }. Esri's hillshade has no water, so at
+// state scale the sea and the Sound read as flat land. Water is painted a flat
+// `rgb` where Terrarium elevation is at or just above sea level (the Sound and
+// the Pacific, tidal flats too) or where the USGS National Hydrography Dataset
+// draws water (lakes, and rivers as lines). `outline` (the range map only):
+// { rings: [[[lon, lat]...]...], widthM } draws solid white borders into the
+// image after the water, skipping any stretch that runs along or through
+// water, so coastlines don't get outlined. `maxTiles` lifts the tile cap for
+// a whole-state image.
+export async function createReliefLayer({ west, south, east, north }, level, { reproject = false, water = null, outline = null, maxTiles = RELIEF_MAX_TILES } = {}) {
   let n, x0, x1, y0, y1;
   const tileX = (lon) => Math.floor(((lon + 180) / 360) * n);
-  const tileY = (lat) => {
+  const tileYf = (lat) => {
     const r = Cesium.Math.toRadians(lat);
-    return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n);
+    return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n;
   };
+  const tileY = (lat) => Math.floor(tileYf(lat));
   // A level coarser whenever the area would take too many tiles.
   for (;; level--) {
     n = 2 ** level;
     [x0, x1, y0, y1] = [tileX(west), tileX(east), tileY(north), tileY(south)];
-    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= RELIEF_MAX_TILES || level <= 8) break;
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= maxTiles || level <= 8) break;
   }
   const lonOf = (x) => (x / n) * 360 - 180;
   const latOf = (y) => Cesium.Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))));
@@ -599,13 +777,32 @@ async function createReliefLayer({ west, south, east, north }, level) {
   }
   await Promise.all(draws);
   recolorRelief(ctx, canvas.width, canvas.height);
+  const cover = water ? await paintWater(ctx, canvas.width, canvas.height, level, x0, x1, y0, y1, water.rgb) : null;
+  if (outline) {
+    const metersPerPx = (40075016 * Math.cos(Cesium.Math.toRadians((north + south) / 2))) / (n * 256);
+    drawBorders(ctx, cover, outline.rings, ([lon, lat]) => [(((lon + 180) / 360) * n - x0) * 256, (tileYf(lat) - y0) * 256], outline.widthM / metersPerPx, BORDER_PROBE_M / metersPerPx);
+  }
+  let out = canvas;
+  if (reproject) {
+    out = document.createElement('canvas');
+    out.width = canvas.width;
+    out.height = canvas.height;
+    const octx = out.getContext('2d');
+    const latTop = latOf(y0);
+    const latBottom = latOf(y1 + 1);
+    for (let row = 0; row < out.height; row++) {
+      const lat = latTop + ((latBottom - latTop) * (row + 0.5)) / out.height;
+      const sy = Math.min(canvas.height - 1, Math.max(0, Math.floor((tileYf(lat) - y0) * 256)));
+      octx.drawImage(canvas, 0, sy, canvas.width, 1, 0, row, out.width, 1);
+    }
+  }
 
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve));
+  const blob = await new Promise((resolve) => out.toBlob(resolve));
   const url = URL.createObjectURL(blob);
   try {
     const provider = await Cesium.SingleTileImageryProvider.fromUrl(url, {
       rectangle: Cesium.Rectangle.fromDegrees(lonOf(x0), latOf(y1 + 1), lonOf(x1 + 1), latOf(y0)),
-      credit: RELIEF_CREDIT,
+      credit: water ? `${RELIEF_CREDIT}, USGS The National Map: National Hydrography Dataset` : RELIEF_CREDIT,
     });
     return new Cesium.ImageryLayer(provider);
   } finally {

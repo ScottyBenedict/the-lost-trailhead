@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { hikes } from '../data/hikes'
 import { publicSupabase as supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
+import RangeMap from '../components/RangeMap'
 
 // Alan first, Scott second
 const PERSON_ORDER = [
@@ -82,6 +83,7 @@ export default function AboutPage() {
           Home is the Cascades, but the list keeps growing. From Washington's granite ridgelines
           to the red rock canyons of the Southwest — these are the places we keep coming back to.
         </p>
+        <RangeMap hikes={hikes} />
         <div className="about-range-grid">
           <div className="about-range-col">
             <h3 className="about-range-heading">Where We've Been</h3>

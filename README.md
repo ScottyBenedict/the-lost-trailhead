@@ -79,5 +79,6 @@ the smoothed-GPX number, regions follow WTA, and GPU-heavy checks run one at a t
 
 - `docs/handoff-2026-09-19.md` — current handoff and open work; start here
 - `docs/roadmap-3d-flyover.md` — flyover status (top) plus historical spike notes
+- `docs/handoff-range-map.md` — About-page range map: shelved on branch `range-map`, with state and open problems
 - `docs/handoff-imac-2026-09-17.md` — resolved camera-tracking handoff, kept as history
 - `scripts/flyover-check/README.md` — GPX / snow / flyover check scripts
