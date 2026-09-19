@@ -96,7 +96,7 @@ export const hikes = [
     id: 'colchuck-lake',
     name: 'Colchuck Lake',
     region: 'Alpine Lakes Wilderness · Leavenworth',
-    distance: '8.0 mi',
+    distance: '8.7 mi',
     gain: '2,300 ft',
     difficulty: 'Strenuous',
     season: 'Jun – Oct',
