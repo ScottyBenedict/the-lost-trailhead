@@ -800,6 +800,66 @@ export class TerrainFlyover {
         position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
         point: { ...pinPoint(Cesium.Color.ORANGE), pixelSize: 10 },
       });
+
+      // A dot at each end of the line, so the line starts and ends at
+      // something instead of just stopping: green start, red end, white
+      // outline, same as the card's pins (a loop's one dot, at its shared
+      // start/finish, is green with a red outline, also as on the card). A
+      // little wider than the line up close, so it reads as the line's end
+      // cap. (Map-marker and pushpin versions were tried first; the plain
+      // dot was preferred.)
+      //
+      // Only shown while the camera can actually see that end of the line, so
+      // the far end doesn't show through the mountains in between: every few
+      // frames, a ray from the camera to each dot is picked against the
+      // rendered terrain, and the dot hides if the ray hits ground well short
+      // of it. The slack keeps the ground right at the dot (the line floats
+      // 4m above it) from counting. Cesium's own terrain test for clamped
+      // billboards was tried first and showed the far dot over the ridge too
+      // early: it counts a billboard as visible if any of three points on it
+      // is, and a few km out the dot's top edge is ~40m above its real spot.
+      //
+      // When shown, drawn with no depth test, so terrain right in front of it
+      // can't slice it. Their own collection, added after the entities'
+      // (among the viewer's first primitives), so they draw after the hiker:
+      // every depth-test-disabled billboard sits on the near plane, where
+      // Cesium's LESS depth test keeps whichever drew first, so the hiker
+      // stays on top while it's standing on an end.
+      const DOT_OCCLUSION_SLACK_M = 25;
+      const endDotImage = (fill, outline) => `data:image/svg+xml,${encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 14 14">'
+        + `<circle cx="7" cy="7" r="5.75" fill="${fill.toCssHexString()}" stroke="${outline.toCssHexString()}" stroke-width="1.5"/>`
+        + '</svg>'
+      )}`;
+      this.trail.ends.then(([start, end]) => {
+        if (this.destroyed || this.viewer.isDestroyed()) return;
+        const scene = this.viewer.scene;
+        const collection = scene.primitives.add(new Cesium.BillboardCollection());
+        const addDot = (position, fill, outline = Cesium.Color.WHITE) => collection.add({
+          position,
+          image: endDotImage(fill, outline),
+          width: 14,
+          height: 14,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        });
+        const dots = this.isOutAndBack
+          ? [addDot(start, GREEN), addDot(end, RED)]
+          : [addDot(start, GREEN, RED)];
+        const ray = new Cesium.Ray();
+        const hit = new Cesium.Cartesian3();
+        let frame = 0;
+        this.removeDotOcclusion = scene.preRender.addEventListener(() => {
+          if (frame++ % 4) return;
+          const cam = scene.camera.positionWC;
+          for (const dot of dots) {
+            Cesium.Cartesian3.clone(cam, ray.origin);
+            Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(dot.position, cam, ray.direction), ray.direction);
+            const picked = scene.globe.pick(ray, scene, hit);
+            dot.show = !picked
+              || Cesium.Cartesian3.distance(cam, picked) > Cesium.Cartesian3.distance(cam, dot.position) - DOT_OCCLUSION_SLACK_M;
+          }
+        });
+      });
     }
 
     // The ambient card preview (HikeMapCard.jsx) wants a true top-down "plan"
@@ -1001,6 +1061,7 @@ export class TerrainFlyover {
     this.destroyed = true;
     this.pause();
     this.topDownResizeObserver?.disconnect();
+    this.removeDotOcclusion?.();
     this.trail?.destroy();
     if (!this.viewer.isDestroyed()) this.viewer.destroy();
   }
