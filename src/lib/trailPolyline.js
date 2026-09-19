@@ -81,6 +81,9 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
     }
   };
 
+  let resolveEnds;
+  const ends = new Promise((resolve) => { resolveEnds = resolve; });
+
   const cartos = points.map((p) => Cesium.Cartographic.fromDegrees(p.lon, p.lat));
   Cesium.sampleTerrain(viewer.terrainProvider, TERRARIUM_MAX_ZOOM, cartos)
     .then(() => {
@@ -113,10 +116,15 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
       primitives.push(scene.primitives.add(withoutDepthWrite(casings)), scene.primitives.add(fills));
       updateWidths();
       removePreRender = scene.preRender.addEventListener(updateWidths);
+      resolveEnds([positions[0], positions[positions.length - 1]]);
     })
     .catch((e) => console.error('[terrainFlyover] trail terrain sampling failed:', e));
 
   return {
+    // [first, last] position of the drawn line, terrain-sampled and lifted
+    // exactly as the line is, once it's on screen — for marking its ends.
+    // Never resolves if the trail is torn down (or sampling fails) first.
+    ends,
     destroy() {
       destroyed = true;
       removePreRender?.();
