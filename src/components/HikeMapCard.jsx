@@ -12,6 +12,7 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
 
   const rootRef = useRef(null);
   const mapDivRef = useRef(null);
+  const bodyRef = useRef(null); // the frosted caption band — the map fits the route above it
   const mapInstanceRef = useRef(null);
   const flyoverRef = useRef(null); // TerrainFlyover instance — 3D path only
   const rafRef = useRef(null);
@@ -57,6 +58,7 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
             durationMs: PLAY_MS,
             onProgress: () => {},
             topDownPreview: true,
+            topDownBottomInset: () => bodyRef.current?.offsetHeight ?? 0,
           });
           return; // skip the Leaflet setup below entirely
         }
@@ -197,7 +199,9 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
           ↺
         </button>
       )}
-      <span className="map-card-caption">TRAIL MAP &amp; FLYOVER</span>
+      <div ref={bodyRef} className="map-card-body">
+        <h3 className="map-card-title">Trail Map &amp; Flyover</h3>
+      </div>
     </div>
   );
 }

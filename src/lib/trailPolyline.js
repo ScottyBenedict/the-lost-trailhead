@@ -33,7 +33,7 @@ import { TERRARIUM_MAX_ZOOM } from './terrainFlyoverProvider';
 // nothing per chunk beyond a width update.
 const CHUNK_M = 40;
 const FILL = Cesium.Color.WHITE;
-const CASING = Cesium.Color.fromCssColorString('#1a1d1a');
+export const CASING = Cesium.Color.fromCssColorString('#1a1d1a');
 
 // Wraps a PolylineCollection so its draw commands still depth-test against
 // the terrain but don't write depth, letting the fill (drawn after it, same
