@@ -314,7 +314,7 @@ export const hikes = [
     id: 'melakwa-lake',
     name: 'Melakwa Lake',
     region: 'Alpine Lakes Wilderness · Snoqualmie Pass',
-    distance: '9.0 mi',
+    distance: '9.3 mi',
     gain: '2,600 ft',
     difficulty: 'Moderate–Strenuous',
     season: 'Jul – Oct',

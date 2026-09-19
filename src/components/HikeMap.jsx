@@ -35,6 +35,7 @@ const TRAILING_CAMERA_TEST = {
   // came back in for the closing shot (see maxAimOffset in terrainFlyover.js).
   'kendall-katwalk': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60, maxAimOffset: 0.3 },
   'granite-mountain': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'melakwa-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
