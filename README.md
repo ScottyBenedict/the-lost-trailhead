@@ -68,6 +68,13 @@ session.
   stays in frame, camera stays above terrain) and the GPX stats against the page —
   the checklist and tools are in `scripts/flyover-check/README.md`.
 
+## Working conventions
+
+Scott reviews every change on localhost before anything is pushed. Hike distances use
+the smoothed-GPX number, regions follow WTA, and GPU-heavy checks run one at a time
+(the iMac kernel-panicked under back-to-back runs). Full session setup is in
+`docs/handoff-2026-09-19.md`.
+
 ## Docs
 
 - `docs/handoff-2026-09-19.md` — current handoff and open work; start here
