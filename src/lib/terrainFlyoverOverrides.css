@@ -43,3 +43,13 @@
   opacity: 0.55;
   text-decoration: none;
 }
+
+/* Cesium's own stylesheet sets touch-action: none on its canvas so its
+   camera controls get every gesture. Both maps here have camera input
+   switched off (enableInputs = false in terrainFlyover.js), so on a phone
+   that only swallowed swipes: the hike page couldn't scroll while a finger
+   was on the map card, and the lightbox couldn't scroll to the flyover's
+   controls and stats. Gestures go back to the browser; taps still click. */
+.cesium-widget canvas {
+  touch-action: manipulation;
+}
