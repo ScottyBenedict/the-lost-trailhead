@@ -252,12 +252,12 @@ export const hikes = [
     id: 'lake-serene',
     name: 'Lake Serene',
     region: 'Mt. Baker-Snoqualmie National Forest · Index',
-    distance: '8.0 mi',
-    gain: '3,700 ft',
+    distance: '7.9 mi',
+    gain: '2,250 ft',
     difficulty: 'Strenuous',
     season: 'Jul – Oct',
     description:
-      'Lake Serene sits in one of the most dramatic cirques in the Cascades, walled in on three sides by the sheer granite faces of Mount Index. The trail is unrelenting — nearly 4,000 feet of gain packed into four miles — but the payoff is a lake that feels genuinely remote despite its proximity to the highway. In early season the shoreline holds ice and snow well into July.',
+      'Lake Serene sits in one of the most dramatic cirques in the Cascades, walled in on three sides by the sheer granite faces of Mount Index. The trail is unrelenting — over 2,000 feet of gain packed into four miles — but the payoff is a lake that feels genuinely remote despite its proximity to the highway. In early season the shoreline holds ice and snow well into July.',
     cover: '/photos/IMG_6076.jpeg',
     coverPosition: 'center 45%',
     photos: [
