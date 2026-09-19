@@ -33,7 +33,11 @@ CREATE TABLE hike_photos (
     user_id UUID NOT NULL,
     storage_path TEXT NOT NULL,
     display_order INTEGER DEFAULT 0,
-    file_hash TEXT
+    file_hash TEXT,
+    capture_datetime TIMESTAMPTZ,
+    capture_subsec TEXT,
+    gps_lat DOUBLE PRECISION,
+    gps_lng DOUBLE PRECISION
 );
 
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;

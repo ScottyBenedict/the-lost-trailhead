@@ -128,6 +128,8 @@ export default function LogTripTab({ session, pendingHikeIds }) {
         await supabase.from('hike_photos').insert({
           hike_id: selectedHikeId, user_id: session.user.id, storage_path: storagePath,
           display_order: existingPhotos.length + i, file_hash: photos[i].hash,
+          capture_datetime: photos[i].captureDatetime, capture_subsec: photos[i].captureSubsec,
+          gps_lat: photos[i].gpsLat, gps_lng: photos[i].gpsLng,
         })
       }
       setHikeId(''); setCustomHike(''); setIsNewHike(false); setReportText(''); setHotTake('')
