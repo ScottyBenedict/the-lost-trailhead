@@ -11,7 +11,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './terrainFlyoverOverrides.css';
 import { buildCumulative, flyoverDurationMs, positionAt, bearingBetween, haversineM } from './gpxFlyover';
 import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
-import { createTerrainTrail } from './trailPolyline';
+import { createTerrainTrail, CASING as TRAIL_CASING } from './trailPolyline';
 
 // findApexIndex's bestScore (below) doubles as out-and-back detection: it's
 // the average GPS deviation between the outbound and return legs at the
@@ -442,12 +442,124 @@ function untangleHairpins(pts) {
   }
 }
 
+// The card's basemap: Esri's shaded relief (World_Hillshade), recolored from
+// gray into the site's forest greens, instead of satellite. At card size
+// satellite read as busy — snowfields, shadow and forest all competing with
+// the thin route line — where plain relief reads like a printed trail map.
+// Satellite stays in the lightbox flyover. Recolored through a lookup table:
+// hillshade is grayscale, and on the North Cascades mostly 0.5-0.96 gray, so
+// the ramp spends its range there, keeping the lightest slopes well short of
+// the white route line.
+const RELIEF_STOPS = [
+  [0.45, [15, 23, 17]],
+  [0.6, [29, 42, 32]],
+  [0.8, [58, 80, 64]],
+  [0.96, [111, 143, 120]],
+  [1, [126, 158, 136]], // --stone
+];
+const RELIEF_LUT = Array.from({ length: 256 }, (_, v) => {
+  const t = v / 255;
+  if (t <= RELIEF_STOPS[0][0]) return RELIEF_STOPS[0][1];
+  for (let i = 1; i < RELIEF_STOPS.length; i++) {
+    const [t1, c1] = RELIEF_STOPS[i];
+    if (t <= t1) {
+      const [t0, c0] = RELIEF_STOPS[i - 1];
+      const f = (t - t0) / (t1 - t0);
+      return c0.map((c, k) => Math.round(c + (c1[k] - c) * f));
+    }
+  }
+  return RELIEF_STOPS[RELIEF_STOPS.length - 1][1];
+});
+
+const RELIEF_TILE_URL = (z, y, x) =>
+  `https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/${z}/${y}/${x}`;
+// The service's own copyrightText — Esri's terms require it on screen, same
+// as the satellite credit.
+const RELIEF_CREDIT = 'Sources: Esri, Vantor, Airbus DS, USGS, NGA, NASA, CGIAR, N Robinson, NCEAS, NLS, OS, NMA, Geodatastyrelsen, Rijkswaterstaat, GSA, Geoland, FEMA, Intermap, and the GIS user community';
+// Bounds the one image's size (64 tiles = 2048px square at most).
+const RELIEF_MAX_TILES = 64;
+
+function recolorRelief(ctx, width, height) {
+  const pixels = ctx.getImageData(0, 0, width, height);
+  const d = pixels.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const [r, g, b] = RELIEF_LUT[d[i]];
+    d[i] = r;
+    d[i + 1] = g;
+    d[i + 2] = b;
+  }
+  ctx.putImageData(pixels, 0, 0);
+}
+
+// The card's relief as ONE image: every Esri tile at one zoom level over the
+// given area, stitched onto a canvas, recolored in one pass, and handed to
+// Cesium as a single image. Left to Cesium's normal tile-by-tile loading, the
+// card mixed levels (Esri shades each level differently, so it came out as a
+// patchwork of darker and lighter squares) and, even with the level pinned,
+// could leave a coarse stand-in tile showing next to full detail, as if two
+// different maps had been stitched together. A single image can't mix
+// anything. Esri's Web Mercator tiles are placed on Cesium's lat/lon grid as
+// one rectangle; over a card-sized area the two projections differ by a few
+// centimeters.
+async function createReliefLayer({ west, south, east, north }, level) {
+  let n, x0, x1, y0, y1;
+  const tileX = (lon) => Math.floor(((lon + 180) / 360) * n);
+  const tileY = (lat) => {
+    const r = Cesium.Math.toRadians(lat);
+    return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n);
+  };
+  // A level coarser whenever the area would take too many tiles.
+  for (;; level--) {
+    n = 2 ** level;
+    [x0, x1, y0, y1] = [tileX(west), tileX(east), tileY(north), tileY(south)];
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= RELIEF_MAX_TILES || level <= 8) break;
+  }
+  const lonOf = (x) => (x / n) * 360 - 180;
+  const latOf = (y) => Cesium.Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = (x1 - x0 + 1) * 256;
+  canvas.height = (y1 - y0 + 1) * 256;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const draws = [];
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      draws.push(
+        fetch(RELIEF_TILE_URL(level, y, x))
+          .then((res) => res.blob())
+          .then((blob) => createImageBitmap(blob))
+          .then((img) => ctx.drawImage(img, (x - x0) * 256, (y - y0) * 256))
+          // A tile that fails just leaves its square transparent, showing
+          // the globe's base color.
+          .catch(() => {})
+      );
+    }
+  }
+  await Promise.all(draws);
+  recolorRelief(ctx, canvas.width, canvas.height);
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve));
+  const url = URL.createObjectURL(blob);
+  try {
+    const provider = await Cesium.SingleTileImageryProvider.fromUrl(url, {
+      rectangle: Cesium.Rectangle.fromDegrees(lonOf(x0), latOf(y1 + 1), lonOf(x1 + 1), latOf(y0)),
+      credit: RELIEF_CREDIT,
+    });
+    return new Cesium.ImageryLayer(provider);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 // Renders a 3D terrain flyover into `containerEl` for the given already-parsed
 // (and ideally already-decimated) GPX `points`. Deliberately takes points, not a
 // GPX URL — stays agnostic of Supabase/fetching, which the caller (HikeMap.jsx /
 // HikeMapCard.jsx) already owns.
 export class TerrainFlyover {
-  constructor(containerEl, { points, onProgress, onFinish, camera, durationMs, topDownPreview } = {}) {
+  // topDownBottomInset (top-down card only): a function returning how many
+  // pixels along the bottom of the card are covered (by its caption band), so
+  // the route is fit into the area above it rather than tucked underneath.
+  constructor(containerEl, { points, onProgress, onFinish, camera, durationMs, topDownPreview, topDownBottomInset } = {}) {
     if (!points || points.length < 2) throw new Error('TerrainFlyover requires at least 2 points');
 
     // Apex-finding needs the real, unsmoothed recording (findApexIndex's own
@@ -541,14 +653,17 @@ export class TerrainFlyover {
     // layer — it's a raster image, not a vector style; there's no separate
     // "trail line" layer to toggle off. Satellite imagery is real ground
     // photography with no drawn trail overlay of any kind, so there's nothing
-    // for our own route to visually conflict with.
-    const baseImagery = new Cesium.ImageryLayer(
-      new Cesium.UrlTemplateImageryProvider({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        credit: 'Esri, Maxar, Earthstar Geographics',
-        maximumLevel: 19,
-      })
-    );
+    // for our own route to visually conflict with. The top-down card uses
+    // recolored shaded relief instead, added once its fit is known (below).
+    const baseImagery = topDownPreview
+      ? false
+      : new Cesium.ImageryLayer(
+          new Cesium.UrlTemplateImageryProvider({
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            credit: 'Esri, Maxar, Earthstar Geographics',
+            maximumLevel: 19,
+          })
+        );
 
     this.viewer = new Cesium.Viewer(containerEl, {
       terrainProvider: createTerrariumTerrainProvider(),
@@ -564,14 +679,23 @@ export class TerrainFlyover {
       infoBox: false,
       selectionIndicator: false,
       shouldAnimate: false,
+      // The card never moves, so it only redraws when something changes
+      // (tiles arriving, a resize) rather than 60 times a second — which is
+      // what makes the full-density rendering below affordable for it.
+      requestRenderMode: !!topDownPreview,
+      maximumRenderTimeChange: Infinity,
+      useBrowserRecommendedResolution: !topDownPreview,
     });
     this.viewer.scene.globe.enableLighting = true;
     // FXAA smooths edge stair-stepping (the trail line's edges especially).
     // Rendering at the display's full pixel density
     // (useBrowserRecommendedResolution = false) was tried alongside it for
     // sharper terrain on Retina screens — up to 4x the pixels, plus finer
-    // tiles streaming in — and made playback visibly jittery, so Cesium's
-    // default resolution stays.
+    // tiles streaming in — and made playback visibly jittery, so the flyover
+    // stays at Cesium's default resolution. The card has no playback, so it
+    // gets full density (capped at 2x, so a 3x phone doesn't draw 9x the
+    // pixels) — at 1x it was visibly soft on Retina screens.
+    if (topDownPreview) this.viewer.resolutionScale = Math.min(1, 2 / window.devicePixelRatio);
     this.viewer.scene.postProcessStages.fxaa.enabled = true;
     this.viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#8a9a78');
     // Off by default in Cesium, which draws lines and points over the terrain
@@ -661,6 +785,21 @@ export class TerrainFlyover {
           return { centerLon, centerLat, halfWidthM, halfHeightM, maxEle };
         })()
       : null;
+    // The card's relief (createReliefLayer), from the zoom level whose pixels
+    // best match the card's own over the route's extent (on Cascade, 13).
+    // Built once the view is fit (end of this constructor), over the ground
+    // area the camera actually shows. Until it arrives, the globe shows the
+    // relief's midtone.
+    let reliefLevel;
+    if (topDownExtent) {
+      const { halfWidthM, halfHeightM, centerLat } = topDownExtent;
+      const widthPx = containerEl.clientWidth || 400;
+      const heightPx = Math.max((containerEl.clientHeight || 300) - (topDownBottomInset?.() ?? 0), 1);
+      const metersPerPx = Math.max((2 * halfWidthM) / widthPx, (2 * halfHeightM) / heightPx);
+      const webMercatorMetersPerPxAtZ0 = 156543.03 * Math.cos(Cesium.Math.toRadians(centerLat));
+      reliefLevel = Cesium.Math.clamp(Math.round(Math.log2(webMercatorMetersPerPxAtZ0 / metersPerPx)), 8, 16);
+      this.viewer.scene.globe.baseColor = Cesium.Color.fromBytes(...RELIEF_LUT[205]);
+    }
     const applyTopDownView = () => {
       if (this.destroyed || !topDownExtent) return;
       this.viewer.camera.frustum.aspectRatio = containerEl.clientWidth / containerEl.clientHeight;
@@ -671,11 +810,19 @@ export class TerrainFlyover {
       const fovX = this.viewer.camera.frustum.fov;
       const fovY = this.viewer.camera.frustum.fovy;
       const { centerLon, centerLat, halfWidthM, halfHeightM, maxEle } = topDownExtent;
-      const distForHeight = halfHeightM / Math.tan(fovY / 2);
+      // The caption band covers the bottom of the card: fit the route's height
+      // into the uncovered part, then shift the view south (screen-down, with
+      // north up) by half the band so the route centers in that part.
+      const heightPx = containerEl.clientHeight;
+      const insetPx = Math.min(topDownBottomInset?.() ?? 0, heightPx * 0.5);
+      const uncovered = (heightPx - insetPx) / heightPx;
+      const distForHeight = halfHeightM / (Math.tan(fovY / 2) * uncovered);
       const distForWidth = halfWidthM / Math.tan(fovX / 2);
       const clearance = Math.max(distForHeight, distForWidth);
+      const metersPerPx = (2 * clearance * Math.tan(fovY / 2)) / heightPx;
+      const shiftedLat = centerLat - ((insetPx / 2) * metersPerPx) / 111320;
       this.viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(centerLon, centerLat, maxEle + clearance),
+        destination: Cesium.Cartesian3.fromDegrees(centerLon, shiftedLat, maxEle + clearance),
         orientation: { heading: 0, pitch: Cesium.Math.toRadians(-90), roll: 0 },
       });
     };
@@ -771,28 +918,18 @@ export class TerrainFlyover {
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     });
     if (topDownPreview) {
-      if (this.isOutAndBack) {
-        // Start and the real turnaround/summit are genuinely different
-        // places — two full pins, one at each.
-        const endPoint = this.cameraPoints[this.apexIdx];
+      // White dots outlined in the line's own dark casing, so on the card they
+      // read as the line's two ends rather than as extra map colors (the
+      // lightbox flyover keeps its green start and red end). An out-and-back's
+      // start and real turnaround are different places, so each gets a dot. A
+      // loop starts and finishes at the same spot (measured on Maple Pass
+      // Loop's real GPX: ~1m apart), so it gets one; two stacked there read as
+      // "the other one is missing," not as "this is a loop."
+      const ends = this.isOutAndBack ? [points[0], this.cameraPoints[this.apexIdx]] : [points[0]];
+      for (const p of ends) {
         this.viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
-          point: pinPoint(GREEN),
-        });
-        this.viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(endPoint.lon, endPoint.lat, 3),
-          point: pinPoint(RED),
-        });
-      } else {
-        // A loop starts and finishes at the same physical spot (measured on
-        // Maple Pass Loop's real GPX: ~1m apart) — two full pins there just
-        // render on top of each other, which read as "the other one is
-        // missing," not as "this is a loop." One pin instead, green fill
-        // (start) with a red outline (also the finish) — delineates both
-        // without implying two different locations that don't exist.
-        this.viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
-          point: pinPoint(GREEN, RED),
+          position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 3),
+          point: pinPoint(Cesium.Color.WHITE, TRAIL_CASING),
         });
       }
     } else {
@@ -872,6 +1009,29 @@ export class TerrainFlyover {
     // until that correction lands.
     if (topDownExtent) {
       applyTopDownView();
+      // The ground the card shows, measured on the ellipsoid, which sits
+      // below all this terrain and so overshoots it slightly: a safe cover.
+      // Plus a margin for later small resizes. An estimate from the route's
+      // own box came up short at the card's west edge on Cascade, where
+      // Cesium smeared the image's edge pixels across the gap.
+      const view = this.viewer.camera.computeViewRectangle();
+      if (view) {
+        const padLon = (view.east - view.west) * 0.15;
+        const padLat = (view.north - view.south) * 0.15;
+        const deg = Cesium.Math.toDegrees;
+        createReliefLayer({
+          west: deg(view.west - padLon),
+          south: deg(view.south - padLat),
+          east: deg(view.east + padLon),
+          north: deg(view.north + padLat),
+        }, reliefLevel)
+          .then((layer) => {
+            if (this.destroyed || this.viewer.isDestroyed()) return;
+            this.viewer.imageryLayers.add(layer);
+            this.viewer.scene.requestRender();
+          })
+          .catch((e) => console.error('[terrainFlyover] card relief failed:', e));
+      }
     } else {
       this.applyFrame(0);
     }

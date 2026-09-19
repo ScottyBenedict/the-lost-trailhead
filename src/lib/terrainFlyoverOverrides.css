@@ -21,15 +21,16 @@
   width: auto;
 }
 
-/* Matches .map-card-caption's own left inset (see index.css) so the
-   remaining Esri credit text lines up under "Trail Map & Flyover" instead of
-   sitting flush in the raw corner (Cesium's default: bottom: 0; left: 0)
-   while the caption above it has generous padding. Bottom stays smaller than
-   the caption's own 1.5rem so the two sit stacked with a visible gap rather
-   than overlapping. */
-.cesium-viewer-bottom {
-  left: 1.75rem;
-  bottom: 0.6rem;
+/* On the map card, the credit link sits inside the frosted caption band
+   (index.css .map-card-body, z-index 500) at its right end, level with the
+   title. !important because Cesium's Viewer.resize() writes left/right/bottom
+   straight onto this element as inline styles, which a plain rule can't
+   override (an earlier plain-rule inset here never took effect). */
+.map-card .cesium-viewer-bottom {
+  left: auto !important;
+  right: 1.5rem !important;
+  bottom: 1.15rem !important;
+  z-index: 501;
 }
 
 /* The "Data attribution" expand-link is the only thing left in the credit
