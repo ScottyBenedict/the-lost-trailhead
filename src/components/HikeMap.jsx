@@ -28,6 +28,7 @@ const TRAILING_CAMERA_TEST = {
   'rattlesnake-ledge': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'rachel-rampart-lakes': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'lake-serene': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'hidden-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
