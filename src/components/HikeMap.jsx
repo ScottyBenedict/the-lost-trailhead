@@ -31,6 +31,21 @@ const TRAILING_CAMERA_TEST = {
   'hidden-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'colchuck-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'lake-ingalls': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  // Kendall only: its long, fast flight briefly lost the hiker as the camera
+  // came back in for the closing shot (see maxAimOffset in terrainFlyover.js).
+  'kendall-katwalk': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60, maxAimOffset: 0.3 },
+};
+
+// Per-hike flight length, in seconds, for a hike long enough that
+// flyoverDurationMs's 48s cap would push its pace well past the others'
+// (~300 m/s). Kendall's flight path is ~20km: at 48s it ran 418 m/s, and the
+// trailing camera's aim (an average over a few seconds of the flight) swung
+// far enough on bends to jitter and briefly lose the hiker. 64s is the pace
+// the uncapped formula gives it. Rule going forward: a flight over 60s gets
+// flagged to Scott before it ships, to decide between the longer flight
+// and a faster one.
+const FLIGHT_SECONDS = {
+  'kendall-katwalk': 64,
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -354,7 +369,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
             // doesn't apply to Cesium's one-time static WebGL line; using it here
             // was throwing away real resolution the drawn track needs.
             points,
-            durationMs: flyoverDurationMs(total3d),
+            durationMs: FLIGHT_SECONDS[hikeId] ? FLIGHT_SECONDS[hikeId] * 1000 : flyoverDurationMs(total3d),
             camera: TRAILING_CAMERA_TEST[hikeId] ? { trailing: TRAILING_CAMERA_TEST[hikeId] } : undefined,
             onProgress: ({ frac, ele, distM }) => {
               drawIndicator(flyDataRef.current?.indicatorCtx, flyDataRef.current?.scale, frac, ele);
