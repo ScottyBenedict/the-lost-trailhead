@@ -24,8 +24,9 @@ const TRAILING_CAMERA_TEST = {
   // A loop: no turnaround, so no descent pitch — the camera trails the
   // direction of travel all the way round.
   'maple-pass-loop': { range: 900, closeRange: 400, pitchDeg: -38 },
-  // An out-and-back like Cascade, so the same shot, descent pitch included.
+  // Out-and-backs like Cascade, so the same shot, descent pitch included.
   'rattlesnake-ledge': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'rachel-rampart-lakes': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
