@@ -198,7 +198,7 @@ function gaussianSmooth(values, sigmaSamples) {
 // camera rises to this steeper angle during the summit orbit and holds it for
 // the descent.
 function buildTrailingRig(pathPoints, pathCum, apexIdx, isOutAndBack, speedMps, shot, rig = TRAILING_RIG) {
-  const { range, closeRange, pitchDeg, descentPitchDeg } = shot;
+  const { range, closeRange, pitchDeg, descentPitchDeg, maxAimOffset } = shot;
   const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
   const step = 5;
   const total = pathCum[pathCum.length - 1];
@@ -271,6 +271,30 @@ function buildTrailingRig(pathPoints, pathCum, apexIdx, isOutAndBack, speedMps, 
   pitch = pitch.map((p, j) => p + (p0 - p) * outro[j]);
   const introM = Math.min(rig.introS * speedMps, total / 3);
   const rangeM = flight.xs.map((_, j) => closeRange + (range - closeRange) * ease((j * step) / introM) * (1 - outro[j]));
+
+  // Optional, per hike (`maxAimOffset` in its trailing settings): keeps the aim
+  // within that fraction of the camera's range from the hiker. The aim is an
+  // average of the path over targetSigmaS, and on a long, fast flight that
+  // average can swing far enough off a bend, or ahead of the hiker as the
+  // camera comes back in close for the closing shot, to drop the hiker out
+  // of frame. The capped aim is then smoothed again over 0.75s: capped
+  // alone, it follows the hiker's own zigzag wherever the cap holds it,
+  // which on Kendall made the camera 3x as jittery as the uncapped aim.
+  // Smoothed, it's as steady as the other hikes' and stays within ~0.6x the
+  // range (well inside the frame). Hikes without the setting skip this.
+  if (maxAimOffset) {
+    for (let j = 0; j < aimX.length; j++) {
+      const dx = aimX[j] - flight.xs[j], dy = aimY[j] - flight.ys[j];
+      const off = Math.hypot(dx, dy), max = maxAimOffset * rangeM[j];
+      if (off > max) {
+        aimX[j] = flight.xs[j] + (dx * max) / off;
+        aimY[j] = flight.ys[j] + (dy * max) / off;
+      }
+    }
+    const resmooth = (0.75 * speedMps) / step;
+    const sx = gaussianSmooth(aimX, resmooth), sy = gaussianSmooth(aimY, resmooth);
+    for (let j = 0; j < aimX.length; j++) { aimX[j] = sx[j]; aimY[j] = sy[j]; }
+  }
 
   return {
     aimAt: (s) => ({ lat: lat0 + lerp(aimY, s / step) / mPerDegLat, lon: lon0 + lerp(aimX, s / step) / mPerDegLon }),
@@ -670,9 +694,9 @@ export class TerrainFlyover {
     this.onFinish = onFinish;
     this.camera = { ...DEFAULT_CAMERA, ...camera };
     if (camera?.trailing) {
-      const { range, closeRange = range, pitchDeg, descentPitchDeg = pitchDeg } = camera.trailing;
+      const { range, closeRange = range, pitchDeg, descentPitchDeg = pitchDeg, maxAimOffset } = camera.trailing;
       const speedMps = this.total / (this.durationMs / 1000);
-      this.trailingRig = buildTrailingRig(this.cameraPoints, this.cum, this.apexIdx, this.isOutAndBack, speedMps, { range, closeRange, pitchDeg, descentPitchDeg });
+      this.trailingRig = buildTrailingRig(this.cameraPoints, this.cum, this.apexIdx, this.isOutAndBack, speedMps, { range, closeRange, pitchDeg, descentPitchDeg, maxAimOffset });
     }
 
     this.flying = false;
@@ -914,7 +938,7 @@ export class TerrainFlyover {
     this.trail = createTerrainTrail(
       this.viewer,
       this.cameraPoints.slice(0, this.apexIdx + 1),
-      topDownPreview ? { minWidthPx: 2 } : undefined
+      topDownPreview ? { minWidthPx: 2, onTop: true } : undefined
     );
 
     // heightReference: RELATIVE_TO_GROUND makes Cesium clamp this point to the
@@ -963,13 +987,24 @@ export class TerrainFlyover {
       // loop starts and finishes at the same spot (measured on Maple Pass
       // Loop's real GPX: ~1m apart), so it gets one; two stacked there read as
       // "the other one is missing," not as "this is a loop."
-      const ends = this.isOutAndBack ? [points[0], this.cameraPoints[this.apexIdx]] : [points[0]];
-      for (const p of ends) {
-        this.viewer.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(p.lon, p.lat, 3),
-          point: pinPoint(Cesium.Color.WHITE, TRAIL_CASING),
-        });
-      }
+      // Placed at the drawn line's own ends, once it exists, and added after
+      // it: the card's line is drawn over the terrain with no depth test
+      // (onTop), so anything drawn before it would be painted over.
+      this.trail.ends.then(([start, end]) => {
+        if (this.destroyed || this.viewer.isDestroyed()) return;
+        const dots = this.viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
+        for (const position of this.isOutAndBack ? [start, end] : [start]) {
+          dots.add({
+            position,
+            pixelSize: 11,
+            color: Cesium.Color.WHITE,
+            outlineColor: TRAIL_CASING,
+            outlineWidth: 2,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          });
+        }
+        this.viewer.scene.requestRender();
+      });
     } else {
       this.marker = this.viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),

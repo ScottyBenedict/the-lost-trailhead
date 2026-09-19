@@ -217,7 +217,7 @@ export const hikes = [
     id: 'kendall-katwalk',
     name: 'Kendall Katwalk',
     region: 'Alpine Lakes Wilderness · Snoqualmie Pass',
-    distance: '11.0 mi',
+    distance: '12.6 mi',
     gain: '2,700 ft',
     difficulty: 'Strenuous',
     season: 'Jul – Oct',

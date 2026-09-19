@@ -40,8 +40,10 @@ export const CASING = Cesium.Color.fromCssColorString('#1a1d1a');
 // opaque pass — Cesium runs opaque commands in the order they're added)
 // cover it everywhere. PolylineCollection has no render-state option, so
 // this swaps the state on the commands it pushes each frame.
-function withoutDepthWrite(collection) {
-  const renderState = Cesium.RenderState.fromCache({ depthMask: false, depthTest: { enabled: true } });
+// With depthTest false (the top-down card, see onTop below) it also skips the
+// depth test, so the terrain can't hide any of it.
+function withoutDepthWrite(collection, depthTest = true) {
+  const renderState = Cesium.RenderState.fromCache({ depthMask: false, depthTest: { enabled: depthTest } });
   return {
     show: true,
     update(frameState) {
@@ -55,7 +57,12 @@ function withoutDepthWrite(collection) {
   };
 }
 
-export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.2, maxWidthPx = 8, liftM = 4 } = {}) {
+// onTop: draw the whole line over the terrain instead of depth-testing it.
+// For the top-down card, where nothing should ever be in front of the trail:
+// depth-tested, the card's coarser terrain detail poked up through the line
+// in steep spots and cut it into pieces. The flyover keeps the depth test (a
+// ridge in front of the line should hide it there).
+export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.2, maxWidthPx = 8, liftM = 4, onTop = false } = {}) {
   const scene = viewer.scene;
   const chunks = [];
   const primitives = [];
@@ -113,7 +120,10 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
         start = i;
         run = 0;
       }
-      primitives.push(scene.primitives.add(withoutDepthWrite(casings)), scene.primitives.add(fills));
+      primitives.push(
+        scene.primitives.add(withoutDepthWrite(casings, !onTop)),
+        scene.primitives.add(onTop ? withoutDepthWrite(fills, false) : fills)
+      );
       updateWidths();
       removePreRender = scene.preRender.addEventListener(updateWidths);
       resolveEnds([positions[0], positions[positions.length - 1]]);
