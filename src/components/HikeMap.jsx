@@ -27,6 +27,7 @@ const TRAILING_CAMERA_TEST = {
   // Out-and-backs like Cascade, so the same shot, descent pitch included.
   'rattlesnake-ledge': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'rachel-rampart-lakes': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'lake-serene': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
