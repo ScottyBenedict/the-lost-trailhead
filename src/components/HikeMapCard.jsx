@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { parseGPX, buildCumulative, positionAt, growTravelLine, decimate } from '../lib/gpxFlyover';
+import { parseGPX, buildCumulative, positionAt, growTravelLine, decimate, trimToTrailStart } from '../lib/gpxFlyover';
 
 const PLAY_MS = 15210; // 9s base, slowed 30% then another 30% per feedback
 
-export default function HikeMapCard({ gpxUrl, onOpen }) {
+export default function HikeMapCard({ gpxUrl, hikeId, onOpen }) {
   // 2026-09-17: rolled out to every hike after camera behavior (including
   // loop-shaped routes like Maple Pass Loop) was confirmed working —
   // previously gated to a small allowlist (terrain3dTestHikes.js, now
@@ -33,7 +33,9 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
         const text = await res.text();
         if (cancelled) return;
 
-        const fullPoints = parseGPX(text);
+        // Same trim as the flyover, so the card's map and the flight it
+        // opens show the same route (see TRAIL_START in gpxFlyover.js).
+        const fullPoints = trimToTrailStart(parseGPX(text), hikeId);
         if (fullPoints.length === 0) return;
 
         if (USE_TERRAIN_3D) {
@@ -174,7 +176,7 @@ export default function HikeMapCard({ gpxUrl, onOpen }) {
         mapInstanceRef.current = null;
       }
     };
-  }, [gpxUrl, USE_TERRAIN_3D]);
+  }, [gpxUrl, hikeId, USE_TERRAIN_3D]);
 
   return (
     <div ref={rootRef} className="gallery-item map-card" onClick={onOpen}>

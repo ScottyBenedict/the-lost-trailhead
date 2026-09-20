@@ -27,6 +27,35 @@ export function haversineM(a, b) {
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
+// Tracks that start somewhere other than the trailhead. Blanca Lake's
+// access road was washed out 1.6 miles below the trail, so the recording
+// opens with a flat road walk and closes with the same walk back — 3.2 of
+// its 10.8 miles, and 30% of a flyover spent over a forest road before the
+// hike begins. The GPX keeps the whole trip, because that is what was
+// walked; the map and the flyover show the trail.
+export const TRAIL_START = {
+  'blanca-lake': { lat: 47.9157, lon: -121.3128 },
+};
+
+// The track between the first and last approach to the trailhead. On an
+// out-and-back the same walk bookends the recording, so both ends go.
+// Falls back to the whole track if the point is never reached, which is
+// what a mistyped coordinate looks like.
+export function trimToTrailStart(points, hikeId, radiusM = 60) {
+  const start = TRAIL_START[hikeId];
+  if (!start || points.length === 0) return points;
+  let first = -1;
+  let last = -1;
+  for (let i = 0; i < points.length; i++) {
+    if (haversineM(points[i], start) <= radiusM) {
+      if (first === -1) first = i;
+      last = i;
+    }
+  }
+  if (first === -1 || last - first < 2) return points;
+  return points.slice(first, last + 1);
+}
+
 export function buildCumulative(points) {
   const cum = [0];
   for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + haversineM(points[i - 1], points[i]));
