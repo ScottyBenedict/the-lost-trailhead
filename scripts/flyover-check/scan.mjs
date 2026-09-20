@@ -4,11 +4,13 @@
 // `python3 hikerscan.py <hike_id>`; you only need to LOOK at frames if it flags
 // something (reading images is the expensive part).
 import { chromium } from 'playwright-core';
+import { useDiskCache } from './httpcache.mjs';
 import path from 'node:path'; import { fileURLToPath } from 'node:url';
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'out');
 const hike = process.argv[2]; const BASE = process.env.BASE ?? 'http://localhost:5173';
 const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-gpu', '--use-angle=metal'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const cache = await useDiskCache(page.context());
 await page.goto(`${BASE}/hikes/${hike}`, { waitUntil: 'networkidle' });
 await page.locator('.map-card').first().click();
 await page.locator('[aria-label="Flyover progress"]').waitFor({ timeout: 30000 });
@@ -23,4 +25,5 @@ for (const t of times) {
   if (t > 6000 && (await page.locator('[aria-label="Pause flyover"]').count()) === 0) break;
   await page.screenshot({ path: `${OUT}/scan-${hike}-${String(t).padStart(5, '0')}.png`, clip: { x: 370, y: 125, width: 700, height: 600 } });
 }
+console.log(cache.report());
 await browser.close();

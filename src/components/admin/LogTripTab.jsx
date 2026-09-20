@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { hikes } from '../../data/hikes'
-import { processFiles, slugify, unslugify, wordsMatch } from '../../lib/adminUtils'
+import { makeThumb, processFiles, PHOTO_QUALITY, slugify, thumbPath, unslugify, wordsMatch } from '../../lib/adminUtils'
 import PhotoDropZone from './PhotoDropZone'
 import HikeOptions from './HikeOptions'
 
@@ -83,7 +83,11 @@ export default function LogTripTab({ session, pendingHikeIds }) {
     if (direction === 'cw') { ctx.translate(canvas.width, 0); ctx.rotate(Math.PI / 2) }
     else { ctx.translate(0, canvas.height); ctx.rotate(-Math.PI / 2) }
     ctx.drawImage(img, 0, 0)
-    setPhotos(prev => prev.map((p, i) => i === idx ? { ...p, previewUrl: canvas.toDataURL('image/jpeg', 0.92) } : p))
+    // Already down to PHOTO_MAX_EDGE, so rotating does not resize again —
+    // but the thumbnail has to be rebuilt or it stays on its old side.
+    const previewUrl = canvas.toDataURL('image/jpeg', PHOTO_QUALITY)
+    const thumbUrl = await makeThumb(previewUrl)
+    setPhotos(prev => prev.map((p, i) => i === idx ? { ...p, previewUrl, thumbUrl } : p))
   }
 
   function removePhoto(idx) { setPhotos(prev => prev.filter((_, i) => i !== idx)) }
@@ -125,6 +129,12 @@ export default function LogTripTab({ session, pendingHikeIds }) {
         const storagePath = `${selectedHikeId}/${session.user.id}/${filename}`
         const { error: uploadError } = await supabase.storage.from('hike-photos').upload(storagePath, blob, { contentType: 'image/jpeg' })
         if (uploadError) throw uploadError
+        // The gallery loads this one; only opening the lightbox pulls the
+        // full-size photo. Same path with a thumb_ prefix, so nothing has
+        // to be recorded for it.
+        const thumbBlob = await fetch(photos[i].thumbUrl).then(r => r.blob())
+        const { error: thumbError } = await supabase.storage.from('hike-photos').upload(thumbPath(storagePath), thumbBlob, { contentType: 'image/jpeg' })
+        if (thumbError) throw thumbError
         await supabase.from('hike_photos').insert({
           hike_id: selectedHikeId, user_id: session.user.id, storage_path: storagePath,
           display_order: existingPhotos.length + i, file_hash: photos[i].hash,

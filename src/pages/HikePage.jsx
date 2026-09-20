@@ -23,6 +23,17 @@ function seededRandom(seed) {
   }
 }
 
+// The gallery cell is about 350px wide, so it loads the thumbnail that sits
+// beside each photo in storage (adminUtils thumbPath writes it); only the
+// lightbox pulls the full-size one. Photos in public/photos are served by
+// Vercel, not Supabase, and have no thumbnail — they are left alone.
+// Kept here rather than imported from adminUtils, which drags in heic2any
+// and exifr and has no business in a public page bundle.
+function thumbFor(url) {
+  if (typeof url !== 'string' || !url.includes('/hike-photos/')) return url
+  return url.replace(/\/([^/?#]+)(?=$|[?#])/, '/thumb_$1')
+}
+
 export default function HikePage() {
   const { slug } = useParams()
   const hike = hikes.find((h) => h.id === slug)
@@ -268,9 +279,12 @@ export default function HikePage() {
               onClick={() => setLightboxIndex(item.photoIdx + photoIndexOffset)}
             >
               <img
-                src={item.src}
+                src={thumbFor(item.src)}
                 alt={`${hike.name} — photo ${item.photoIdx + 1}`}
                 loading={item.photoIdx < 2 ? 'eager' : 'lazy'}
+                // A photo uploaded before thumbnails existed has none until
+                // resizephotos.py has run over it; fall back to the full one.
+                onError={(e) => { if (e.currentTarget.src !== item.src) e.currentTarget.src = item.src }}
               />
             </div>
           )
