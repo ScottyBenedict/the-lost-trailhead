@@ -519,7 +519,7 @@ const RELIEF_STOPS = [
   [0.96, [111, 143, 120]],
   [1, [126, 158, 136]], // --stone
 ];
-const RELIEF_LUT = Array.from({ length: 256 }, (_, v) => {
+export const RELIEF_LUT = Array.from({ length: 256 }, (_, v) => {
   const t = v / 255;
   if (t <= RELIEF_STOPS[0][0]) return RELIEF_STOPS[0][1];
   for (let i = 1; i < RELIEF_STOPS.length; i++) {
@@ -553,6 +553,42 @@ function recolorRelief(ctx, width, height) {
   ctx.putImageData(pixels, 0, 0);
 }
 
+// Water for the range map, from the rings in src/data/water.json (rebuild
+// them with scripts/flyover-check/fetchwater.py). Painted flat, over the
+// recolored relief, before the borders.
+//
+// This is deliberately vector. The tempting shortcut is a rendered hydro
+// basemap — Esri's or USGS's — with the water picked out of the image by
+// pixel color, but those tiles have their place labels drawn into them, and
+// the anti-aliased edge of a dark label sitting on a light lake passes
+// through exactly the blue a lake outline is drawn in. No color tolerance
+// separates the two, and closing the gaps in the text welds each label into
+// a solid block. Geometry has no such problem, needs no cleanup pass, and
+// costs no tile requests at all.
+function drawWater(ctx, toPx, { ocean, water }, rgb) {
+  const paint = (target, style) => {
+    target.fillStyle = style;
+    // Each entry is one polygon: its outline first, then any holes (the
+    // islands — Mercer, Vashon, the San Juans, and the land inside the
+    // ocean's own outline), so each fills even-odd on its own.
+    for (const poly of [...ocean, ...water]) {
+      target.beginPath();
+      for (const ring of poly) trace(target, ring, toPx);
+      target.fill('evenodd');
+    }
+  };
+  paint(ctx, `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`);
+}
+
+function trace(target, ring, toPx) {
+  ring.forEach((point, i) => {
+    const [x, y] = toPx(point);
+    if (i === 0) target.moveTo(x, y);
+    else target.lineTo(x, y);
+  });
+  target.closePath();
+}
+
 // The card's relief as ONE image: every Esri tile at one zoom level over the
 // given area, stitched onto a canvas, recolored in one pass, and handed to
 // Cesium as a single image. Left to Cesium's normal tile-by-tile loading, the
@@ -563,18 +599,34 @@ function recolorRelief(ctx, width, height) {
 // anything. Esri's Web Mercator tiles are placed on Cesium's lat/lon grid as
 // one rectangle; over a card-sized area the two projections differ by a few
 // centimeters.
-async function createReliefLayer({ west, south, east, north }, level) {
+//
+// `reproject` (the range map only): the stitched image is linear in Web
+// Mercator's y but Cesium places it linearly in latitude. Over a card-sized
+// area that is a few centimeters; over a whole state it is kilometers, enough
+// to slide the shading off its own pins, so the range map resamples it row by
+// row into latitude first. Off by default: the hike cards are untouched.
+//
+// `water` (the range map only): { rings, rgb }. Esri's hillshade has no water,
+// so at state scale the sea and the Sound read as flat land. `rings` is
+// src/data/water.json — the Pacific, the Sound and the Strait, the lakes and
+// the Columbia as polygons — filled flat in `rgb`. The state lines are NOT
+// painted here: they are drawn over the map as polylines (see rangeMap.js),
+// because a line baked into this image goes through the reprojection below
+// with it and comes out dashed. `maxTiles` lifts the tile cap for a
+// whole-state image.
+export async function createReliefLayer({ west, south, east, north }, level, { reproject = false, water = null, maxTiles = RELIEF_MAX_TILES } = {}) {
   let n, x0, x1, y0, y1;
   const tileX = (lon) => Math.floor(((lon + 180) / 360) * n);
-  const tileY = (lat) => {
+  const tileYf = (lat) => {
     const r = Cesium.Math.toRadians(lat);
-    return Math.floor(((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n);
+    return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n;
   };
+  const tileY = (lat) => Math.floor(tileYf(lat));
   // A level coarser whenever the area would take too many tiles.
   for (;; level--) {
     n = 2 ** level;
     [x0, x1, y0, y1] = [tileX(west), tileX(east), tileY(north), tileY(south)];
-    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= RELIEF_MAX_TILES || level <= 8) break;
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) <= maxTiles || level <= 8) break;
   }
   const lonOf = (x) => (x / n) * 360 - 180;
   const latOf = (y) => Cesium.Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))));
@@ -599,13 +651,32 @@ async function createReliefLayer({ west, south, east, north }, level) {
   }
   await Promise.all(draws);
   recolorRelief(ctx, canvas.width, canvas.height);
+  // Lon/lat to a pixel on the stitched image, still in Web Mercator here —
+  // `reproject` below straightens the rows into latitude afterwards, so the
+  // water and the borders travel with the shading they belong to.
+  const toPx = ([lon, lat]) => [(((lon + 180) / 360) * n - x0) * 256, (tileYf(lat) - y0) * 256];
+  if (water) drawWater(ctx, toPx, water.rings, water.rgb);
+  let out = canvas;
+  if (reproject) {
+    out = document.createElement('canvas');
+    out.width = canvas.width;
+    out.height = canvas.height;
+    const octx = out.getContext('2d');
+    const latTop = latOf(y0);
+    const latBottom = latOf(y1 + 1);
+    for (let row = 0; row < out.height; row++) {
+      const lat = latTop + ((latBottom - latTop) * (row + 0.5)) / out.height;
+      const sy = Math.min(canvas.height - 1, Math.max(0, Math.floor((tileYf(lat) - y0) * 256)));
+      octx.drawImage(canvas, 0, sy, canvas.width, 1, 0, row, out.width, 1);
+    }
+  }
 
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve));
+  const blob = await new Promise((resolve) => out.toBlob(resolve));
   const url = URL.createObjectURL(blob);
   try {
     const provider = await Cesium.SingleTileImageryProvider.fromUrl(url, {
       rectangle: Cesium.Rectangle.fromDegrees(lonOf(x0), latOf(y1 + 1), lonOf(x1 + 1), latOf(y0)),
-      credit: RELIEF_CREDIT,
+      credit: water ? `${RELIEF_CREDIT}, USGS The National Map: National Hydrography Dataset, Natural Earth` : RELIEF_CREDIT,
     });
     return new Cesium.ImageryLayer(provider);
   } finally {

@@ -42,7 +42,7 @@ export const CASING = Cesium.Color.fromCssColorString('#1a1d1a');
 // this swaps the state on the commands it pushes each frame.
 // With depthTest false (the top-down card, see onTop below) it also skips the
 // depth test, so the terrain can't hide any of it.
-function withoutDepthWrite(collection, depthTest = true) {
+export function withoutDepthWrite(collection, depthTest = true) {
   const renderState = Cesium.RenderState.fromCache({ depthMask: false, depthTest: { enabled: depthTest } });
   return {
     show: true,
