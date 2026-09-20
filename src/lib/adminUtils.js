@@ -154,8 +154,64 @@ function encode(canvas, maxEdge, quality) {
   return out.toDataURL(PHOTO_TYPE, quality)
 }
 
+// A duplicate has to be recognised by what the picture looks like, not by
+// its bytes. Every upload is re-encoded (rotated, resized, now WebP), and
+// the photos already on a hike may be a repo file, an older JPEG upload or
+// a fresh WebP one — so the same photograph has a different SHA-256 in
+// every one of those forms. This is a difference hash: shrink to 9x8 grey,
+// then record whether each pixel is darker than the one to its right. The
+// result survives re-encoding, resizing and mild colour shifts, and two
+// hashes are compared by counting differing bits.
+export async function perceptualHash(src) {
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image()
+      // Needed for getImageData on a Supabase URL; storage sends
+      // access-control-allow-origin: *. A data: URL ignores it.
+      if (!src.startsWith('data:')) i.crossOrigin = 'anonymous'
+      i.onload = () => resolve(i)
+      i.onerror = reject
+      i.src = src
+    })
+    const canvas = document.createElement('canvas')
+    canvas.width = 9
+    canvas.height = 8
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    ctx.drawImage(img, 0, 0, 9, 8)
+    const d = ctx.getImageData(0, 0, 9, 8).data
+    const grey = (i) => 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]
+    let bits = ''
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) bits += grey(y * 9 + x) < grey(y * 9 + x + 1) ? '1' : '0'
+    }
+    return bits
+  } catch {
+    // A photo that will not load or taints the canvas simply is not
+    // compared, rather than blocking the upload.
+    return null
+  }
+}
+
+// Out of 64. Measured on the Bandera uploads that prompted this: the two
+// that really were the same photograph came back at 9 bits, and the four
+// genuinely different shots of the same hike at 24 to 28. 14 sits in the
+// middle of that gap — enough headroom that a slightly different
+// re-encode of a duplicate still trips it, still nowhere near a different
+// photo of the same place.
+export const DUPLICATE_BITS = 14
+
+export function looksDuplicate(hash, existing) {
+  if (!hash) return false
+  return existing.some((other) => {
+    if (!other || other.length !== hash.length) return false
+    let diff = 0
+    for (let i = 0; i < hash.length; i++) if (hash[i] !== other[i]) diff++
+    return diff <= DUPLICATE_BITS
+  })
+}
+
 // Throws if any file exceeds MAX_FILE_BYTES — callers should catch and surface err.message
-export async function processFiles(files, existingHashes = new Set()) {
+export async function processFiles(files, existingHashes = new Set(), existingLooks = []) {
   const imageFiles = Array.from(files).filter(f =>
     f.type.startsWith('image/') || f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif')
   )
@@ -171,6 +227,17 @@ export async function processFiles(files, existingHashes = new Set()) {
     }
     const hash = await computeHash(file)
     const url = await rotateImage(workingFile)
-    return { file: workingFile, previewUrl: url, thumbUrl: await makeThumb(url), hash, isDuplicate: existingHashes.has(hash) }
+    const looks = await perceptualHash(url)
+    return {
+      file: workingFile,
+      previewUrl: url,
+      thumbUrl: await makeThumb(url),
+      hash,
+      looks,
+      // Exact byte match catches the same file dropped twice in one session;
+      // the visual match catches the same photograph already on the hike in
+      // any other form.
+      isDuplicate: existingHashes.has(hash) || looksDuplicate(looks, existingLooks),
+    }
   }))
 }
