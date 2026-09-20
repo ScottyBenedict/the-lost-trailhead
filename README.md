@@ -20,7 +20,7 @@ Live on Vercel. Repo: `ScottyBenedict/the-lost-trailhead`.
 |---|---|
 | `/` | Hike card grid, A-Z / Recent sort, hover flyover preview on each card |
 | `/hikes/:slug` | Hero photo, stats bar, photo gallery with trip reports interspersed |
-| `/about` | Profiles for Alan & Scott |
+| `/about` | Profiles for Alan & Scott, plus a Washington range map with a pin per hike (desktop only — see `docs/handoff-2026-09-19.md`) |
 | `/gear` | Gear list per person, grouped by category |
 | `/admin` | Auth-gated CMS — log trips, publish new hike pages, manage gear/profile/GPX |
 
@@ -66,7 +66,15 @@ session.
   hiker") camera, enabled through `TRAILING_CAMERA_TEST` in
   `src/components/HikeMap.jsx`. Add a hike there only after checking playback (hiker
   stays in frame, camera stays above terrain) and the GPX stats against the page —
-  the checklist and tools are in `scripts/flyover-check/README.md`.
+  the checklist and tools are in `scripts/flyover-check/README.md`. It is on 18 of
+  the 33 hikes as of 2026-09-19.
+- **Photos are stored at the size the site shows them.** Uploads are resized in
+  the browser (WebP, 2880px long edge, plus an 800px `thumb_<name>` beside each,
+  found by convention with no DB column), and the buckets reject anything over
+  3 MB / 1 MB / 8 MB server-side whatever sent it. `scripts/photopipe.py` does
+  bulk work. Skipping this is what took the site down on 2026-09-19: nothing had
+  ever been resized, a hike page cost ~28 MB, and the free tier's 5 GB of monthly
+  CDN egress went mostly to our own localhost testing.
 
 ## Working conventions
 
@@ -79,6 +87,6 @@ the smoothed-GPX number, regions follow WTA, and GPU-heavy checks run one at a t
 
 - `docs/handoff-2026-09-19.md` — current handoff and open work; start here
 - `docs/roadmap-3d-flyover.md` — flyover status (top) plus historical spike notes
-- `docs/handoff-range-map.md` — About-page range map: shelved on branch `range-map`, with state and open problems
+- `docs/handoff-range-map.md` — superseded; the range map shipped in PR #41 (kept for what the failed approaches cost)
 - `docs/handoff-imac-2026-09-17.md` — resolved camera-tracking handoff, kept as history
 - `scripts/flyover-check/README.md` — GPX / snow / flyover check scripts
