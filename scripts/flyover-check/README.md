@@ -7,7 +7,7 @@ Not part of the site build. See `docs/handoff-2026-09-19.md` for open work.
 
 ```
 cd scripts/flyover-check && npm install      # playwright-core; uses your installed Chrome
-pip3 install pillow                          # if missing
+pip3 install pillow shapely                  # if missing
 ```
 
 The browser checks need the dev server running (`npm run dev` at the repo root).
@@ -22,6 +22,9 @@ Output goes to `out/`; downloads are cached in `.cache/` (both gitignored).
 | `python3 wbsearch.py <hike_id>` | Newest snow-free Esri Wayback capture + its source date/resolution vs current |
 | `node scan.mjs <hike_id>` then `python3 hikerscan.py <hike_id>` | Plays the flyover; reports any moment the hiker leaves the frame and the tightest edge margin |
 | `node card.mjs <hike_id>...` | Screenshot of the hike page's map card |
+| `python3 watercheck.py [--png]` | The range map's water, checked offline: wet/dry at 30 landmarks, no browser |
+| `python3 fetchwater.py` | Rebuilds `src/data/water.json` from Natural Earth + USGS NHD (slow; only when the water changes) |
+| `python3 fetchborders.py` | Rebuilds `src/data/stateBorders.json` from Census TIGERweb; needs `water.json` first, to tell coast from border |
 | `node range.mjs [name]` | Screenshot of the About page's range map, plus a check that the page scrolls over it |
 
 ## Adding the trailing camera to a hike (the checklist)

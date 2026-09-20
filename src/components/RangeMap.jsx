@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import stateBorders from '../data/stateBorders.json';
 
 // Washington's bounding box: anything outside it (the two Arizona hikes) is
 // counted in a note instead of pinned.
@@ -46,7 +45,6 @@ export default function RangeMap({ hikes }) {
       map = new RangeMapView(mapDivRef.current, {
         pins,
         bounds: WASHINGTON,
-        borders: stateBorders.rings,
         waterRgb: WATER_RGB,
         bottomInset: () => bodyRef.current?.offsetHeight ?? 0,
         onHover: (pin, at) => setTip(pin ? { names: pin.hikes.map((h) => h.name).join(' · '), ...at } : null),
