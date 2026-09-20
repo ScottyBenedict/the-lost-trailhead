@@ -23,15 +23,15 @@ export const hikes = [
     season: 'Jun – Oct',
     description:
       'Bandera Mountain earns its place among the great I-90 corridor trails with a summit view that stops you cold — Mount Rainier floating above the Cascade foothills to the south, the Snoqualmie Valley threading through the forest far below, and the jagged ridgeline of the Alpine Lakes stretching in every direction. The route climbs steadily through dense second-growth before the trees thin and the upper mountain opens into boulder fields and wildflower meadows. The summit itself is a broad, rocky plateau with enough room to spread out and stay a while.',
-    cover: '/photos/IMG_7942.jpeg',
+    cover: '/photos/IMG_7942.webp',
     coverPosition: 'center 40%',
     photos: [
-      '/photos/IMG_7942.jpeg',
-      '/photos/IMG_7938.jpeg',
-      '/photos/IMG_7924.jpeg',
-      '/photos/IMG_7931.jpeg',
-      '/photos/IMG_7935.jpeg',
-      '/photos/IMG_7925.jpeg',
+      '/photos/IMG_7942.webp',
+      '/photos/IMG_7938.webp',
+      '/photos/IMG_7924.webp',
+      '/photos/IMG_7931.webp',
+      '/photos/IMG_7935.webp',
+      '/photos/IMG_7925.webp',
     ],
   },
   {
@@ -44,12 +44,12 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'Few lakes in Washington stop hikers in their tracks the way Blanca does. Fed by the Columbia Glacier, the water holds an impossible milky turquoise that shifts with the light throughout the day. The trail earns every bit of that view — a relentless climb through dense forest that gives little hint of what\'s waiting at the top until the trees break and the lake opens up below.',
-    cover: '/photos/IMG_5347.jpeg',
+    cover: '/photos/IMG_5347.webp',
     coverPosition: 'center 45%',
     photos: [
-      '/photos/IMG_5347.jpeg',
-      '/photos/IMG_5337.jpeg',
-      '/photos/IMG_2283b.jpeg',
+      '/photos/IMG_5347.webp',
+      '/photos/IMG_5337.webp',
+      '/photos/IMG_2283b.webp',
     ],
   },
   {
@@ -76,20 +76,20 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'One of the great hikes in the North Cascades, Cascade Pass delivers a sweeping alpine panorama from its saddle — and that\'s just the beginning. Past the pass, the Sahale Arm climbs steeply through open heather slopes to a rounded shoulder above 6,000 feet, where Doubtful Lake appears 800 feet below and the arm keeps rising toward Sahale Glacier. The fall color here is extraordinary: crimson and gold blueberry fields spreading across the high ridges, with glaciated peaks in every direction.',
-    cover: '/photos/IMG_2427.jpeg',
+    cover: '/photos/IMG_2427.webp',
     coverPosition: 'center 40%',
     photos: [
-      '/photos/IMG_2427.jpeg',
-      '/photos/IMG_5621.jpeg',
-      '/photos/IMG_5586.jpeg',
-      '/photos/IMG_5594.jpeg',
-      '/photos/IMG_5595.jpeg',
-      '/photos/IMG_5598.jpeg',
-      '/photos/IMG_5605.jpeg',
-      '/photos/IMG_5608.jpeg',
-      '/photos/IMG_5616.jpeg',
-      '/photos/IMG_5625.jpeg',
-      '/photos/IMG_5628.jpeg',
+      '/photos/IMG_2427.webp',
+      '/photos/IMG_5621.webp',
+      '/photos/IMG_5586.webp',
+      '/photos/IMG_5594.webp',
+      '/photos/IMG_5595.webp',
+      '/photos/IMG_5598.webp',
+      '/photos/IMG_5605.webp',
+      '/photos/IMG_5608.webp',
+      '/photos/IMG_5616.webp',
+      '/photos/IMG_5625.webp',
+      '/photos/IMG_5628.webp',
     ],
   },
   {
@@ -102,15 +102,15 @@ export const hikes = [
     season: 'Jun – Oct',
     description:
       'Colchuck Lake sits at 5,570 feet beneath the sheer north faces of Dragontail Peak and Colchuck Peak — two of the most dramatic walls in the Alpine Lakes Wilderness. The trail climbs steadily through dense forest before breaking out onto the boulder-strewn lakeshore, a granite and ice world that holds its winter coat well into summer. In early season the lake freezes hard enough to walk on, and the silence is complete: just the creak of ice, the wind off the couloir, and the ridge reflected in whatever open water the thaw has left.',
-    cover: '/photos/IMG_4742.jpeg',
+    cover: '/photos/IMG_4742.webp',
     coverPosition: 'center 40%',
     photos: [
-      '/photos/IMG_1771.jpeg',
-      '/photos/IMG_4735.jpeg',
-      '/photos/IMG_4740.jpeg',
-      '/photos/IMG_4742.jpeg',
-      '/photos/IMG_4745.jpeg',
-      '/photos/IMG_4748.jpeg',
+      '/photos/IMG_1771.webp',
+      '/photos/IMG_4735.webp',
+      '/photos/IMG_4740.webp',
+      '/photos/IMG_4742.webp',
+      '/photos/IMG_4745.webp',
+      '/photos/IMG_4748.webp',
     ],
   },
   {
@@ -123,18 +123,18 @@ export const hikes = [
     season: 'Apr – Nov',
     description:
       "Named for a logger who once worked these slopes, Dirty Harry's Balcony delivers one of the most dramatic viewpoints in the I-90 corridor — a cliffside perch looking straight down the Snoqualmie Valley as the highway threads between fog-wrapped ridgelines below. The trail climbs relentlessly through second-growth forest before the trees open up and the full sweep of the valley appears.",
-    cover: '/photos/IMG_5012.jpeg',
+    cover: '/photos/IMG_5012.webp',
     coverPosition: 'center 55%',
     photos: [
-      '/photos/IMG_4994.jpeg',
-      '/photos/IMG_4992.jpeg',
-      '/photos/IMG_5003.jpeg',
-      '/photos/IMG_5005.jpeg',
-      '/photos/IMG_5008.jpeg',
-      '/photos/IMG_5012.jpeg',
-      '/photos/IMG_5015.jpeg',
-      '/photos/IMG_5021.jpeg',
-      '/photos/IMG_5022.jpeg',
+      '/photos/IMG_4994.webp',
+      '/photos/IMG_4992.webp',
+      '/photos/IMG_5003.webp',
+      '/photos/IMG_5005.webp',
+      '/photos/IMG_5008.webp',
+      '/photos/IMG_5012.webp',
+      '/photos/IMG_5015.webp',
+      '/photos/IMG_5021.webp',
+      '/photos/IMG_5022.webp',
     ],
   },
   {
@@ -206,11 +206,11 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'The Hidden Lake Lookout sits perched above a glacially carved cirque at 6,890 feet, offering what many consider the finest panorama in the North Cascades. The route climbs through wildflower-soaked Sibley Creek Basin before a final scramble to the historic fire lookout. On a clear day the view stretches from Glacier Peak to the Canadian border.',
-    cover: '/photos/IMG_9270.jpeg',
+    cover: '/photos/IMG_9270.webp',
     coverPosition: 'center 50%',
     photos: [
-      '/photos/IMG_9270.jpeg',
-      '/photos/IMG_9271.jpeg',
+      '/photos/IMG_9270.webp',
+      '/photos/IMG_9271.webp',
     ],
   },
   {
@@ -223,11 +223,11 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'The most dramatic stretch of the PCT in Washington, Kendall Katwalk is a trail blasted into the sheer granite face of Kendall Peak, with nothing but air between you and the valley floor. The approach climbs steadily through old-growth forest and subalpine meadows before the ridge suddenly drops away and the Katwalk comes into view — a narrow ledge with the entire Snoqualmie Pass corridor spread below.',
-    cover: '/photos/IMG_1870.jpeg',
+    cover: '/photos/IMG_1870.webp',
     coverPosition: 'center 50%',
     photos: [
-      '/photos/IMG_1870.jpeg',
-      '/photos/IMG_1871.jpeg',
+      '/photos/IMG_1870.webp',
+      '/photos/IMG_1871.webp',
     ],
   },
   {
@@ -240,12 +240,12 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'Tucked below the craggy granite face of Mount Stuart, Lake Ingalls is the jewel of the Teanaway country. The trail winds through subalpine meadows carpeted in lupine and paintbrush before cresting Ingalls Pass and revealing the steel-blue lake framed by larchwood. In late September the Western larches ignite with gold — one of the finest fall color displays in the Cascades.',
-    cover: '/photos/IMG_8823.jpeg',
+    cover: '/photos/IMG_8823.webp',
     coverPosition: 'center 45%',
     photos: [
-      '/photos/IMG_2633.jpeg',
-      '/photos/IMG_8823.jpeg',
-      '/photos/IMG_8824.jpeg',
+      '/photos/IMG_2633.webp',
+      '/photos/IMG_8823.webp',
+      '/photos/IMG_8824.webp',
     ],
   },
   {
@@ -258,10 +258,10 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'Lake Serene sits in one of the most dramatic cirques in the Cascades, walled in on three sides by the sheer granite faces of Mount Index. The trail is unrelenting — over 2,000 feet of gain packed into four miles — but the payoff is a lake that feels genuinely remote despite its proximity to the highway. In early season the shoreline holds ice and snow well into July.',
-    cover: '/photos/IMG_6076.jpeg',
+    cover: '/photos/IMG_6076.webp',
     coverPosition: 'center 45%',
     photos: [
-      '/photos/IMG_6076.jpeg',
+      '/photos/IMG_6076.webp',
     ],
   },
   {
@@ -274,10 +274,10 @@ export const hikes = [
     season: 'Year-round',
     description:
       'Lake Twenty-Two sits in a tight cirque beneath the cliffs of Ashland Lakes Ridge, fed by snowmelt and ringed by old-growth forest. The trail climbs through one of the few remaining old-growth stands on the west slope of the Cascades — massive hemlocks and cedars draped in moss — before the trees give way and the lake appears. In winter the approach ices over and the surrounding walls run with frozen waterfalls, making it a different kind of trip entirely.',
-    cover: '/photos/IMG_6227.jpeg',
+    cover: '/photos/IMG_6227.webp',
     coverPosition: 'center 45%',
     photos: [
-      '/photos/IMG_6227.jpeg',
+      '/photos/IMG_6227.webp',
     ],
   },
   {
@@ -320,10 +320,10 @@ export const hikes = [
     season: 'Jul – Oct',
     description:
       'Melakwa Lake sits in a quiet granite basin above Denny Creek, ringed by talus slopes and patches of late-season color. The trail follows the creek through old-growth hemlock before a steep push over Melakwa Pass and the first glimpse of the lake below. Less trafficked than Snow Lake despite sharing the same general corridor, it rewards the extra miles with genuine stillness.',
-    cover: '/photos/IMG_2964.jpeg',
+    cover: '/photos/IMG_2964.webp',
     coverPosition: 'center 50%',
     photos: [
-      '/photos/IMG_2964.jpeg',
+      '/photos/IMG_2964.webp',
     ],
   },
   {
@@ -484,10 +484,10 @@ export const hikes = [
     season: 'Jun – Oct',
     description:
       'The most beloved trail in the Alpine Lakes Wilderness, Snow Lake rewards with a classic Cascades experience — granite slabs, old-growth forest, and a shimmering lake ringed with peaks. The trail climbs steadily through the Source Creek valley before the final descent to the lakeshore, where Rock Creek drains westward toward the Middle Fork Snoqualmie. A perfect introduction to the Enchantments region.',
-    cover: '/photos/IMG_5009.jpeg',
+    cover: '/photos/IMG_5009.webp',
     coverPosition: 'center 50%',
     photos: [
-      '/photos/IMG_5009.jpeg',
+      '/photos/IMG_5009.webp',
     ],
   },
   {
@@ -514,11 +514,11 @@ export const hikes = [
     season: 'Jul – Sep',
     description:
       'Starting from Sunrise — the highest point in the park reachable by road — Sourdough Ridge delivers outsized rewards with minimal effort. The trail rolls across the crest of the ridge with unobstructed views of Rainier\'s Emmons Glacier to the south and the volcanic Cascades stretching north to the horizon. Wildflowers peak in late July, painting the tundra-like meadows in waves of pink and yellow.',
-    cover: '/photos/IMG_2343.jpeg',
+    cover: '/photos/IMG_2343.webp',
     coverPosition: 'center 40%',
     photos: [
-      '/photos/IMG_2343.jpeg',
-      '/photos/IMG_2345.jpeg',
+      '/photos/IMG_2343.webp',
+      '/photos/IMG_2345.webp',
     ],
   },
   {
@@ -531,10 +531,10 @@ export const hikes = [
     season: 'Year-round',
     description:
       'Hidden at the end of Fay Canyon, the Subway Cave is one of Sedona\'s best-kept secrets — a cathedral of layered sandstone where the walls pinch together overhead and the canyon floor drops away beneath you. Getting there requires a bit of scrambling and a nose for routes that aren\'t marked on most maps, which keeps the crowds thin. Inside, the red rock glows warm even in shade, and the view back through the cave mouth frames the canyon like a painting.',
-    cover: '/photos/IMG_7510.jpeg',
+    cover: '/photos/IMG_7510.webp',
     coverPosition: 'center 55%',
     photos: [
-      '/photos/IMG_7510.jpeg',
+      '/photos/IMG_7510.webp',
     ],
     galleryStart: 1,
   },

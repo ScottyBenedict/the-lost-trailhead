@@ -5,6 +5,34 @@ import { supabase } from './supabase'
 
 export const MAX_FILE_BYTES = 20 * 1024 * 1024 // 20 MB
 
+// Photos are stored at the size the site can actually show them, not at
+// whatever the phone shot. Originals were going up untouched at ~4 MB each
+// (the largest was 11 MB), so one hike page cost about 28 MB to load and a
+// few hundred views used up a month of Supabase's CDN allowance — which is
+// what took the site down on 2026-09-19.
+//
+// The lightbox is capped at 77vw/75vh with object-fit: contain. On a 5K
+// desktop that still works out to about 2880 device pixels across a
+// landscape photo, so that is the long edge — 2048 is visibly soft there.
+// The gallery cell is about 350px in a three-column grid, so 800 covers it
+// at 2x.
+//
+// WebP, not JPEG: at 2880 it weighs what a 2560 JPEG does (across
+// public/photos, 52 MB against 63 MB) while being sharp at full size
+// rather than slightly soft. Supported everywhere since 2020.
+export const PHOTO_TYPE = 'image/webp'
+export const PHOTO_MAX_EDGE = 2880
+export const PHOTO_QUALITY = 0.82
+export const THUMB_MAX_EDGE = 800
+export const THUMB_QUALITY = 0.8
+
+// The thumbnail lives beside its photo under a prefixed name, so no column
+// and no migration: given a storage_path, its thumbnail is always here.
+export function thumbPath(storagePath) {
+  const cut = storagePath.lastIndexOf('/') + 1
+  return storagePath.slice(0, cut) + 'thumb_' + storagePath.slice(cut)
+}
+
 // Hikes already published to hikes.js, by both their slug id and (if set)
 // their separate Supabase id — anything else showing up in hike_reports/
 // hike_photos is a "pending" hike still waiting on a page.
@@ -85,7 +113,45 @@ export async function rotateImage(file) {
     if (op.translate) ctx.translate(...op.translate)
   }
   ctx.drawImage(img, 0, 0)
-  return canvas.toDataURL('image/jpeg', 0.92)
+  return encode(canvas, PHOTO_MAX_EDGE, PHOTO_QUALITY)
+}
+
+// A gallery-sized copy of an already-rotated photo.
+export async function makeThumb(dataUrl) {
+  const img = await createImageBitmap(await (await fetch(dataUrl)).blob())
+  const canvas = document.createElement('canvas')
+  canvas.width = img.width
+  canvas.height = img.height
+  canvas.getContext('2d').drawImage(img, 0, 0)
+  return encode(canvas, THUMB_MAX_EDGE, THUMB_QUALITY)
+}
+
+// Scale the long edge down to `maxEdge` and encode as PHOTO_TYPE. The halving
+// loop matters: drawImage jumping straight from 4000px to 800px samples
+// only a fraction of the source pixels, which softens edges and aliases
+// anything fine (scree, branches, water texture). Halving until the last
+// step is under 2x reads every pixel on the way down.
+function encode(canvas, maxEdge, quality) {
+  const scale = Math.min(1, maxEdge / Math.max(canvas.width, canvas.height))
+  if (scale === 1) return canvas.toDataURL(PHOTO_TYPE, quality)
+  const target = { w: Math.round(canvas.width * scale), h: Math.round(canvas.height * scale) }
+  let src = canvas
+  while (src.width > target.w * 2) {
+    const step = document.createElement('canvas')
+    step.width = Math.max(target.w, Math.round(src.width / 2))
+    step.height = Math.max(target.h, Math.round(src.height / 2))
+    const sctx = step.getContext('2d')
+    sctx.imageSmoothingQuality = 'high'
+    sctx.drawImage(src, 0, 0, step.width, step.height)
+    src = step
+  }
+  const out = document.createElement('canvas')
+  out.width = target.w
+  out.height = target.h
+  const octx = out.getContext('2d')
+  octx.imageSmoothingQuality = 'high'
+  octx.drawImage(src, 0, 0, target.w, target.h)
+  return out.toDataURL(PHOTO_TYPE, quality)
 }
 
 // Throws if any file exceeds MAX_FILE_BYTES — callers should catch and surface err.message
@@ -105,6 +171,6 @@ export async function processFiles(files, existingHashes = new Set()) {
     }
     const hash = await computeHash(file)
     const url = await rotateImage(workingFile)
-    return { file: workingFile, previewUrl: url, hash, isDuplicate: existingHashes.has(hash) }
+    return { file: workingFile, previewUrl: url, thumbUrl: await makeThumb(url), hash, isDuplicate: existingHashes.has(hash) }
   }))
 }
