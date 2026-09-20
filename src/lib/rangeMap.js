@@ -20,6 +20,12 @@ const BORDER_WIDTH_PX = 1.5;
 const PIN_PX = { wide: 11, narrow: 7 };
 const PIN_OUTLINE_PX = { wide: 2, narrow: 1.5 };
 const NARROW_CARD_PX = 700;
+// The stitched relief is built on a canvas, then `reproject` builds a second
+// one the same size, then it is uploaded as a texture. On a desktop that is
+// fine; on a phone it is the largest thing on the page and iOS discards the
+// WebGL context under memory pressure, which leaves the card blank. A phone
+// is also showing it at 350px, where the extra tiles buy nothing.
+const RELIEF_MAX_TILES = { wide: 220, narrow: 80 };
 
 // The About page's range map: the hike cards' 2D trail map (TerrainFlyover with
 // topDownPreview: true) at state scale, with a pin for each hike instead of a
@@ -166,27 +172,32 @@ export class RangeMap {
       }
     };
 
-    const pinAt = (position) => {
-      const picked = this.viewer.scene.pick(position);
+    const pinAt = (clientX, clientY) => {
+      const box = this.viewer.canvas.getBoundingClientRect();
+      const picked = this.viewer.scene.pick(new Cesium.Cartesian2(clientX - box.left, clientY - box.top));
       return (picked && this.entities.get(picked.id?.id)) || null;
     };
-    // Cesium swallows every wheel event over its canvas (its camera controller
-    // handles them even with inputs off), so the page wouldn't scroll while the
-    // pointer was on the map. Stopped in the capture phase, on the way down,
-    // before they reach the canvas; scrolling itself is left alone.
-    this.stopWheel = (e) => e.stopPropagation();
-    containerEl.addEventListener('wheel', this.stopWheel, { capture: true, passive: true });
-    this.container = containerEl;
-    this.handler = new Cesium.ScreenSpaceEventHandler(this.viewer.canvas);
-    this.handler.setInputAction((move) => {
-      const pin = pinAt(move.endPosition);
+
+    // Plain DOM listeners, not Cesium's ScreenSpaceEventHandler. That handler
+    // registers its own touch listeners and cancels the gesture, so on a
+    // phone a swipe over the map moved nothing and the page stuck — the map
+    // does not pan or zoom, so there is nothing for it to be doing with a
+    // drag. A native click is a tap on touch and costs the page nothing.
+    this.onMove = (e) => {
+      const pin = pinAt(e.clientX, e.clientY);
       containerEl.style.cursor = pin ? 'pointer' : '';
-      onHover?.(pin, pin ? { x: move.endPosition.x, y: move.endPosition.y } : null);
-    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-    this.handler.setInputAction((click) => {
-      const pin = pinAt(click.position);
+      const box = containerEl.getBoundingClientRect();
+      onHover?.(pin, pin ? { x: e.clientX - box.left, y: e.clientY - box.top } : null);
+    };
+    this.onLeave = () => onHover?.(null, null);
+    this.onClick = (e) => {
+      const pin = pinAt(e.clientX, e.clientY);
       if (pin) onPinClick?.(pin);
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    };
+    containerEl.addEventListener('mousemove', this.onMove);
+    containerEl.addEventListener('mouseleave', this.onLeave);
+    containerEl.addEventListener('click', this.onClick);
+    this.container = containerEl;
 
     // Cesium sizes its canvas at construction; the container may not be final.
     let reliefLevel;
@@ -209,7 +220,7 @@ export class RangeMap {
       }, reliefLevel, {
         reproject: true,
         water: { rings: water, rgb: waterRgb },
-        maxTiles: 220,
+        maxTiles: RELIEF_MAX_TILES[containerEl.clientWidth < NARROW_CARD_PX ? 'narrow' : 'wide'],
       })
         .then((layer) => {
           if (this.destroyed || this.viewer.isDestroyed()) return;
@@ -219,6 +230,16 @@ export class RangeMap {
         .then(() => this.addBorders())
         .catch((e) => console.error('[rangeMap] relief failed:', e));
     }, 100);
+
+    // iOS drops the WebGL context when it needs the memory back, and Cesium
+    // does not come back on its own. Rather than leave a blank green box on
+    // the page, take the card out and leave the lists that follow it.
+    this.onContextLost = (e) => {
+      e.preventDefault();
+      console.warn('[rangeMap] WebGL context lost — hiding the map');
+      containerEl.classList.add('range-map-lost');
+    };
+    this.viewer.canvas.addEventListener('webglcontextlost', this.onContextLost);
 
     this.resizeObserver = new ResizeObserver(() => {
       fit();
@@ -257,8 +278,13 @@ export class RangeMap {
   destroy() {
     this.destroyed = true;
     this.resizeObserver?.disconnect();
-    this.container?.removeEventListener('wheel', this.stopWheel, { capture: true });
-    this.handler?.destroy();
+    for (const type of ['wheel', 'touchmove']) {
+      this.container?.removeEventListener(type, this.swallow, { capture: true });
+    }
+    this.container?.removeEventListener('mousemove', this.onMove);
+    this.container?.removeEventListener('mouseleave', this.onLeave);
+    this.container?.removeEventListener('click', this.onClick);
+    if (!this.viewer.isDestroyed()) this.viewer.canvas.removeEventListener('webglcontextlost', this.onContextLost);
     if (!this.viewer.isDestroyed()) this.viewer.destroy();
   }
 }
