@@ -755,6 +755,10 @@ a   { color: inherit; text-decoration: none; }
 /* The About page's range map: the hike card's map card (.map-card, its caption
    band and title above), full width of the section instead of a gallery cell. */
 .range-map {
+  /* pan-y, not the manipulation Cesium's canvases carry: a vertical drag
+     over the map has to belong to the page, since the map itself does not
+     pan or zoom. Without it iOS keeps the gesture and the page sticks. */
+  touch-action: pan-y;
   height: min(78vh, 760px);
   min-height: 460px;
   margin: 0 auto;
@@ -762,6 +766,14 @@ a   { color: inherit; text-decoration: none; }
   overflow: hidden;
   text-align: left;
 }
+
+/* Cesium sets touch-action: manipulation on its own canvas, which would
+   override the card's pan-y. */
+.range-map canvas { touch-action: pan-y !important; }
+
+/* Set when iOS discards the WebGL context (see rangeMap.js): the map cannot
+   come back, so it goes rather than sitting there empty. */
+.range-map-lost { display: none; }
 
 @media (max-width: 680px) {
   .range-map { height: 420px; min-height: 0; }
@@ -883,6 +895,17 @@ a   { color: inherit; text-decoration: none; }
 .hike-map-viewport {
   height: min(660px, calc(88vh - 105px));
   height: min(660px, calc(88svh - 105px));
+}
+
+/* The 105px above covers the header and leaves the stats peeking out — it
+   was sized for one row of four. Below 560px the stats become two rows of
+   two (HikeMap.jsx, narrowStats), because four columns cannot fit a label
+   and its number on a phone, so the map gives up the height they need. */
+@media (max-width: 559px) {
+  .hike-map-viewport {
+    height: min(660px, calc(88vh - 200px));
+    height: min(660px, calc(88svh - 200px));
+  }
 }
 
 .gallery-lightbox-controls {

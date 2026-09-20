@@ -8,7 +8,16 @@ Not part of the site build. See `docs/handoff-2026-09-19.md` for open work.
 ```
 cd scripts/flyover-check && npm install      # playwright-core; uses your installed Chrome
 pip3 install pillow shapely                  # if missing
+npx playwright-core install webkit           # only for real-Safari checks
+brew install ffmpeg                          # only for reel.mjs output
 ```
+
+Chrome is enough for layout and logic. **iOS bugs need WebKit** — Chrome at a
+phone viewport missed both of the ones that mattered (the map trapping the
+page's scroll, and the tab dying under memory pressure), because a phone
+sends touchmove rather than wheel and a desktop has memory a phone does not.
+Some things only a real device shows: headless WebKit rendered the range map
+fine while an iPhone could not keep it alive.
 
 The browser checks need the dev server running (`npm run dev` at the repo root).
 Output goes to `out/`; downloads are cached in `.cache/` (both gitignored).
@@ -33,6 +42,8 @@ need a genuinely fresh fetch.
 | `python3 fetchwater.py` | Rebuilds `src/data/water.json` from Natural Earth + USGS NHD (slow; only when the water changes) |
 | `python3 fetchborders.py` | Rebuilds `src/data/stateBorders.json` from Census TIGERweb; needs `water.json` first, to tell coast from border |
 | `node range.mjs [name]` | Screenshot of the About page's range map, plus a check that the page scrolls over it |
+| `node reel.mjs <hike_id> [secs]` | Records the flyover as a vertical clip for social — no cursor, no chrome, steady frame rate. `--bare` strips everything but the map. Outputs webm to `out/reel/`; convert with ffmpeg |
+| `node mobilecheck.mjs [baseUrl]` | Phone-width layout check: horizontal overflow, broken images, map/gallery sizing, console errors. Chrome at 390px, not real iOS Safari — catches layout and loading, not WebKit rendering |
 
 ## Adding the trailing camera to a hike (the checklist)
 
