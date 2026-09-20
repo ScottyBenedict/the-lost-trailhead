@@ -40,13 +40,13 @@ export const hikes = [
     id: 'blanca-lake',
     name: 'Blanca Lake',
     region: 'Henry M. Jackson Wilderness · Stevens Pass',
-    trailhead: [47.89708, -121.32485],
+    trailhead: [47.9157, -121.3128],
     distance: '8.0 mi',
     gain: '3,500 ft',
     difficulty: 'Strenuous',
     season: 'Jul – Oct',
     description:
-      'Few lakes in Washington stop hikers in their tracks the way Blanca does. Fed by the Columbia Glacier, the water holds an impossible milky turquoise that shifts with the light throughout the day. The trail earns every bit of that view — a relentless climb through dense forest that gives little hint of what\'s waiting at the top until the trees break and the lake opens up below.',
+      'Few lakes in Washington stop hikers in their tracks the way Blanca does. Fed by the Columbia Glacier, the water holds an impossible milky turquoise that shifts with the light throughout the day. The trail earns every bit of that view — a relentless climb through dense forest that gives little hint of what\'s waiting at the top until the trees break and the lake opens up below. When we went, the access road had washed out about a mile and a half below the trailhead, which added a flat road walk to each end of the day — worth checking road conditions before you drive out.',
     cover: '/photos/IMG_5347.webp',
     coverPosition: 'center 45%',
     photos: [

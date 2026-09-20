@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate } from '../lib/gpxFlyover';
+import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate, trimToTrailStart } from '../lib/gpxFlyover';
 
 // Trailing "drone following behind" camera (see terrainFlyover.js) — under
 // test on one hike before any wider rollout. Placement from offline
@@ -34,6 +34,10 @@ const TRAILING_CAMERA_TEST = {
   // Kendall only: its long, fast flight briefly lost the hiker as the camera
   // came back in for the closing shot (see maxAimOffset in terrainFlyover.js).
   'kendall-katwalk': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60, maxAimOffset: 0.3 },
+  // The road to this one was washed out 1.6 mi below the trailhead; the
+  // track is trimmed to the trail (see TRAIL_START in gpxFlyover.js), which
+  // also brings the flight back under the speed where it starts to jitter.
+  'blanca-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'granite-mountain': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'melakwa-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'dirty-harrys-balcony': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
@@ -335,7 +339,10 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
         const text = await res.text();
         if (cancelled) return;
 
-        const points = parseGPX(text);
+        // Trimmed where the recording starts below the trailhead (Blanca's
+        // washed-out road) — the stats and the chart then describe the hike
+        // the flyover is actually showing.
+        const points = trimToTrailStart(parseGPX(text), hikeId);
         if (points.length === 0) throw new Error('No track points found');
 
         const computed = computeStats(points);
