@@ -33,6 +33,7 @@ need a genuinely fresh fetch.
 | `python3 fetchwater.py` | Rebuilds `src/data/water.json` from Natural Earth + USGS NHD (slow; only when the water changes) |
 | `python3 fetchborders.py` | Rebuilds `src/data/stateBorders.json` from Census TIGERweb; needs `water.json` first, to tell coast from border |
 | `node range.mjs [name]` | Screenshot of the About page's range map, plus a check that the page scrolls over it |
+| `node mobilecheck.mjs [baseUrl]` | Phone-width layout check: horizontal overflow, broken images, map/gallery sizing, console errors. Chrome at 390px, not real iOS Safari — catches layout and loading, not WebKit rendering |
 
 ## Adding the trailing camera to a hike (the checklist)
 

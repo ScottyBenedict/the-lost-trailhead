@@ -13,6 +13,13 @@ import water from '../data/water.json';
 // as a boundary without competing with the terrain.
 const BORDER_COLOR = Cesium.Color.fromCssColorString('rgba(255, 255, 255, 0.92)');
 const BORDER_WIDTH_PX = 1.5;
+// The pins keep their size in screen pixels, so on a phone — a third of the
+// desktop width for the same 1,400 km of ground — an 11px dot covers about
+// three times as much map. The dozen hikes around Snoqualmie Pass merged
+// into one blob. Scaled to the card instead.
+const PIN_PX = { wide: 11, narrow: 7 };
+const PIN_OUTLINE_PX = { wide: 2, narrow: 1.5 };
+const NARROW_CARD_PX = 700;
 
 // The About page's range map: the hike cards' 2D trail map (TerrainFlyover with
 // topDownPreview: true) at state scale, with a pin for each hike instead of a
@@ -130,22 +137,34 @@ export class RangeMap {
       return ((view.east - view.west) * metersPerDegLon) / containerEl.clientWidth;
     };
 
-    // One dot per pin: white, outlined in the line's dark casing, 11px, on top.
+    // One dot per pin: white, outlined in the line's dark casing, on top.
+    const pinScale = () => (containerEl.clientWidth < NARROW_CARD_PX ? 'narrow' : 'wide');
     this.entities = new Map();
+    this.points = [];
     pins.forEach((pin, i) => {
       const entity = this.viewer.entities.add({
         id: `pin-${i}`,
         position: Cesium.Cartesian3.fromDegrees(pin.lon, pin.lat),
         point: {
-          pixelSize: 11,
+          pixelSize: PIN_PX[pinScale()],
           color: Cesium.Color.WHITE,
           outlineColor: TRAIL_CASING,
-          outlineWidth: 2,
+          outlineWidth: PIN_OUTLINE_PX[pinScale()],
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
       });
       this.entities.set(entity.id, pin);
+      this.points.push(entity.point);
     });
+
+    // Rotating a phone crosses the threshold, so the dots resize with it.
+    this.sizePins = () => {
+      const which = pinScale();
+      for (const point of this.points) {
+        point.pixelSize = PIN_PX[which];
+        point.outlineWidth = PIN_OUTLINE_PX[which];
+      }
+    };
 
     const pinAt = (position) => {
       const picked = this.viewer.scene.pick(position);
@@ -203,6 +222,7 @@ export class RangeMap {
 
     this.resizeObserver = new ResizeObserver(() => {
       fit();
+      this.sizePins();
       this.viewer.scene.requestRender();
     });
     this.resizeObserver.observe(containerEl);

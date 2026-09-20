@@ -10,6 +10,11 @@
 // Only successful responses are stored — caching a 402 or a 500 would keep
 // serving it back long after the real problem was fixed. Delete .cache/http
 // to force a refetch.
+//
+// The key includes the page's origin, not just the URL. Supabase echoes the
+// requesting origin back in access-control-allow-origin, so a response
+// cached while pointed at localhost, replayed against the production site,
+// fails CORS — which reads as the live site being broken when it is not.
 
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -37,7 +42,9 @@ export async function useDiskCache(context, { hosts = DEFAULT_HOSTS, verbose = f
     if (route.request().method() !== 'GET' || !hosts.some((h) => url.includes(h))) {
       return route.continue();
     }
-    const key = createHash('sha256').update(url).digest('hex').slice(0, 32);
+    // Keyed by origin + url: see the note at the top about CORS headers.
+    const origin = new URL(route.request().frame().url()).origin;
+    const key = createHash('sha256').update(`${origin}\n${url}`).digest('hex').slice(0, 32);
     const metaFile = path.join(DIR, `${key}.json`);
     const bodyFile = path.join(DIR, `${key}.bin`);
 
