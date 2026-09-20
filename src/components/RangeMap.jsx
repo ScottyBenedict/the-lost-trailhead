@@ -12,12 +12,21 @@ const inWashington = ([lat, lon]) =>
 
 // The About page's range map — the hike cards' 2D trail map at state scale,
 // with a pin per hike (see src/lib/rangeMap.js).
+// Cesium is not loaded at all below this width. The map is a fixed,
+// north-up, non-interactive picture, but drawing it still costs a WebGL
+// context and a large texture on top of the 663 kB engine — enough that
+// iOS Safari kills the tab when you scroll. Until it is rebuilt as a plain
+// image with HTML pins (which is all it ever needed to be), phones get the
+// region lists below instead of a page that reloads itself.
+const MIN_MAP_WIDTH = 700;
+
 export default function RangeMap({ hikes }) {
   const navigate = useNavigate();
   const rootRef = useRef(null);
   const mapDivRef = useRef(null);
   const bodyRef = useRef(null); // the frosted caption band — pins are fit above it
   const [tip, setTip] = useState(null);
+  const [enabled] = useState(() => typeof window === 'undefined' || window.innerWidth >= MIN_MAP_WIDTH);
 
   // Hikes that share a trailhead (a winter page and its summer twin) share one
   // pin: they'd be stacked exactly on top of each other otherwise.
@@ -35,7 +44,7 @@ export default function RangeMap({ hikes }) {
   }, [hikes]);
 
   useEffect(() => {
-    if (!pins.length) return;
+    if (!enabled || !pins.length) return;
     let map;
     let cancelled = false;
     (async () => {
@@ -55,7 +64,9 @@ export default function RangeMap({ hikes }) {
       cancelled = true;
       map?.destroy();
     };
-  }, [pins, navigate]);
+  }, [enabled, pins, navigate]);
+
+  if (!enabled) return null;
 
   return (
     <>
