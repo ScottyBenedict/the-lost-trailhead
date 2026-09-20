@@ -1,7 +1,7 @@
 # Flyover check scripts
 
 Dev-only tools for checking a hike's GPX stats and 3D flyover before shipping.
-Not part of the site build. See `docs/handoff-2026-09-19.md` for open work.
+Not part of the site build. See `docs/handoff-2026-09-20.md` for open work.
 
 ## Setup (once)
 

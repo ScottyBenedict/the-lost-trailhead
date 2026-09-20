@@ -20,7 +20,7 @@ Live on Vercel. Repo: `ScottyBenedict/the-lost-trailhead`.
 |---|---|
 | `/` | Hike card grid, A-Z / Recent sort, hover flyover preview on each card |
 | `/hikes/:slug` | Hero photo, stats bar, photo gallery with trip reports interspersed |
-| `/about` | Profiles for Alan & Scott, plus a Washington range map with a pin per hike (desktop only — see `docs/handoff-2026-09-19.md`) |
+| `/about` | Profiles for Alan & Scott, plus a Washington range map with a pin per hike (desktop only — see `docs/handoff-2026-09-20.md`) |
 | `/gear` | Gear list per person, grouped by category |
 | `/admin` | Auth-gated CMS — log trips, publish new hike pages, manage gear/profile/GPX |
 
@@ -81,11 +81,11 @@ session.
 Scott reviews every change on localhost before anything is pushed. Hike distances use
 the smoothed-GPX number, regions follow WTA, and GPU-heavy checks run one at a time
 (the iMac kernel-panicked under back-to-back runs). Full session setup is in
-`docs/handoff-2026-09-19.md`.
+`docs/handoff-2026-09-20.md`.
 
 ## Docs
 
-- `docs/handoff-2026-09-19.md` — current handoff and open work; start here
+- `docs/handoff-2026-09-20.md` — current handoff and open work; start here
 - `docs/roadmap-3d-flyover.md` — flyover status (top) plus historical spike notes
 - `docs/handoff-range-map.md` — superseded; the range map shipped in PR #41 (kept for what the failed approaches cost)
 - `docs/handoff-imac-2026-09-17.md` — resolved camera-tracking handoff, kept as history

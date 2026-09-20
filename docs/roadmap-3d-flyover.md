@@ -5,7 +5,7 @@ true 3D terrain flyover, in the spirit of Strava's route animations.
 
 ## ✅ STATUS (updated 2026-09-19): Live on every hike; trailing camera on 17 hikes
 
-**Start with `docs/handoff-2026-09-19.md` for open work.** This doc is the flyover's
+**Start with `docs/handoff-2026-09-20.md` for open work.** This doc is the flyover's
 status and history. The 2026-09-18 and 2026-09-17 status blocks below and everything
 under them are kept as history.
 

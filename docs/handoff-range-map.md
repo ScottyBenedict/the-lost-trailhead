@@ -2,7 +2,7 @@
 
 This described the range map shelved on branch `range-map` (commit
 `ecb9f54`, never merged). That work was rebuilt and shipped in **PR #41**;
-see `docs/handoff-2026-09-19.md` section 1 for the current state.
+see `docs/handoff-2026-09-20.md` section 1 for the current state.
 
 Kept only for the two findings that cost the most to learn:
 
