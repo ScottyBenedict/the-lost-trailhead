@@ -11,7 +11,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './terrainFlyoverOverrides.css';
 import { buildCumulative, flyoverDurationMs, positionAt, bearingBetween, haversineM } from './gpxFlyover';
 import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
-import { createTerrainTrail, CASING as TRAIL_CASING } from './trailPolyline';
+import { createTerrainTrail, CASING as TRAIL_CASING, LIFT_M as TRAIL_LIFT_M } from './trailPolyline';
 
 // findApexIndex's bestScore (below) doubles as out-and-back detection: it's
 // the average GPS deviation between the outbound and return legs at the
@@ -1221,8 +1221,12 @@ export class TerrainFlyover {
       ? this.trailingRig.headingAt(frac * this.total)
       : (this.fixedBearing + this.camera.sideOffsetDeg + 360) % 360;
 
-    // Marker sits at the hiker's real, current position — always.
-    this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, 3);
+    // Marker sits at the hiker's real, current position — always. Its height
+    // is set below, once groundHeightAt has run for this frame: it has to sit
+    // on the terrain like the green/red end dots do, not at a fixed height
+    // above the ellipsoid. At a trailhead 600m up, a marker pinned near sea
+    // level projects to a visibly different screen point than the dot it is
+    // supposed to be standing on.
 
     // Tried aiming a fixed real distance ahead on the path instead of at the
     // exact current position (a "look through the curve" attempt at fixing
@@ -1268,6 +1272,12 @@ export class TerrainFlyover {
     // heightReference to lean on), sampled at the already-smoothed lat/lon.
     const groundHeight = this.groundHeightAt(aim.lat, aim.lon, pos.ele);
     const targetPos = Cesium.Cartesian3.fromDegrees(aim.lon, aim.lat, groundHeight + 3);
+
+    // The marker, on the ground and lifted exactly as the trail line is
+    // (TRAIL_LIFT_M matches createTerrainTrail's liftM), so at 0% it lands on
+    // the green start dot instead of beside it. groundHeightAt smooths
+    // internally, so it is called once per frame and the value reused.
+    this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, groundHeight + TRAIL_LIFT_M);
 
     // camera.lookAt(target, HeadingPitchRange) positions the camera at the
     // given heading/pitch/range *from* target and points it at target — the

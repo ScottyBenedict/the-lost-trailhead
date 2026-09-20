@@ -34,6 +34,9 @@ import { TERRARIUM_MAX_ZOOM } from './terrainFlyoverProvider';
 const CHUNK_M = 40;
 const FILL = Cesium.Color.WHITE;
 export const CASING = Cesium.Color.fromCssColorString('#1a1d1a');
+// How far the line floats above the sampled terrain. Exported so the moving
+// marker can use the same lift and sit on the line rather than beside it.
+export const LIFT_M = 4;
 
 // Wraps a PolylineCollection so its draw commands still depth-test against
 // the terrain but don't write depth, letting the fill (drawn after it, same
@@ -62,7 +65,7 @@ export function withoutDepthWrite(collection, depthTest = true) {
 // depth-tested, the card's coarser terrain detail poked up through the line
 // in steep spots and cut it into pieces. The flyover keeps the depth test (a
 // ridge in front of the line should hide it there).
-export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.2, maxWidthPx = 8, liftM = 4, onTop = false } = {}) {
+export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.2, maxWidthPx = 8, liftM = LIFT_M, onTop = false } = {}) {
   const scene = viewer.scene;
   const chunks = [];
   const primitives = [];
