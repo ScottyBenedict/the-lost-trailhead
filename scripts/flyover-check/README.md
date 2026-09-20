@@ -13,6 +13,13 @@ pip3 install pillow shapely                  # if missing
 The browser checks need the dev server running (`npm run dev` at the repo root).
 Output goes to `out/`; downloads are cached in `.cache/` (both gitignored).
 
+The browser checks cache every Supabase, terrain and imagery response to
+`.cache/http` (`httpcache.mjs`). Keep it: localhost pulls photos and GPX
+from the Supabase CDN exactly like production, about 28 MB per hike page,
+and a day of unchecked runs is what exhausted the 5 GB monthly allowance
+and got the project restricted on 2026-09-19. Delete `.cache/http` when you
+need a genuinely fresh fetch.
+
 ## Scripts
 
 | Script | What it tells you |
