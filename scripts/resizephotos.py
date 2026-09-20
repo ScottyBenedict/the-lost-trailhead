@@ -2,7 +2,10 @@
 """One-off: re-encode everything already in Supabase Storage to web sizes.
 
     pip3 install pillow
-    export SUPABASE_SERVICE_ROLE_KEY=...        # dashboard > Settings > API
+    # Put SUPABASE_SERVICE_ROLE_KEY=... in .env.local (gitignored) — the
+    # service role key bypasses RLS, so it does not belong in a shell
+    # history, a transcript, or anything committed.
+    python3 scripts/resizephotos.py --backup ~/Desktop/tlt-storage-backup
     python3 scripts/resizephotos.py --dry-run   # report only, changes nothing
     python3 scripts/resizephotos.py
 
@@ -24,9 +27,16 @@ Each photo is replaced in place and a thumb_<name> written beside it, which
 is where the gallery looks — no database column and no migration. Safe to
 re-run: anything already small enough is skipped.
 
-The originals are NOT backed up anywhere by this script. They are the
-phone's exports and live in the photo library; Storage is only what the
-site serves.
+The file list comes from Storage, not from the hike_photos table: this
+project only ever granted table privileges to anon and authenticated, so
+service_role gets "permission denied for table hike_photos". Storage has
+its own authorization and the secret key is fine there, so walking the
+bucket avoids needing a GRANT just to run a cleanup.
+
+This rewrites the originals in place and they are not recoverable
+afterwards — photos uploaded through the admin portal may exist nowhere
+else. Run --backup first; it downloads every object in all three buckets,
+keeping the exact storage paths so anything can be put back by hand.
 """
 
 import io
@@ -40,8 +50,26 @@ import urllib.request
 from PIL import Image, ImageOps
 
 URL = 'https://ikjgtsvauctfmxpqwmyd.supabase.co'
-KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
 DRY = '--dry-run' in sys.argv
+
+
+def service_key():
+    """From the environment, else .env.local (gitignored)."""
+    key = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+    if key:
+        return key.strip()
+    env = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env.local')
+    try:
+        for line in open(env):
+            name, _, value = line.partition('=')
+            if name.strip() == 'SUPABASE_SERVICE_ROLE_KEY':
+                return value.strip().strip('\'"')
+    except OSError:
+        pass
+    return None
+
+
+KEY = service_key()
 
 PHOTO = (2880, 85)
 THUMB = (800, 78)
@@ -62,6 +90,27 @@ def api(path, method='GET', body=None, headers=None, raw=False):
     with urllib.request.urlopen(req, body, timeout=300) as r:
         data = r.read()
     return data if raw else json.loads(data or b'null')
+
+
+def walk(bucket, prefix=''):
+    """Every file under a prefix. A folder comes back with null metadata."""
+    files = []
+    offset = 0
+    while True:
+        page = api(f'/storage/v1/object/list/{bucket}', method='POST',
+                   body={'prefix': prefix, 'limit': 1000, 'offset': offset})
+        if not page:
+            break
+        for entry in page:
+            name = entry['name']
+            if entry.get('metadata') is None:
+                files += walk(bucket, f'{prefix}{name}/')
+            else:
+                files.append((f'{prefix}{name}', entry['metadata'].get('size', 0)))
+        if len(page) < 1000:
+            break
+        offset += len(page)
+    return files
 
 
 def download(bucket, path):
@@ -98,13 +147,38 @@ def kb(n):
     return f'{n / 1024:,.0f} kB'
 
 
+def backup(root):
+    root = os.path.abspath(os.path.expanduser(root))
+    total = files = 0
+    for bucket in ('hike-photos', 'gpx-files', 'avatars'):
+        for path, size in walk(bucket):
+            dest = os.path.join(root, bucket, path)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            if os.path.exists(dest) and os.path.getsize(dest) == size:
+                continue                       # already saved; safe to resume
+            data = download(bucket, path)
+            with open(dest, 'wb') as f:
+                f.write(data)
+            files += 1
+            total += len(data)
+            print(f'  {bucket}/{path}  {kb(len(data))}')
+    print(f'\n  {files} files, {total / 1024 / 1024:.1f} MB -> {root}')
+    return 0
+
+
 def main():
     if not KEY:
-        raise SystemExit('set SUPABASE_SERVICE_ROLE_KEY (dashboard > Settings > API)')
+        raise SystemExit('add SUPABASE_SERVICE_ROLE_KEY=... to .env.local '
+                         '(Dashboard > Settings > API > service_role)')
 
-    rows = api('/rest/v1/hike_photos?select=storage_path&order=storage_path')
-    paths = [r['storage_path'] for r in rows if not r['storage_path'].rsplit('/', 1)[-1].startswith('thumb_')]
-    print(f'{len(paths)} photos{" (dry run)" if DRY else ""}\n')
+    if '--backup' in sys.argv:
+        return backup(sys.argv[sys.argv.index('--backup') + 1])
+
+    everything = walk('hike-photos')
+    paths = sorted(p for p, _ in everything if not p.rsplit('/', 1)[-1].startswith('thumb_'))
+    known = dict(everything)
+    print(f'{len(paths)} photos, {len(everything) - len(paths)} thumbnails already there'
+          f'{" (dry run)" if DRY else ""}\n')
 
     before = after = 0
     failed = []
@@ -129,9 +203,7 @@ def main():
             failed.append((path, e))
             print(f'  [{i:3}/{len(paths)}] {path} FAILED: {e}')
 
-    avatars = api('/rest/v1/profiles?select=avatar_url&avatar_url=like.*supabase*')
-    for row in avatars:
-        path = row['avatar_url'].split('/avatars/', 1)[-1].split('?')[0]
+    for path, _ in walk('avatars'):
         try:
             original = download('avatars', path)
             small, size = resize(original, *AVATAR)
