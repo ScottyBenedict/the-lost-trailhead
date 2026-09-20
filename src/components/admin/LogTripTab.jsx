@@ -16,6 +16,11 @@ export default function LogTripTab({ session, pendingHikeIds }) {
   // What each existing photo looks like, for spotting a re-upload of the
   // same photograph in a different file (see perceptualHash).
   const [existingLooks, setExistingLooks] = useState([])
+  // Thumbnails of the same photos: what the strip displays and what gets
+  // hashed. Hashing the full-size ones meant downloading every photo on the
+  // hike every time it was selected — 18 MB for Maple Pass — which is the
+  // bandwidth problem that took the site down all over again.
+  const [existingThumbs, setExistingThumbs] = useState([])
   // Supabase rows are one source; the other is the photos committed into
   // hikes.js, which the page shows and this tab used not to. Bandera had
   // six of those and zero rows, so the tab reported "no photos" while the
@@ -36,7 +41,7 @@ export default function LogTripTab({ session, pendingHikeIds }) {
   useEffect(() => {
     function resetHikeFields() {
       setReportText(''); setHotTake(''); setExistingPhotos([]); setExistingHashes(new Set())
-      setExistingLooks([]); setUploadedCount(0); setHasExistingReport(false)
+      setExistingLooks([]); setExistingThumbs([]); setUploadedCount(0); setHasExistingReport(false)
     }
     if (!selectedHikeId || isNewHike || !session) {
       resetHikeFields()
@@ -52,8 +57,9 @@ export default function LogTripTab({ session, pendingHikeIds }) {
       } else {
         setReportText(''); setHotTake(''); setHasExistingReport(false)
       }
-      const uploaded = (photosRes.data ?? []).map(p =>
-        supabase.storage.from('hike-photos').getPublicUrl(p.storage_path).data.publicUrl)
+      const publicUrl = (path) => supabase.storage.from('hike-photos').getPublicUrl(path).data.publicUrl
+      const uploaded = (photosRes.data ?? []).map(p => publicUrl(p.storage_path))
+      const uploadedThumbs = (photosRes.data ?? []).map(p => publicUrl(thumbPath(p.storage_path)))
       // Everything already on the hike page, uploads first, then the photos
       // committed into hikes.js (hiddenPhotos included — they are on the
       // hike, just suppressed from the gallery, and re-adding one is still
@@ -61,13 +67,17 @@ export default function LogTripTab({ session, pendingHikeIds }) {
       const hike = hikes.find(h => h.id === selectedHikeId || h.supabaseId === selectedHikeId)
       const fromRepo = hike ? [...new Set([...(hike.photos ?? []), ...(hike.hiddenPhotos ?? []), hike.cover].filter(Boolean))] : []
       const all = [...uploaded, ...fromRepo.filter(p => !uploaded.includes(p))]
+      // Repo photos are served by Vercel and already web-sized, so they are
+      // their own thumbnail.
+      const allThumbs = [...uploadedThumbs, ...fromRepo.filter(p => !uploaded.includes(p))]
       setUploadedCount(uploaded.length)
       setExistingPhotos(all)
+      setExistingThumbs(allThumbs)
       setExistingHashes(new Set((photosRes.data ?? []).filter(p => p.file_hash).map(p => p.file_hash)))
       setExistingLooks([])
       // Hashing reads each photo through a canvas, so it runs after the
       // thumbnails are on screen rather than holding them up.
-      Promise.all(all.map(perceptualHash)).then(looks => setExistingLooks(looks.filter(Boolean)))
+      Promise.all(allThumbs.map(perceptualHash)).then(looks => setExistingLooks(looks.filter(Boolean)))
     }
     loadHikeData()
   }, [selectedHikeId, isNewHike, session])
@@ -188,7 +198,17 @@ export default function LogTripTab({ session, pendingHikeIds }) {
               {existingPhotos.length !== uploadedCount && ` (${uploadedCount} uploaded, ${existingPhotos.length - uploadedCount} on the page itself)`}
             </p>
             <div className="admin-existing-thumbs">
-              {existingPhotos.map((url, i) => <img key={i} src={url} alt="" className="admin-existing-thumb" onClick={() => setLightboxIndex(i)} />)}
+              {existingPhotos.map((url, i) => (
+                <img
+                  key={i}
+                  src={existingThumbs[i] ?? url}
+                  alt=""
+                  className="admin-existing-thumb"
+                  // A photo uploaded before thumbnails existed has none.
+                  onError={e => { if (e.currentTarget.src !== url) e.currentTarget.src = url }}
+                  onClick={() => setLightboxIndex(i)}
+                />
+              ))}
             </div>
           </div>
         )}
