@@ -200,6 +200,19 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
   const lastLineUpdateRef = useRef(0);
 
   const [stats, setStats] = useState(null);
+  // The stats row is four columns of inline styles, so a media query cannot
+  // reach it. On a phone those columns get about 47px of text each once the
+  // padding is off, which wraps "ELEVATION GAIN" and pushes its value out of
+  // the frame — the labels showed with no numbers under them.
+  const [narrowStats, setNarrowStats] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 559px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 559px)');
+    const sync = () => setNarrowStats(mq.matches);
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [flying, setFlying] = useState(false);
@@ -548,7 +561,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
 
       {stats && (
         <div style={styles.footer}>
-          <div style={styles.statsRow}>
+          <div style={narrowStats ? { ...styles.statsRow, ...styles.statsRowNarrow } : styles.statsRow}>
             {[
               // Distance and gain come from the same curated hike record shown in the
               // page header (src/data/hikes.js) — not recomputed from the raw GPX, which
@@ -565,7 +578,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
               { label: 'ELEVATION LOSS', value: hikeGain ? `-${hikeGain}` : `-${stats.lossFt.toLocaleString()} ft` },
               { label: 'HIGH POINT', value: stats.maxFt ? `${stats.maxFt.toLocaleString()} ft` : '—' },
             ].map(({ label, value }) => (
-              <div key={label} style={styles.stat}>
+              <div key={label} style={narrowStats ? { ...styles.stat, ...styles.statNarrow } : styles.stat}>
                 <span style={styles.statLabel}>{label}</span>
                 <span style={styles.statValue}>{value}</span>
               </div>
@@ -682,6 +695,11 @@ const styles = {
     display: 'flex',
     borderBottom: `1px solid ${FOREST_LIGHT}`,
   },
+  // Two by two on a phone: four across cannot show a label and its number.
+  statsRowNarrow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+  },
   stat: {
     flex: 1,
     padding: '14px 20px',
@@ -689,6 +707,11 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '4px',
+  },
+  statNarrow: {
+    padding: '10px 14px',
+    borderRight: 'none',
+    borderTop: `1px solid ${FOREST_LIGHT}`,
   },
   statLabel: {
     fontSize: '0.58rem',

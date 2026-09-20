@@ -897,6 +897,17 @@ a   { color: inherit; text-decoration: none; }
   height: min(660px, calc(88svh - 105px));
 }
 
+/* The 105px above covers the header and leaves the stats peeking out — it
+   was sized for one row of four. Below 560px the stats become two rows of
+   two (HikeMap.jsx, narrowStats), because four columns cannot fit a label
+   and its number on a phone, so the map gives up the height they need. */
+@media (max-width: 559px) {
+  .hike-map-viewport {
+    height: min(660px, calc(88vh - 200px));
+    height: min(660px, calc(88svh - 200px));
+  }
+}
+
 .gallery-lightbox-controls {
   display: flex;
   align-items: center;
