@@ -13,9 +13,10 @@ views (most of them ours, developing against localhost, which pulls from
 the same CDN) used the whole 5 GB monthly allowance and Supabase restricted
 the project on 2026-09-19.
 
-New uploads are handled in src/lib/adminUtils.js. This does the back
-catalogue, to the same sizes:
-  - photo:  long edge 2048, quality 82   (the lightbox caps at 77vw/75vh)
+New uploads are handled in src/lib/adminUtils.js and go up as WebP. These
+stay JPEG under their existing names, because storage_path is recorded in
+hike_photos and renaming them would break every row. Same dimensions:
+  - photo:  long edge 2880, quality 85   (a 5K lightbox asks for 2880)
   - thumb:  long edge 800,  quality 78   (the gallery cell is ~350px)
   - avatar: long edge 512,  quality 82   (shown at 180px)
 
@@ -42,7 +43,7 @@ URL = 'https://ikjgtsvauctfmxpqwmyd.supabase.co'
 KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
 DRY = '--dry-run' in sys.argv
 
-PHOTO = (2048, 82)
+PHOTO = (2880, 85)
 THUMB = (800, 78)
 AVATAR = (512, 82)
 # Below this there is nothing worth doing.

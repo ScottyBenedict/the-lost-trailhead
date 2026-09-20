@@ -3,6 +3,7 @@
 
     pip3 install pillow
     python3 scripts/photopipe.py optimize public/photos [--dry-run]
+    python3 scripts/photopipe.py towebp public/photos --refs src/data/hikes.js src/index.css
     python3 scripts/photopipe.py prepare <src_dir> [-o out_dir]
     python3 scripts/photopipe.py gpx <file.gpx>... [--dry-run]
     python3 scripts/photopipe.py audit          # needs SUPABASE_SERVICE_ROLE_KEY
@@ -29,8 +30,14 @@ multi-user path is unchanged — what goes into it is just already small.
 
 COMMANDS
 
-optimize  Re-encode images in place (public/photos and the like). Skips
-          anything already small. Reports before/after.
+optimize  Re-encode images in place as JPEG, same name. Skips anything
+          already small.
+towebp    Convert to WebP and rewrite the paths that referenced them.
+          WebP at 2880 on the long edge weighs about what a 2560 JPEG
+          does (62 MB vs 63 MB across public/photos) while actually
+          being sharp on a 5K display, where the lightbox — capped at
+          77vw/75vh — asks for 2880 device pixels on a landscape photo.
+          Every browser has supported WebP since 2020.
 prepare   Take a folder of originals — HEIC included — and write
           web-sized copies plus a manifest with each photo's SHA-256,
           capture time and GPS. EXIF is stripped from the output; the
@@ -56,8 +63,11 @@ import urllib.request
 from PIL import Image, ImageOps
 
 # Matches src/lib/adminUtils.js — see the note there for why these sizes.
-PHOTO_MAX_EDGE, PHOTO_QUALITY = 2048, 82
+PHOTO_MAX_EDGE, PHOTO_QUALITY = 2880, 82
 THUMB_MAX_EDGE, THUMB_QUALITY = 800, 78
+# Files the site reaches by a path stored in the database rather than in
+# the source, so renaming them would break a link nothing here can fix.
+KEEP_NAME = {'scott-profile.jpeg'}
 # Re-encoding something already this small is not worth the quality loss.
 SKIP_UNDER = 400 * 1024
 
@@ -151,6 +161,66 @@ def cmd_optimize(args):
                 f.write(data)
     print(f'\n  {changed} rewritten, {human(before)} -> {human(after)} '
           f'({100 - after * 100 // max(1, before)}% smaller)')
+    if args.dry_run:
+        print('  dry run — nothing was written')
+
+
+def cmd_towebp(args):
+    files = [f for f in images_under(args.path) if not f.lower().endswith('.webp')]
+    print(f'{len(files)} images under {args.path}{" (dry run)" if args.dry_run else ""}\n')
+    before = after = 0
+    renames = {}
+    for path in files:
+        size = os.path.getsize(path)
+        before += size
+        keep = os.path.basename(path) in KEEP_NAME
+        try:
+            img = ImageOps.exif_transpose(Image.open(path)).convert('RGB')
+        except OSError as e:
+            print(f'  skip {path}: {e}')
+            after += size
+            continue
+        if max(img.size) > args.max_edge:
+            img.thumbnail((args.max_edge, args.max_edge), Image.LANCZOS)
+        buf = io.BytesIO()
+        if keep:
+            # Stays a JPEG under its own name: profiles.avatar_url points at
+            # it from the database, which this cannot rewrite.
+            img.save(buf, 'JPEG', quality=args.quality + 3, optimize=True, progressive=True)
+            target = path
+        else:
+            img.save(buf, 'WEBP', quality=args.quality, method=6)
+            target = os.path.splitext(path)[0] + '.webp'
+            renames['/' + os.path.relpath(path, 'public').replace(os.sep, '/')] = \
+                '/' + os.path.relpath(target, 'public').replace(os.sep, '/')
+        data = buf.getvalue()
+        after += len(data)
+        print(f'  {os.path.relpath(path):46} {human(size):>10} -> {human(len(data)):>9}  '
+              f'{img.size[0]}x{img.size[1]}{"  (kept as jpeg)" if keep else ""}')
+        if not args.dry_run:
+            with open(target, 'wb') as f:
+                f.write(data)
+            if target != path:
+                os.remove(path)
+
+    print(f'\n  {human(before)} -> {human(after)} '
+          f'({100 - after * 100 // max(1, before)}% smaller)')
+
+    # Rewrite every path that pointed at a file we renamed.
+    total = 0
+    for ref in args.refs or []:
+        text = open(ref).read()
+        hits = sum(text.count(old) for old in renames)
+        if not hits:
+            continue
+        for old, new in renames.items():
+            text = text.replace(old, new)
+        total += hits
+        print(f'  {ref}: {hits} path(s) rewritten')
+        if not args.dry_run:
+            open(ref, 'w').write(text)
+    if args.refs and not total:
+        print('  no references needed rewriting')
     if args.dry_run:
         print('  dry run — nothing was written')
 
@@ -278,6 +348,14 @@ def main():
     o.add_argument('path')
     o.add_argument('--dry-run', action='store_true')
     o.set_defaults(func=cmd_optimize)
+
+    w = sub.add_parser('towebp', help='convert to WebP and fix the references')
+    w.add_argument('path')
+    w.add_argument('--refs', nargs='*', help='source files whose /photos/... paths to rewrite')
+    w.add_argument('--max-edge', type=int, default=PHOTO_MAX_EDGE)
+    w.add_argument('--quality', type=int, default=PHOTO_QUALITY)
+    w.add_argument('--dry-run', action='store_true')
+    w.set_defaults(func=cmd_towebp)
 
     pr = sub.add_parser('prepare', help='web-size a folder of originals + manifest')
     pr.add_argument('src')
