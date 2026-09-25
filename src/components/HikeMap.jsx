@@ -48,6 +48,7 @@ const TRAILING_CAMERA_TEST = {
   'mt-baldy': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'annette-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'lake-22': { range: 900, closeRange: 400, pitchDeg: -38 },
+  'mailbox-old-trail': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
