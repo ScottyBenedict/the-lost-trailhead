@@ -93,13 +93,16 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
 
   let resolveEnds;
   const ends = new Promise((resolve) => { resolveEnds = resolve; });
+  let resolveGround;
+  const ground = new Promise((resolve) => { resolveGround = resolve; });
 
   const cartos = points.map((p) => Cesium.Cartographic.fromDegrees(p.lon, p.lat));
   Cesium.sampleTerrain(viewer.terrainProvider, TERRARIUM_MAX_ZOOM, cartos)
     .then(() => {
       if (destroyed || viewer.isDestroyed()) return;
+      const heights = cartos.map((c, i) => c.height ?? points[i].ele ?? 0);
       const positions = cartos.map((c, i) =>
-        Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, (c.height ?? points[i].ele ?? 0) + liftM)
+        Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, heights[i] + liftM)
       );
       const casings = new Cesium.PolylineCollection();
       const fills = new Cesium.PolylineCollection();
@@ -130,6 +133,7 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
       updateWidths();
       removePreRender = scene.preRender.addEventListener(updateWidths);
       resolveEnds([positions[0], positions[positions.length - 1]]);
+      resolveGround(heights);
     })
     .catch((e) => console.error('[terrainFlyover] trail terrain sampling failed:', e));
 
@@ -138,6 +142,10 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
     // exactly as the line is, once it's on screen — for marking its ends.
     // Never resolves if the trail is torn down (or sampling fails) first.
     ends,
+    // The ground height (m, no lift) under each of `points`, from the same
+    // sampling the line is drawn on — so anything placed with it sits on the
+    // line, not on Cesium's coarser idea of the ground. Same resolve rules.
+    ground,
     destroy() {
       destroyed = true;
       removePreRender?.();

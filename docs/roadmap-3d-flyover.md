@@ -3,7 +3,7 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
-## ✅ STATUS (updated 2026-09-19): Live on every hike; trailing camera on 17 hikes
+## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 18 of 33 hikes
 
 **Start with `docs/handoff-2026-09-20.md` for open work.** This doc is the flyover's
 status and history. The 2026-09-18 and 2026-09-17 status blocks below and everything
@@ -12,9 +12,9 @@ under them are kept as history.
 - **3D flyover is on every hike.** The `terrain3dTestHikes.js` allowlist was removed
   on 2026-09-17 (`USE_TERRAIN_3D = true` in `HikeMap.jsx` and `HikeMapCard.jsx`).
 - **Trailing ("drone behind the hiker") camera is per hike**, via
-  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 17: Cascade Pass
+  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 18: Cascade Pass
   & Sahale Arm, Maple Pass Loop, Rattlesnake Ledge, Rachel & Rampart Lakes, Lake
-  Serene, Hidden Lake, Colchuck Lake, Lake Ingalls, Kendall Katwalk, Granite Mountain,
+  Serene, Hidden Lake, Colchuck Lake, Lake Ingalls, Kendall Katwalk, Blanca Lake, Granite Mountain,
   Melakwa Lake, Dirty Harry's Balcony, Garfield Ledges (+ Winter), Hex Mountain —
   Winter, Lake Valhalla, Mt. Baldy. Remaining hikes are listed in the handoff.
   Out-and-backs use `{ range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 }`;
@@ -30,6 +30,10 @@ under them are kept as history.
   as recolored Esri shaded relief (`createReliefLayer` in `terrainFlyover.js`) with
   white end dots and a frosted caption band; reset to the opening frame when playback
   ends; regions audited against WTA; `scripts/flyover-check/` saved to the repo.
+- **Hiker on the end dots (PR #47, 2026-09-25):** the hiker now stands on the line's
+  own sampled terrain (`trail.ground` → `placeMarker`), not Cesium's
+  RELATIVE_TO_GROUND clamp, which ran 14 m low at Blanca's trailhead. The line, the
+  end dots and the hiker all share one ground on every hike.
 - **Known, deferred:** jumping the paused slider from 0% to roughly 4-20% can put the
   camera underground. Normal playback is fine.
 
