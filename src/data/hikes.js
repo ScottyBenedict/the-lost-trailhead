@@ -350,7 +350,7 @@ export const hikes = [
     name: 'Mailbox Peak — Old Trail',
     region: 'Middle Fork Snoqualmie Natural Resources Conservation Area · North Bend',
     trailhead: [47.46737, -121.67381],
-    distance: '9.4 mi',
+    distance: '6.5 mi',
     gain: '4,000 ft',
     difficulty: 'Strenuous',
     season: 'Jun – Oct',
