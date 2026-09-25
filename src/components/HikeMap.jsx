@@ -53,6 +53,7 @@ const TRAILING_CAMERA_TEST = {
   'snow-lake-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'subway-cave': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'manastash': { range: 900, closeRange: 400, pitchDeg: -38 },
+  'mt-si-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
