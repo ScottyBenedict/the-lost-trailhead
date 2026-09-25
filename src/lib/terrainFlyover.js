@@ -102,6 +102,52 @@ function findApexIndex(points, cum) {
   return { bestIdx, bestScore };
 }
 
+// A lollipop (Lake 22: a stem up to the lake, a loop around it, the same stem
+// back down) scores as a loop above, since the loop keeps the two halves apart
+// at the midpoint, but its stem is walked twice, and drawn twice it looks as
+// muddy as an out-and-back's two legs did. This measures how far from the
+// start the outbound leg keeps retracing the return: for each point along the
+// outbound half, the nearest point on the return's final stretch. On the real
+// GPX, Lake 22's legs stay within 12m (median 4m) for 4.2km, then split at the
+// lake (87m, then 300m+); Maple Pass Loop shares only 400m by its trailhead.
+// Returns where the stem ends on each leg (raw indices), or null if the two
+// halves never split (an out-and-back, handled above).
+const STEM_TOLERANCE_M = 40;
+const LOLLIPOP_MIN_STEM_M = 1000;
+function findStem(points, cum) {
+  const n = points.length;
+  const total = cum[n - 1];
+  const idxAtDist = (target) => {
+    let lo = 0, hi = n - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (cum[mid] < target) lo = mid + 1; else hi = mid;
+    }
+    return lo;
+  };
+  const STEP_M = 25;
+  const devs = [];
+  for (let d = 0; d < total / 2; d += STEP_M) {
+    const p = points[idxAtDist(d)];
+    let best = { dist: Infinity, j: n - 1 };
+    for (let j = idxAtDist(Math.max(total / 2 + d * 0.2, total - (d * 1.4 + 300))); j < n; j += 2) {
+      const dist = haversineM(p, points[j]);
+      if (dist < best.dist) best = { dist, j };
+    }
+    devs.push(best);
+  }
+  // The stem ends where the legs split for good: 150m running past tolerance,
+  // so a single GPS spike doesn't end it early.
+  const split = devs.findIndex((_, i) => i + 6 <= devs.length && devs.slice(i, i + 6).every((v) => v.dist > STEM_TOLERANCE_M));
+  if (split <= 0) return null;
+  // Rejoin where the legs are closest in the stem's last 300m, not at its very
+  // end, where they're already drifting apart: the hiker steps from one leg
+  // to the other there, and on Lake 22 the end was a visible 39m hop.
+  let k = split - 1;
+  for (let i = Math.max(0, split - 12); i < split; i++) if (devs[i].dist < devs[k].dist) k = i;
+  return { stemM: (split - 1) * STEP_M, outIdx: idxAtDist(k * STEP_M), retIdx: devs[k].j };
+}
+
 // Chase-cam distance/angle from the marker. Replaces an earlier hand-rolled
 // implementation (a custom spherical-trig "compute a point behind, then set
 // camera position+orientation to look toward it" — two independent
@@ -766,6 +812,7 @@ export class TerrainFlyover {
     const fullCum = buildCumulative(points);
     const { bestIdx: rawApexIdx, bestScore: apexScore } = findApexIndex(points, fullCum);
     this.isOutAndBack = apexScore <= OUT_AND_BACK_MATCH_THRESHOLD_M;
+    let stem;
 
     if (this.isOutAndBack) {
       // The descent retraces the exact same physical trail as the ascent — so
@@ -783,6 +830,27 @@ export class TerrainFlyover {
       const outboundFlowing = buildSmoothTrail(outboundRawPoints);
       this.cameraPoints = [...outboundFlowing, ...outboundFlowing.slice(0, -1).reverse()];
       this.apexIdx = outboundFlowing.length - 1;
+      this.mirrorIdx = this.apexIdx;
+    } else if ((stem = findStem(points, fullCum)) && stem.stemM >= LOLLIPOP_MIN_STEM_M) {
+      // A lollipop: drawn and flown up the stem and around the loop once, to
+      // where the return rejoins the stem; then, like an out-and-back, the
+      // hiker walks the drawn stem back in reverse rather than a second,
+      // separately recorded line beside it.
+      const flowing = buildSmoothTrail(points.slice(0, stem.retIdx + 1));
+      const flowCum = buildCumulative(flowing);
+      // The stem's end on the smoothed line: nearest to the raw junction,
+      // searched only around its distance along the line, since the loop's
+      // far end comes back past that same spot.
+      const target = fullCum[stem.outIdx] * (flowCum[flowCum.length - 1] / fullCum[stem.retIdx]);
+      let junction = 0, nearest = Infinity;
+      for (let i = 0; i < flowing.length; i++) {
+        if (Math.abs(flowCum[i] - target) > 300) continue;
+        const d = haversineM(flowing[i], points[stem.outIdx]);
+        if (d < nearest) { nearest = d; junction = i; }
+      }
+      this.cameraPoints = [...flowing, ...flowing.slice(0, junction).reverse()];
+      this.apexIdx = flowing.length - 1;
+      this.mirrorIdx = junction;
     } else {
       // A loop never truly retraces itself, so there's nothing to collapse
       // or mirror — per docs/roadmap-3d-flyover.md Decision 5, the full
@@ -1296,10 +1364,11 @@ export class TerrainFlyover {
       this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, 3);
       return;
     }
-    // The line covers cameraPoints[0..apexIdx]; an out-and-back's return leg
-    // is that same stretch walked backward, so index k maps to 2*apexIdx - k.
+    // The line covers cameraPoints[0..apexIdx]. Past it, the hiker walks the
+    // drawn line backward from mirrorIdx (an out-and-back's turnaround, or a
+    // lollipop's stem junction), so index k maps to mirrorIdx + apexIdx - k.
     const last = this.apexIdx;
-    const ground = (k) => this.lineGround[k <= last ? k : 2 * last - k];
+    const ground = (k) => this.lineGround[k <= last ? k : this.mirrorIdx + last - k];
     const i = pos.idx;
     const d0 = this.cum[i - 1], d1 = this.cum[i];
     const t = d1 > d0 ? Cesium.Math.clamp((frac * this.total - d0) / (d1 - d0), 0, 1) : 0;

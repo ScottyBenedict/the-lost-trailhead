@@ -284,7 +284,7 @@ export const hikes = [
     name: 'Lake Twenty-Two',
     region: 'Mt. Baker-Snoqualmie National Forest · Mountain Loop Highway',
     trailhead: [48.07675, -121.74591],
-    distance: '5.4 mi',
+    distance: '6.1 mi',
     gain: '1,400 ft',
     difficulty: 'Moderate',
     season: 'Year-round',
