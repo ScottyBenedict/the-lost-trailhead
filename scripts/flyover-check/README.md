@@ -48,8 +48,16 @@ need a genuinely fresh fetch.
 ## Adding the trailing camera to a hike (the checklist)
 
 1. `gpxcheck.py <hike_id>`
-   - **Distance**: use the smoothed number (raw GPS reads 4–27% long). Change the
-     page (`src/data/hikes.js`) when it differs by >= 0.3 mi. "Trip we hiked" basis.
+   - **Distance** (rule set by Scott 2026-09-25): the page uses **WTA's roundtrip
+     distance** (wta.org/go-hiking/hikes/<slug>). Compare it with the track, using
+     the smoothed climb x 2 for an out-and-back (the flyover replays the climb), or
+     the smoothed total for a loop. Within 10%: same hike measured differently, so
+     use WTA. More than 10% off: our route really differed (a partial trip, an extra
+     spur, a different start or descent), so use WTA adjusted by the measured
+     difference, confirmed with Scott. Example: Snow Lake is WTA 7.2 + 0.5 mi up the
+     shoreline = 7.7. No GPX, or not on WTA: WTA if listed, else the land manager's
+     figure. Compare the up and down legs before trusting any total (Mailbox went
+     up the old trail and down the new one).
    - **Gain**: change only when clearly wrong (e.g. below the net rise, or well
      outside both methods). Scott declined small gain tweaks (Maple stays 2,020).
    - **Way-in gaps**: auto-filled by `fillOutboundGaps`; add the distance the gap
