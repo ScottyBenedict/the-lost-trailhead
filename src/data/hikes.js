@@ -366,7 +366,7 @@ export const hikes = [
     name: 'Manastash Ridge',
     region: 'Wenas Wildlife Area · Ellensburg',
     trailhead: [46.96551, -120.6459],
-    distance: '6.0 mi',
+    distance: '5.8 mi',
     gain: '1,600 ft',
     difficulty: 'Strenuous',
     season: 'Year-round',

@@ -112,6 +112,7 @@ function findApexIndex(points, cum) {
 // lake (87m, then 300m+); Maple Pass Loop shares only 400m by its trailhead.
 // Returns where the stem ends on each leg (raw indices), or null if the two
 // halves never split (an out-and-back, handled above).
+const LOOP_CLOSE_M = 30;
 const STEM_TOLERANCE_M = 40;
 const LOLLIPOP_MIN_STEM_M = 1000;
 function findStem(points, cum) {
@@ -802,7 +803,7 @@ export class TerrainFlyover {
   // topDownBottomInset (top-down card only): a function returning how many
   // pixels along the bottom of the card are covered (by its caption band), so
   // the route is fit into the area above it rather than tucked underneath.
-  constructor(containerEl, { points, onProgress, onFinish, camera, durationMs, topDownPreview, topDownBottomInset } = {}) {
+  constructor(containerEl, { points, onProgress, onFinish, camera, durationMs, topDownPreview, topDownBottomInset, forceLoop = false, imageryRelease } = {}) {
     if (!points || points.length < 2) throw new Error('TerrainFlyover requires at least 2 points');
 
     // Apex-finding needs the real, unsmoothed recording (findApexIndex's own
@@ -811,7 +812,8 @@ export class TerrainFlyover {
     // at all — see OUT_AND_BACK_MATCH_THRESHOLD_M above.
     const fullCum = buildCumulative(points);
     const { bestIdx: rawApexIdx, bestScore: apexScore } = findApexIndex(points, fullCum);
-    this.isOutAndBack = apexScore <= OUT_AND_BACK_MATCH_THRESHOLD_M;
+    // forceLoop: see FORCE_LOOP in gpxFlyover.js.
+    this.isOutAndBack = !forceLoop && apexScore <= OUT_AND_BACK_MATCH_THRESHOLD_M;
     let stem;
 
     if (this.isOutAndBack) {
@@ -859,6 +861,19 @@ export class TerrainFlyover {
       // last index of what gets drawn/flown," which for a loop is simply the
       // whole array — no separate branch needed past this point.
       this.cameraPoints = buildSmoothTrail(points);
+      // A loop that finishes within LOOP_CLOSE_M of where it started is
+      // closed onto its start, so the line's two ends, its one dot and the
+      // hiker all meet at the trailhead. The finish's last few metres are
+      // dropped first: Manastash's descent comes back along its opening
+      // stretch and stops 0.8m *past* the start, and joining that straight
+      // back to the start made a hairpin, which Cesium draws as a spike
+      // sticking out of the dot.
+      const first = this.cameraPoints[0];
+      const pts = this.cameraPoints;
+      if (haversineM(first, pts[pts.length - 1]) < LOOP_CLOSE_M) {
+        while (pts.length > 2 && haversineM(first, pts[pts.length - 1]) < 3) pts.pop();
+        pts.push({ ...first });
+      }
       this.apexIdx = this.cameraPoints.length - 1;
     }
     this.cum = buildCumulative(this.cameraPoints);
@@ -926,11 +941,19 @@ export class TerrainFlyover {
     // photography with no drawn trail overlay of any kind, so there's nothing
     // for our own route to visually conflict with. The top-down card uses
     // recolored shaded relief instead, added once its fit is known (below).
+    //
+    // imageryRelease: an Esri World Imagery Wayback release to fly over
+    // instead of the current imagery, for a hike whose current capture is
+    // clouded or snowy (see SATELLITE_RELEASE in HikeMap.jsx, and
+    // scripts/flyover-check/wbsearch.py for finding one). Same tiles and
+    // levels, just an older capture.
     const baseImagery = topDownPreview
       ? false
       : new Cesium.ImageryLayer(
           new Cesium.UrlTemplateImageryProvider({
-            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            url: imageryRelease
+              ? `https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/${imageryRelease}/{z}/{y}/{x}`
+              : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             credit: 'Esri, Maxar, Earthstar Geographics',
             maximumLevel: 19,
           })

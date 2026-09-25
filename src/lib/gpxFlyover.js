@@ -33,26 +33,49 @@ export function haversineM(a, b) {
 // its 10.8 miles, and 30% of a flyover spent over a forest road before the
 // hike begins. The GPX keeps the whole trip, because that is what was
 // walked; the map and the flyover show the trail.
+//
+// Manastash's recording starts right at the trailhead, where the trail meets
+// Cove Road, but ends 276m past it at the street parking; its descent passes
+// within 1m of the start point, so it gets a 2m radiusM, cutting the walk to
+// the car right at that pass; at 10m the cut landed 9m past the trailhead and
+// the line overshot the start dot.
 export const TRAIL_START = {
   'blanca-lake': { lat: 47.9157, lon: -121.3128 },
+  'manastash': { lat: 46.965507, lon: -120.645898, radiusM: 2 },
 };
 
-// The track between the first and last approach to the trailhead. On an
-// out-and-back the same walk bookends the recording, so both ends go.
-// Falls back to the whole track if the point is never reached, which is
-// what a mistyped coordinate looks like.
-export function trimToTrailStart(points, hikeId, radiusM = 60) {
+// Loops the out-and-back detector gets wrong. Manastash climbs a long,
+// wandering way for 4.75 mi and comes straight down a different, steep 1.25
+// mi, never far from the car; its "does the return retrace the outbound"
+// score came in at 67m, just under the 70m cutoff (terrainFlyover.js), so it
+// was flown as an out-and-back turning at 3.14 mi: the top 1.6 mi of the
+// climb and the whole real descent were missing. Named per hike, not by
+// moving the cutoff, since that would also reclassify Mailbox and Mt. Si
+// Winter, whose descents differ but which are shown as out-and-backs on
+// purpose.
+export const FORCE_LOOP = new Set(['manastash']);
+
+// The track between the first approach to the trailhead (in its first half)
+// and the last (in its second half). On an out-and-back the same walk
+// bookends the recording, so both ends go; an end that never reaches the
+// trailhead (a recording started or stopped out on the trail) is kept as
+// is, as is the whole track if a mistyped coordinate is never reached.
+// Searching each half separately matters: Manastash's only pass by its
+// trailhead is on the way out, and a whole-track search took that for the
+// start too and kept almost nothing.
+export function trimToTrailStart(points, hikeId, defaultRadiusM = 60) {
   const start = TRAIL_START[hikeId];
   if (!start || points.length === 0) return points;
-  let first = -1;
-  let last = -1;
-  for (let i = 0; i < points.length; i++) {
-    if (haversineM(points[i], start) <= radiusM) {
-      if (first === -1) first = i;
-      last = i;
-    }
+  const radiusM = start.radiusM ?? defaultRadiusM;
+  const half = Math.floor(points.length / 2);
+  let first = 0;
+  let last = points.length - 1;
+  for (let i = 0; i < half; i++) {
+    if (haversineM(points[i], start) <= radiusM) { first = i; break; }
   }
-  if (first === -1 || last - first < 2) return points;
+  for (let i = points.length - 1; i >= half; i--) {
+    if (haversineM(points[i], start) <= radiusM) { last = i; break; }
+  }
   return points.slice(first, last + 1);
 }
 

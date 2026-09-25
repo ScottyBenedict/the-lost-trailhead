@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate, trimToTrailStart } from '../lib/gpxFlyover';
+import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate, trimToTrailStart, FORCE_LOOP } from '../lib/gpxFlyover';
 
 // Trailing "drone following behind" camera (see terrainFlyover.js) — under
 // test on one hike before any wider rollout. Placement from offline
@@ -52,6 +52,7 @@ const TRAILING_CAMERA_TEST = {
   'snow-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'snow-lake-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'subway-cave': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'manastash': { range: 900, closeRange: 400, pitchDeg: -38 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
@@ -64,6 +65,15 @@ const TRAILING_CAMERA_TEST = {
 // and a faster one. Raised to 75 on 2026-09-25 (Scott's call): the eased
 // playback's faster cruise and FLIGHT_SPEEDUP in terrainFlyover.js put it
 // back at ~385 m/s, rushed next to the others; 75 plays in ~68s.
+// Per-hike Esri Wayback imagery release, for a hike whose current satellite
+// capture is clouded or snowy. Scott's rule: the clear capture must be at
+// least as sharp as the current one, or it's his call. Manastash: the current
+// capture (2025-10, 0.5 m) has cloud over the lower route; release 22252
+// serves a clear 2020-09 GeoEye-1 capture at 0.46 m (wbsearch.py).
+const SATELLITE_RELEASE = {
+  'manastash': 22252,
+};
+
 const FLIGHT_SECONDS = {
   'kendall-katwalk': 75,
 };
@@ -407,6 +417,8 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
             points,
             durationMs: FLIGHT_SECONDS[hikeId] ? FLIGHT_SECONDS[hikeId] * 1000 : flyoverDurationMs(total3d),
             camera: TRAILING_CAMERA_TEST[hikeId] ? { trailing: TRAILING_CAMERA_TEST[hikeId] } : undefined,
+            forceLoop: FORCE_LOOP.has(hikeId),
+            imageryRelease: SATELLITE_RELEASE[hikeId],
             onProgress: ({ frac, ele, distM }) => {
               drawIndicator(flyDataRef.current?.indicatorCtx, flyDataRef.current?.scale, frac, ele);
               // Scaled against the same curated hike distance shown in the stats

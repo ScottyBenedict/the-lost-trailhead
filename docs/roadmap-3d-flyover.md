@@ -3,7 +3,7 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
-## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 24 of 33 hikes
+## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 25 of 33 hikes
 
 **Start with `docs/handoff-2026-09-20.md` for open work.** This doc is the flyover's
 status and history. The 2026-09-18 and 2026-09-17 status blocks below and everything
@@ -12,11 +12,11 @@ under them are kept as history.
 - **3D flyover is on every hike.** The `terrain3dTestHikes.js` allowlist was removed
   on 2026-09-17 (`USE_TERRAIN_3D = true` in `HikeMap.jsx` and `HikeMapCard.jsx`).
 - **Trailing ("drone behind the hiker") camera is per hike**, via
-  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 24: Cascade Pass
+  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 25: Cascade Pass
   & Sahale Arm, Maple Pass Loop, Rattlesnake Ledge, Rachel & Rampart Lakes, Lake
   Serene, Hidden Lake, Colchuck Lake, Lake Ingalls, Kendall Katwalk, Blanca Lake, Granite Mountain,
   Melakwa Lake, Dirty Harry's Balcony, Garfield Ledges (+ Winter), Hex Mountain —
-  Winter, Lake Valhalla, Mt. Baldy, Annette Lake, Lake 22, Mailbox Peak — Old Trail, Snow Lake (+ Winter), Subway Cave. Remaining hikes are listed in the handoff.
+  Winter, Lake Valhalla, Mt. Baldy, Annette Lake, Lake 22, Mailbox Peak — Old Trail, Snow Lake (+ Winter), Subway Cave, Manastash Ridge. Remaining hikes are listed in the handoff.
   Out-and-backs use `{ range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 }`;
   loops drop `descentPitchDeg`. Kendall alone adds `maxAimOffset: 0.3` and a 64s
   flight (`FLIGHT_SECONDS`). The rig has no terrain-clearance check of its own, so
@@ -47,6 +47,15 @@ under them are kept as history.
   the loop once; after the loop, the hiker walks the drawn stem back in reverse, as on
   an out-and-back. This is the roadmap's decision 4, which had never been built. Lake 22
   (4.2 km stem) is the first. Maple Pass (375 m) stays a true loop.
+- **Per-hike route and imagery fixes (PR #56, 2026-09-25, Manastash):** `FORCE_LOOP`
+  (gpxFlyover.js) forces a loop that the out-and-back detector misreads (Manastash scored
+  67 m against a 70 m cutoff and was flown as an out-and-back). `TRAIL_START` entries can
+  set their own `radiusM`, and the trim now searches each half of the track separately, so
+  a recording that passes the trailhead only on the way out is trimmed correctly. A loop
+  that finishes within 30 m of its start is closed onto it, after dropping any overshoot.
+  `SATELLITE_RELEASE` (HikeMap.jsx) flies a hike over an Esri Wayback capture instead of the
+  current one: Manastash uses release 22252, a clear 2020 capture at 0.46 m, instead of the
+  clouded 2025 one. This is the same mechanism the snow-free imagery work below needs.
 - **Known, deferred:** jumping the paused slider from 0% to roughly 4-20% can put the
   camera underground. Normal playback is fine.
 
