@@ -11,7 +11,7 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './terrainFlyoverOverrides.css';
 import { buildCumulative, flyoverDurationMs, positionAt, bearingBetween, haversineM } from './gpxFlyover';
 import { createTerrariumTerrainProvider } from './terrainFlyoverProvider';
-import { createTerrainTrail, CASING as TRAIL_CASING } from './trailPolyline';
+import { createTerrainTrail, CASING as TRAIL_CASING, LIFT_M } from './trailPolyline';
 
 // findApexIndex's bestScore (below) doubles as out-and-back detection: it's
 // the average GPS deviation between the outbound and return legs at the
@@ -1012,16 +1012,14 @@ export class TerrainFlyover {
       topDownPreview ? { minWidthPx: 2, onTop: true } : undefined
     );
 
-    // heightReference: RELATIVE_TO_GROUND makes Cesium clamp this point to the
-    // terrain itself (offsetting the position's height above that clamp) —
-    // the same underlying ground-clamping mechanism the line's own
-    // clampToGround uses. Previously the marker's height came from this
-    // file's own scene.globe.getHeight() sampling (with its own EMA
-    // smoothing) while the line's came from Cesium's separate internal
-    // ground-clamp — two different "ground" values for the same real spot,
-    // which is a small vertical gap in 3D, but a real, visible on-screen
-    // offset once projected through a steep, oblique camera angle. Sharing
-    // the one mechanism both use removes the possibility of them disagreeing.
+    // heightReference: RELATIVE_TO_GROUND makes Cesium clamp a point to the
+    // terrain itself. The hiker only uses it until the line is drawn: the
+    // line is placed on its own terrain sampling (trailPolyline.js), and
+    // Cesium's clamp can disagree with that — measured at Blanca's trailhead,
+    // it put the ground 14m below the line's, so the hiker sat visibly below
+    // the green dot. Once the line's heights arrive, the hiker stands on
+    // those instead (see placeMarker), so the line, its end dots and the
+    // hiker all share one ground.
     //
     // The top-down static preview shows no animation, so a single "hiker"
     // dot (always sitting at the trailhead, since it's never advanced by
@@ -1080,6 +1078,13 @@ export class TerrainFlyover {
       this.marker = this.viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(points[0].lon, points[0].lat, 3),
         point: { ...pinPoint(Cesium.Color.ORANGE), pixelSize: 10 },
+      });
+      this.trail.ground.then((ground) => {
+        if (this.destroyed || this.viewer.isDestroyed()) return;
+        this.lineGround = ground;
+        this.marker.point.heightReference = Cesium.HeightReference.NONE;
+        this.placeMarker(this.frac ?? 0);
+        this.viewer.scene.requestRender();
       });
 
       // A dot at each end of the line, so the line starts and ends at
@@ -1210,6 +1215,28 @@ export class TerrainFlyover {
     return this.smoothedGroundHeight;
   }
 
+  // Until the line's ground heights arrive, the hiker is clamped by Cesium,
+  // so its height is metres ABOVE THE TERRAIN: passing an absolute height
+  // then (tried 2026-09-20, reverted) gets the ground added twice and throws
+  // the hiker ~600m up, out of frame. After, it's absolute: the line's own
+  // ground under this spot plus the line's lift, the same height the line
+  // and its end dots are drawn at.
+  placeMarker(frac, pos = positionAt(this.cameraPoints, this.cum, this.total, frac, this.posHint)) {
+    if (!this.lineGround) {
+      this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, 3);
+      return;
+    }
+    // The line covers cameraPoints[0..apexIdx]; an out-and-back's return leg
+    // is that same stretch walked backward, so index k maps to 2*apexIdx - k.
+    const last = this.apexIdx;
+    const ground = (k) => this.lineGround[k <= last ? k : 2 * last - k];
+    const i = pos.idx;
+    const d0 = this.cum[i - 1], d1 = this.cum[i];
+    const t = d1 > d0 ? Cesium.Math.clamp((frac * this.total - d0) / (d1 - d0), 0, 1) : 0;
+    const height = ground(i - 1) + (ground(i) - ground(i - 1)) * t;
+    this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, height + LIFT_M);
+  }
+
   applyFrame(frac) {
     this.frac = frac;
     const pos = positionAt(this.cameraPoints, this.cum, this.total, frac, this.posHint);
@@ -1221,13 +1248,8 @@ export class TerrainFlyover {
       ? this.trailingRig.headingAt(frac * this.total)
       : (this.fixedBearing + this.camera.sideOffsetDeg + 360) % 360;
 
-    // Marker sits at the hiker's real, current position — always. The 3 is
-    // metres ABOVE THE TERRAIN, not above the ellipsoid: pinPoint sets
-    // heightReference RELATIVE_TO_GROUND, so Cesium adds the ground height
-    // itself. Passing an absolute height here (tried 2026-09-20, reverted)
-    // gets it added twice and throws the marker ~600m into the sky, where
-    // it is simply not in frame — no error, just no hiker.
-    this.marker.position = Cesium.Cartesian3.fromDegrees(pos.lon, pos.lat, 3);
+    // Marker sits at the hiker's real, current position — always.
+    this.placeMarker(frac, pos);
 
     // Tried aiming a fixed real distance ahead on the path instead of at the
     // exact current position (a "look through the curve" attempt at fixing
