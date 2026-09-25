@@ -3,7 +3,7 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
-## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 23 of 33 hikes
+## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 24 of 33 hikes
 
 **Start with `docs/handoff-2026-09-20.md` for open work.** This doc is the flyover's
 status and history. The 2026-09-18 and 2026-09-17 status blocks below and everything
@@ -12,11 +12,11 @@ under them are kept as history.
 - **3D flyover is on every hike.** The `terrain3dTestHikes.js` allowlist was removed
   on 2026-09-17 (`USE_TERRAIN_3D = true` in `HikeMap.jsx` and `HikeMapCard.jsx`).
 - **Trailing ("drone behind the hiker") camera is per hike**, via
-  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 23: Cascade Pass
+  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 24: Cascade Pass
   & Sahale Arm, Maple Pass Loop, Rattlesnake Ledge, Rachel & Rampart Lakes, Lake
   Serene, Hidden Lake, Colchuck Lake, Lake Ingalls, Kendall Katwalk, Blanca Lake, Granite Mountain,
   Melakwa Lake, Dirty Harry's Balcony, Garfield Ledges (+ Winter), Hex Mountain —
-  Winter, Lake Valhalla, Mt. Baldy, Annette Lake, Lake 22, Mailbox Peak — Old Trail, Snow Lake (+ Winter). Remaining hikes are listed in the handoff.
+  Winter, Lake Valhalla, Mt. Baldy, Annette Lake, Lake 22, Mailbox Peak — Old Trail, Snow Lake (+ Winter), Subway Cave. Remaining hikes are listed in the handoff.
   Out-and-backs use `{ range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 }`;
   loops drop `descentPitchDeg`. Kendall alone adds `maxAimOffset: 0.3` and a 64s
   flight (`FLIGHT_SECONDS`). The rig has no terrain-clearance check of its own, so
