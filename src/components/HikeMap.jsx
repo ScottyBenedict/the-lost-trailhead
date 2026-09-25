@@ -51,6 +51,7 @@ const TRAILING_CAMERA_TEST = {
   'mailbox-old-trail': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'snow-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'snow-lake-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'subway-cave': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
