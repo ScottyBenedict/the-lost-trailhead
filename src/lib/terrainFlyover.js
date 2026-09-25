@@ -162,7 +162,69 @@ const DEFAULT_CAMERA = { range: 750, pitchDeg: -34, sideOffsetDeg: 75 };
 //   to the tracking range over this long.
 // outroS — over the flight's last seconds the camera comes back around and in
 //   to exactly the opening shot, so it ends where it began.
-const TRAILING_RIG = { targetSigmaS: 2.5, headingSigmaM: 1500, headingSigmaS: 2, orbitS: 14, introS: 5, outroS: 9 };
+// pushInS — how much of the outro the move back *in* (to closeRange) takes.
+//   Over the full outroS, the hiker spent ~6s crawling at under 70% of its
+//   ground speed, since playback slows it while the camera is close (see
+//   buildPlaybackTimes); Scott found the finish painfully slow.
+const TRAILING_RIG = { targetSigmaS: 2.5, headingSigmaM: 1500, headingSigmaS: 2, orbitS: 14, introS: 5, outroS: 9, pushInS: 4 };
+
+// Playback speed. At one constant speed the opening read as coming out of
+// the gate hot, and a plain speed ramp didn't fix it: the trailing camera
+// opens in close (closeRange) and backs out over introS, and how fast the
+// hiker *looks* is its ground speed over the camera's distance, so right after
+// a 2s ramp it was still showing ~2x cruise on screen until ~5s. So speed is
+// set per metre of trail, not per second: the hiker accelerates evenly from a
+// standstill to cruise over RAMP_IN_S and slows to a stop over RAMP_OUT_S,
+// and wherever the camera is closer than its tracking range (backing out at
+// the start, coming back in for the closing shot) the ground speed drops in
+// proportion to its distance, so on screen it holds cruise instead of
+// surging. Uncompensated, the finish read as speeding up: ~2.2x cruise on
+// screen in the last seconds. The flight keeps its old duration (Scott's
+// call), so the cruise is whatever makes up for the slow stretches: ~1.2x
+// the old constant speed on Annette.
+// frac stays a fraction of *distance* everywhere (slider, readout, scrubTo);
+// only the clock is remapped.
+// Every flight runs this much faster than its length-derived (or per-hike
+// FLIGHT_SECONDS) duration: Scott found them all a touch slow (2026-09-25).
+const FLIGHT_SPEEDUP = 1.1;
+const RAMP_IN_S = 0.54;
+const RAMP_OUT_S = 0.51;
+
+// Returns the flight time (ms) at each of n+1 evenly spaced distances along
+// the flight, which lasts durationMs. rangeAt/farRange: the trailing camera's
+// distance, or omitted. Built at a trial cruise speed, then rescaled to fit
+// durationMs; the ramp distance is sized from the trial cruise, so the ramps
+// come out a little shorter than RAMP_IN_S/RAMP_OUT_S once the cruise is
+// scaled up.
+function buildPlaybackTimes(total, durationMs, rangeAt, farRange, n = 2000) {
+  const cruise = total / (durationMs / 1000);
+  // Even acceleration: v = cruise * sqrt(s / rampM), rampM the ramp's length.
+  const rampInM = (cruise * RAMP_IN_S) / 2;
+  const rampOutM = (cruise * RAMP_OUT_S) / 2;
+  const speed = (d) => cruise
+    * Math.min(1, Math.sqrt(d / rampInM), Math.sqrt((total - d) / rampOutM))
+    * (rangeAt ? Math.min(1, rangeAt(d) / farRange) : 1);
+  const ds = total / n;
+  const times = new Float64Array(n + 1);
+  for (let k = 1; k <= n; k++) times[k] = times[k - 1] + (1000 * ds) / speed((k - 0.5) * ds);
+  const scale = durationMs / times[n];
+  for (let k = 1; k <= n; k++) times[k] *= scale;
+  return times;
+}
+
+// Flight time (ms) -> fraction of distance, and back.
+function fracAtTime(times, ms) {
+  const n = times.length - 1;
+  if (ms <= 0) return 0;
+  if (ms >= times[n]) return 1;
+  let lo = 0, hi = n;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (times[mid] <= ms) lo = mid; else hi = mid; }
+  return (lo + (ms - times[lo]) / (times[hi] - times[lo])) / n;
+}
+function timeAtFrac(times, frac) {
+  const n = times.length - 1, x = Math.min(n, Math.max(0, frac * n)), i = Math.min(n - 1, Math.floor(x));
+  return times[i] + (times[i + 1] - times[i]) * (x - i);
+}
 
 // Gaussian smoothing with odd-reflection padding (v[-k] = 2v[0] - v[k]), so
 // the ends keep their real position and slope instead of being pulled inward.
@@ -270,7 +332,9 @@ function buildTrailingRig(pathPoints, pathCum, apexIdx, isOutAndBack, speedMps, 
   heading = heading.map((h, j) => h + (h0 + 360 * turns - h) * outro[j]);
   pitch = pitch.map((p, j) => p + (p0 - p) * outro[j]);
   const introM = Math.min(rig.introS * speedMps, total / 3);
-  const rangeM = flight.xs.map((_, j) => closeRange + (range - closeRange) * ease((j * step) / introM) * (1 - outro[j]));
+  const pushInM = Math.min(rig.pushInS * speedMps, outroM);
+  const rangeM = flight.xs.map((_, j) => closeRange
+    + (range - closeRange) * ease((j * step) / introM) * (1 - ease((j * step - (total - pushInM)) / pushInM)));
 
   // Optional, per hike (`maxAimOffset` in its trailing settings): keeps the aim
   // within that fraction of the camera's range from the hiker. The aim is an
@@ -760,7 +824,7 @@ export class TerrainFlyover {
     this.fixedBearing = bearingBetween(this.cameraPoints[0], this.cameraPoints[bearingTargetIdx]);
     // Explicit `durationMs` overrides the length-derived default — HikeMapCard.jsx's
     // ambient preview intentionally uses a fixed duration regardless of hike length.
-    this.durationMs = durationMs ?? flyoverDurationMs(this.total);
+    this.durationMs = (durationMs ?? flyoverDurationMs(this.total)) / FLIGHT_SPEEDUP;
     this.onProgress = onProgress;
     this.onFinish = onFinish;
     this.camera = { ...DEFAULT_CAMERA, ...camera };
@@ -769,6 +833,12 @@ export class TerrainFlyover {
       const speedMps = this.total / (this.durationMs / 1000);
       this.trailingRig = buildTrailingRig(this.cameraPoints, this.cum, this.apexIdx, this.isOutAndBack, speedMps, { range, closeRange, pitchDeg, descentPitchDeg, maxAimOffset });
     }
+    this.playbackTimes = buildPlaybackTimes(
+      this.total,
+      this.durationMs,
+      this.trailingRig?.rangeAt,
+      camera?.trailing?.range
+    );
 
     this.flying = false;
     this.frac = 0;
@@ -1321,7 +1391,7 @@ export class TerrainFlyover {
       this.onFinish?.();
       return;
     }
-    this.applyFrame(elapsed / this.durationMs);
+    this.applyFrame(fracAtTime(this.playbackTimes, elapsed));
     this.rafId = requestAnimationFrame(this._loop);
   };
 
@@ -1329,7 +1399,7 @@ export class TerrainFlyover {
     if (this.destroyed || this.flying) return;
     if (this.frac >= 1) this.frac = 0;
     this.flying = true;
-    this.sessionStart = performance.now() - this.frac * this.durationMs;
+    this.sessionStart = performance.now() - timeAtFrac(this.playbackTimes, this.frac);
     this.rafId = requestAnimationFrame(this._loop);
     this._logPerfOnce();
   }

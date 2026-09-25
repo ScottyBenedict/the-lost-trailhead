@@ -3,7 +3,7 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
-## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 18 of 33 hikes
+## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 19 of 33 hikes
 
 **Start with `docs/handoff-2026-09-20.md` for open work.** This doc is the flyover's
 status and history. The 2026-09-18 and 2026-09-17 status blocks below and everything
@@ -12,11 +12,11 @@ under them are kept as history.
 - **3D flyover is on every hike.** The `terrain3dTestHikes.js` allowlist was removed
   on 2026-09-17 (`USE_TERRAIN_3D = true` in `HikeMap.jsx` and `HikeMapCard.jsx`).
 - **Trailing ("drone behind the hiker") camera is per hike**, via
-  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 18: Cascade Pass
+  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 19: Cascade Pass
   & Sahale Arm, Maple Pass Loop, Rattlesnake Ledge, Rachel & Rampart Lakes, Lake
   Serene, Hidden Lake, Colchuck Lake, Lake Ingalls, Kendall Katwalk, Blanca Lake, Granite Mountain,
   Melakwa Lake, Dirty Harry's Balcony, Garfield Ledges (+ Winter), Hex Mountain —
-  Winter, Lake Valhalla, Mt. Baldy. Remaining hikes are listed in the handoff.
+  Winter, Lake Valhalla, Mt. Baldy, Annette Lake. Remaining hikes are listed in the handoff.
   Out-and-backs use `{ range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 }`;
   loops drop `descentPitchDeg`. Kendall alone adds `maxAimOffset: 0.3` and a 64s
   flight (`FLIGHT_SECONDS`). The rig has no terrain-clearance check of its own, so
@@ -34,6 +34,14 @@ under them are kept as history.
   own sampled terrain (`trail.ground` → `placeMarker`), not Cesium's
   RELATIVE_TO_GROUND clamp, which ran 14 m low at Blanca's trailhead. The line, the
   end dots and the hiker all share one ground on every hike.
+- **Playback speed (PR #49, 2026-09-25):** the hiker eases in and out (`RAMP_IN_S`,
+  `RAMP_OUT_S`), and while the trailing camera is closer than its tracking range the
+  hiker's ground speed drops in proportion, so it never looks faster on screen than
+  cruise. Before this it looked ~2x cruise just after the start and surged at the finish.
+  Flights keep their duration (cruise absorbs the slow stretches, ~1.13x), then all run
+  10% faster (`FLIGHT_SPEEDUP`). The camera's closing push-in is 4s (`pushInS`), not the
+  9s outro, so the finish doesn't crawl. Kendall's `FLIGHT_SECONDS` 64 -> 75 (~68s played).
+  Tuned by Scott on localhost against Annette; see `buildPlaybackTimes` in terrainFlyover.js.
 - **Known, deferred:** jumping the paused slider from 0% to roughly 4-20% can put the
   camera underground. Normal playback is fine.
 

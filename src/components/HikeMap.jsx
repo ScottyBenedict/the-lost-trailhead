@@ -56,9 +56,11 @@ const TRAILING_CAMERA_TEST = {
 // far enough on bends to jitter and briefly lose the hiker. 64s is the pace
 // the uncapped formula gives it. Rule going forward: a flight over 60s gets
 // flagged to Scott before it ships, to decide between the longer flight
-// and a faster one.
+// and a faster one. Raised to 75 on 2026-09-25 (Scott's call): the eased
+// playback's faster cruise and FLIGHT_SPEEDUP in terrainFlyover.js put it
+// back at ~385 m/s, rushed next to the others; 75 plays in ~68s.
 const FLIGHT_SECONDS = {
-  'kendall-katwalk': 64,
+  'kendall-katwalk': 75,
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
