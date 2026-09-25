@@ -4,7 +4,7 @@ export const hikes = [
     name: 'Annette Lake',
     region: 'Mt. Baker-Snoqualmie National Forest · I-90 Corridor',
     trailhead: [47.39276, -121.47426],
-    distance: '7.5 mi',
+    distance: '6.9 mi',
     gain: '1,800 ft',
     difficulty: 'Moderate',
     season: 'Jun – Oct',

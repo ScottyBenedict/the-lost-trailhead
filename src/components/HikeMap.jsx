@@ -46,6 +46,7 @@ const TRAILING_CAMERA_TEST = {
   'hex-mountain-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'lake-valhalla': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'mt-baldy': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'annette-lake': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
