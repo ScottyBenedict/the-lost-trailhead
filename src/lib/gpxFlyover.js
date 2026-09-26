@@ -60,6 +60,13 @@ export const TRAIL_START = {
 // purpose.
 export const FORCE_LOOP = new Set(['manastash']);
 
+// Out-and-backs that turn around at the recording's highest point instead of
+// where the two legs best retrace each other. Red Top's recording goes ~110m
+// past the lookout (a 6-minute stop), then back up to it; the best retrace
+// fell 53m short of the summit, so the hiker never reached the lookout. The
+// side trip past it is part of the hike and stays in (Scott).
+export const TURN_AT_HIGH_POINT = new Set(['red-top-lookout']);
+
 // The track between the first approach to the trailhead (in its first half)
 // and the last (in its second half). On an out-and-back the same walk
 // bookends the recording, so both ends go; an end that never reaches the

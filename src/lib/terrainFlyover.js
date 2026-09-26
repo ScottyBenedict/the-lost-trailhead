@@ -809,7 +809,7 @@ export class TerrainFlyover {
   // topDownBottomInset (top-down card only): a function returning how many
   // pixels along the bottom of the card are covered (by its caption band), so
   // the route is fit into the area above it rather than tucked underneath.
-  constructor(containerEl, { points, onProgress, onFinish, camera, durationMs, topDownPreview, topDownBottomInset, forceLoop = false, imageryRelease, lineGradeLimit = false } = {}) {
+  constructor(containerEl, { points, onProgress, onFinish, camera, durationMs, topDownPreview, topDownBottomInset, forceLoop = false, imageryRelease, lineGradeLimit = false, turnAtHighPoint = false } = {}) {
     if (!points || points.length < 2) throw new Error('TerrainFlyover requires at least 2 points');
 
     // Apex-finding needs the real, unsmoothed recording (findApexIndex's own
@@ -817,7 +817,11 @@ export class TerrainFlyover {
     // recording. bestScore also decides whether this hike is an out-and-back
     // at all — see OUT_AND_BACK_MATCH_THRESHOLD_M above.
     const fullCum = buildCumulative(points);
-    const { bestIdx: rawApexIdx, bestScore: apexScore } = findApexIndex(points, fullCum);
+    const { bestIdx: matchIdx, bestScore: apexScore } = findApexIndex(points, fullCum);
+    // turnAtHighPoint: see TURN_AT_HIGH_POINT in gpxFlyover.js.
+    const rawApexIdx = turnAtHighPoint
+      ? points.reduce((best, p, i) => ((p.ele ?? -Infinity) > (points[best].ele ?? -Infinity) ? i : best), 0)
+      : matchIdx;
     // forceLoop: see FORCE_LOOP in gpxFlyover.js.
     this.isOutAndBack = !forceLoop && apexScore <= OUT_AND_BACK_MATCH_THRESHOLD_M;
     let stem;
@@ -923,7 +927,9 @@ export class TerrainFlyover {
       this.trailingRig = buildTrailingRig(this.cameraPoints, this.cum, this.apexIdx, this.isOutAndBack, speedMps, { range, closeRange, pitchDeg, descentPitchDeg, maxAimOffset });
     }
     const trailing = camera?.trailing;
-    const opensWide = !trailing || (trailing.closeRange ?? trailing.range) >= trailing.range;
+    // A static camera's flight is short and its framing never changes, so it
+    // keeps the short ramps.
+    const opensWide = !camera?.static && (!trailing || (trailing.closeRange ?? trailing.range) >= trailing.range);
     this.playbackTimes = buildPlaybackTimes(
       this.total,
       this.durationMs,
@@ -1422,6 +1428,58 @@ export class TerrainFlyover {
 
     // Marker sits at the hiker's real, current position — always.
     this.placeMarker(frac, pos);
+
+    // A static camera (`camera: { static: true }`, for a hike too short to
+    // need following: Red Top's round trip is ~1.2km of flight) is set once
+    // and never moves: behind the start, facing the turnaround, far enough
+    // back that the whole drawn route fits in frame, with the hiker walking
+    // through the shot.
+    if (this.camera.static) {
+      // orbitDeg (optional): the shot swings this far around the route and
+      // back over the flight. It holds still for the first and last
+      // ORBIT_HOLD of the flight, so the hiker sets off (and arrives) before
+      // the camera moves, and starts and stops turning gently: a plain sine
+      // from the first frame swung the camera as the hiker took off.
+      const orbit = this.camera.orbitDeg ?? 0;
+      const ORBIT_HOLD = 0.12;
+      const headingAt = (f) => {
+        const s = Cesium.Math.clamp((f - ORBIT_HOLD) / (1 - 2 * ORBIT_HOLD), 0, 1);
+        return Cesium.Math.toRadians(this.fixedBearing + (orbit * (1 - Math.cos(2 * Math.PI * s))) / 2);
+      };
+      if (!this.staticFramed) {
+        const drawn = this.cameraPoints.slice(0, this.apexIdx + 1)
+          .map((p) => Cesium.Cartesian3.fromDegrees(p.lon, p.lat, p.ele ?? 0));
+        const sphere = Cesium.BoundingSphere.fromPoints(drawn);
+        const fovy = this.viewer.camera.frustum.fovy ?? Cesium.Math.toRadians(60);
+        // Sized to the route's extent first, then backed off until every
+        // point lands inside the frame: the start is the point nearest the
+        // camera, and a fit to the extent alone left it under the bottom edge
+        // (where the playback bar sits, hence the larger bottom margin).
+        const canvas = this.viewer.scene.canvas;
+        const pitch = Cesium.Math.toRadians(this.camera.pitchDeg);
+        const inFrame = () => drawn.every((c) => {
+          const px = this.viewer.scene.cartesianToCanvasCoordinates(c);
+          return px && px.x > 40 && px.x < canvas.clientWidth - 40 && px.y > 40 && px.y < canvas.clientHeight - 120;
+        });
+        // Checked across the sweep, so the route stays in frame all the way round.
+        const fits = (r) => [0, 0.25, 0.5].every((f) => {
+          this.viewer.camera.lookAt(sphere.center, new Cesium.HeadingPitchRange(headingAt(f), pitch, r));
+          return inFrame();
+        });
+        // Starts close and backs off only until the route fits, so the camera
+        // is as close as the framing allows (a whole-sphere fit sat well back).
+        let range = (0.3 * sphere.radius) / Math.sin(fovy / 2);
+        for (let tries = 0; tries < 30 && !fits(range); tries++) range *= 1.08;
+        this.staticShot = { center: sphere.center, pitch, range };
+        this.staticFramed = true;
+      }
+      if (orbit || frac === 0) {
+        const { center, pitch, range } = this.staticShot;
+        this.viewer.camera.lookAt(center, new Cesium.HeadingPitchRange(headingAt(frac), pitch, range));
+      }
+      this.onProgress?.({ frac, lat: pos.lat, lon: pos.lon, ele: pos.ele, distM: frac * this.total });
+      return;
+    }
 
     // Tried aiming a fixed real distance ahead on the path instead of at the
     // exact current position (a "look through the curve" attempt at fixing
