@@ -19,7 +19,7 @@ export const hikes = [
     name: 'Bandera Mountain',
     region: 'Mt. Baker-Snoqualmie National Forest · I-90 Corridor',
     trailhead: [47.41659, -121.58338],
-    distance: '8.0 mi',
+    distance: '7.0 mi',
     gain: '2,900 ft',
     difficulty: 'Strenuous',
     season: 'Jun – Oct',

@@ -54,6 +54,8 @@ const TRAILING_CAMERA_TEST = {
   'subway-cave': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'manastash': { range: 900, closeRange: 400, pitchDeg: -38 },
   'mt-si-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'bandera-mountain': { range: 900, closeRange: 900, pitchDeg: -38, descentPitchDeg: -60, maxAimOffset: 0.3 },
+  'oyster-dome': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
@@ -74,6 +76,11 @@ const TRAILING_CAMERA_TEST = {
 const SATELLITE_RELEASE = {
   'manastash': 22252,
 };
+
+// Hikes whose line gets limitGrade (trailPolyline.js): no cliffs in the line.
+// Oyster Dome's GPS slips over a cliff edge at 0.37 mi, and the line fell
+// 45m in 25m there.
+const LINE_GRADE_LIMIT = new Set(['oyster-dome']);
 
 const FLIGHT_SECONDS = {
   'kendall-katwalk': 75,
@@ -420,6 +427,7 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
             camera: TRAILING_CAMERA_TEST[hikeId] ? { trailing: TRAILING_CAMERA_TEST[hikeId] } : undefined,
             forceLoop: FORCE_LOOP.has(hikeId),
             imageryRelease: SATELLITE_RELEASE[hikeId],
+            lineGradeLimit: LINE_GRADE_LIMIT.has(hikeId),
             onProgress: ({ frac, ele, distM }) => {
               drawIndicator(flyDataRef.current?.indicatorCtx, flyDataRef.current?.scale, frac, ele);
               // Scaled against the same curated hike distance shown in the stats
@@ -502,10 +510,17 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
 
         setTimeout(() => {
           if (!flyDataRef.current) return;
-          const scale = computeElevationScale(canvasRef.current, points);
+          // The 3D profile is drawn along the path the flyover actually flies,
+          // not the raw recording: an out-and-back flies its climb both ways,
+          // so its profile is the climb and the same climb back down. Drawn
+          // from the recording, Bandera's (whose recording stops partway down)
+          // ended far above its start, and the playback marker, which reads
+          // the flown path's elevation, didn't line up with the curve.
+          const profilePoints = flyoverRef.current?.cameraPoints ?? points;
+          const scale = computeElevationScale(canvasRef.current, profilePoints);
           flyDataRef.current.scale = scale;
           flyDataRef.current.indicatorCtx = setupIndicatorCanvas(indicatorRef.current, scale);
-          drawElevationCanvas(canvasRef.current, points, scale);
+          drawElevationCanvas(canvasRef.current, profilePoints, scale);
         }, 100);
 
       } catch (err) {

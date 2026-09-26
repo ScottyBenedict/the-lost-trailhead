@@ -3,7 +3,7 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
-## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 26 of 33 hikes
+## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 28 of 33 hikes
 
 **Start with `docs/handoff-2026-09-20.md` for open work.** This doc is the flyover's
 status and history. The 2026-09-18 and 2026-09-17 status blocks below and everything
@@ -12,11 +12,11 @@ under them are kept as history.
 - **3D flyover is on every hike.** The `terrain3dTestHikes.js` allowlist was removed
   on 2026-09-17 (`USE_TERRAIN_3D = true` in `HikeMap.jsx` and `HikeMapCard.jsx`).
 - **Trailing ("drone behind the hiker") camera is per hike**, via
-  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 26: Cascade Pass
+  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 28: Cascade Pass
   & Sahale Arm, Maple Pass Loop, Rattlesnake Ledge, Rachel & Rampart Lakes, Lake
   Serene, Hidden Lake, Colchuck Lake, Lake Ingalls, Kendall Katwalk, Blanca Lake, Granite Mountain,
   Melakwa Lake, Dirty Harry's Balcony, Garfield Ledges (+ Winter), Hex Mountain —
-  Winter, Lake Valhalla, Mt. Baldy, Annette Lake, Lake 22, Mailbox Peak — Old Trail, Snow Lake (+ Winter), Subway Cave, Manastash Ridge, Mt. Si — Winter. Remaining hikes are listed in the handoff.
+  Winter, Lake Valhalla, Mt. Baldy, Annette Lake, Lake 22, Mailbox Peak — Old Trail, Snow Lake (+ Winter), Subway Cave, Manastash Ridge, Mt. Si — Winter, Bandera Mountain, Oyster Dome. Remaining hikes are listed in the handoff.
   Out-and-backs use `{ range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 }`;
   loops drop `descentPitchDeg`. Kendall alone adds `maxAimOffset: 0.3` and a 64s
   flight (`FLIGHT_SECONDS`). The rig has no terrain-clearance check of its own, so
@@ -56,6 +56,23 @@ under them are kept as history.
   `SATELLITE_RELEASE` (HikeMap.jsx) flies a hike over an Esri Wayback capture instead of the
   current one: Manastash uses release 22252, a clear 2020 capture at 0.46 m, instead of the
   clouded 2025 one. This is the same mechanism the snow-free imagery work below needs.
+- **Elevation profile follows the flown path (PR #58, 2026-09-25):** the 3D lightbox profile
+  is drawn from `cameraPoints`, not the raw recording, so an out-and-back's profile is its
+  climb mirrored and the playback marker sits on the curve. Bandera's recording stops partway
+  down and its profile had ended far above its start. On Mailbox and Mt. Si Winter the profile
+  now shows the climb replayed, matching their flyovers, not the real different descent.
+- **Wide-opening flyovers ramp longer:** a flight whose camera doesn't open close-in gets 3 s
+  speed ramps (`RAMP_WIDE_S`) instead of the short ones, since it has none of the close-camera
+  slowdown. Only Bandera for now: it opens at 900 m (`closeRange: 900`, plus `maxAimOffset: 0.3`)
+  because its first switchback heads toward the camera and left the frame.
+- **Per-hike line grade limit:** `LINE_GRADE_LIMIT` (HikeMap.jsx) → `limitGrade` in
+  trailPolyline.js keeps a line from rising or falling more steeply than 60%. Oyster Dome only:
+  its GPS slips over a cliff edge at 0.37 mi, and the line fell 45 m in 25 m there. Measured on
+  Mailbox and Cascade, it would have nudged those lines up by 2-3 m, so it's opt-in.
+- **Tile stitching was tried and dropped:** the worker's grid copies each tile's edge row
+  (`rgbTerrainToGrid`), so seams around cliffs can mismatch by 30-50 m. Stitching with
+  neighbor tiles closed them, but it fixed nothing visible and costs 8 extra tile reads per
+  tile, so it was left out. Revisit only if a visible problem traces back to a seam.
 - **Known, deferred:** jumping the paused slider from 0% to roughly 4-20% can put the
   camera underground. Normal playback is fine.
 

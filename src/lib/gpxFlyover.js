@@ -39,8 +39,13 @@ export function haversineM(a, b) {
 // within 1m of the start point, so it gets a 2m radiusM, cutting the walk to
 // the car right at that pass; at 10m the cut landed 9m past the trailhead and
 // the line overshot the start dot.
+//
+// Bandera's recording starts 0.7 mi and 620 ft below the Ira Spring
+// trailhead, a walk up the road, and stops on the way down before getting
+// back to it, so only the start is trimmed.
 export const TRAIL_START = {
   'blanca-lake': { lat: 47.9157, lon: -121.3128 },
+  'bandera-mountain': { lat: 47.4247, lon: -121.5836 },
   'manastash': { lat: 46.965507, lon: -120.645898, radiusM: 2 },
 };
 

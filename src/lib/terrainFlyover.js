@@ -236,6 +236,12 @@ const TRAILING_RIG = { targetSigmaS: 2.5, headingSigmaM: 1500, headingSigmaS: 2,
 const FLIGHT_SPEEDUP = 1.1;
 const RAMP_IN_S = 0.54;
 const RAMP_OUT_S = 0.51;
+// A flight whose camera doesn't open close in (no closeRange push-in, or no
+// trailing camera at all) gets none of the slow opening that the close-camera
+// slowdown above gives, and with the short ramps it reached full speed in
+// under a second: Bandera, opened wide to keep its first switchback in
+// frame, came out of the gate hot. These get longer ramps instead.
+const RAMP_WIDE_S = 3;
 
 // Returns the flight time (ms) at each of n+1 evenly spaced distances along
 // the flight, which lasts durationMs. rangeAt/farRange: the trailing camera's
@@ -243,11 +249,11 @@ const RAMP_OUT_S = 0.51;
 // durationMs; the ramp distance is sized from the trial cruise, so the ramps
 // come out a little shorter than RAMP_IN_S/RAMP_OUT_S once the cruise is
 // scaled up.
-function buildPlaybackTimes(total, durationMs, rangeAt, farRange, n = 2000) {
+function buildPlaybackTimes(total, durationMs, rangeAt, farRange, rampInS = RAMP_IN_S, rampOutS = RAMP_OUT_S, n = 2000) {
   const cruise = total / (durationMs / 1000);
   // Even acceleration: v = cruise * sqrt(s / rampM), rampM the ramp's length.
-  const rampInM = (cruise * RAMP_IN_S) / 2;
-  const rampOutM = (cruise * RAMP_OUT_S) / 2;
+  const rampInM = (cruise * rampInS) / 2;
+  const rampOutM = (cruise * rampOutS) / 2;
   const speed = (d) => cruise
     * Math.min(1, Math.sqrt(d / rampInM), Math.sqrt((total - d) / rampOutM))
     * (rangeAt ? Math.min(1, rangeAt(d) / farRange) : 1);
@@ -803,7 +809,7 @@ export class TerrainFlyover {
   // topDownBottomInset (top-down card only): a function returning how many
   // pixels along the bottom of the card are covered (by its caption band), so
   // the route is fit into the area above it rather than tucked underneath.
-  constructor(containerEl, { points, onProgress, onFinish, camera, durationMs, topDownPreview, topDownBottomInset, forceLoop = false, imageryRelease } = {}) {
+  constructor(containerEl, { points, onProgress, onFinish, camera, durationMs, topDownPreview, topDownBottomInset, forceLoop = false, imageryRelease, lineGradeLimit = false } = {}) {
     if (!points || points.length < 2) throw new Error('TerrainFlyover requires at least 2 points');
 
     // Apex-finding needs the real, unsmoothed recording (findApexIndex's own
@@ -916,11 +922,15 @@ export class TerrainFlyover {
       const speedMps = this.total / (this.durationMs / 1000);
       this.trailingRig = buildTrailingRig(this.cameraPoints, this.cum, this.apexIdx, this.isOutAndBack, speedMps, { range, closeRange, pitchDeg, descentPitchDeg, maxAimOffset });
     }
+    const trailing = camera?.trailing;
+    const opensWide = !trailing || (trailing.closeRange ?? trailing.range) >= trailing.range;
     this.playbackTimes = buildPlaybackTimes(
       this.total,
       this.durationMs,
       this.trailingRig?.rangeAt,
-      camera?.trailing?.range
+      trailing?.range,
+      opensWide ? RAMP_WIDE_S : RAMP_IN_S,
+      opensWide ? RAMP_WIDE_S : RAMP_OUT_S
     );
 
     this.flying = false;
@@ -1170,7 +1180,7 @@ export class TerrainFlyover {
     this.trail = createTerrainTrail(
       this.viewer,
       this.cameraPoints.slice(0, this.apexIdx + 1),
-      topDownPreview ? { minWidthPx: 2, onTop: true } : undefined
+      topDownPreview ? { minWidthPx: 2, onTop: true } : { gradeLimit: lineGradeLimit }
     );
 
     // heightReference: RELATIVE_TO_GROUND makes Cesium clamp a point to the
