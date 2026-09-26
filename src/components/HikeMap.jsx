@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate, trimToTrailStart, FORCE_LOOP } from '../lib/gpxFlyover';
+import { parseGPX, haversineM, buildCumulative, positionAt, flyoverDurationMs, growTravelLine, decimate, trimToTrailStart, FORCE_LOOP, TURN_AT_HIGH_POINT } from '../lib/gpxFlyover';
 
 // Trailing "drone following behind" camera (see terrainFlyover.js) — under
 // test on one hike before any wider rollout. Placement from offline
@@ -84,6 +84,18 @@ const LINE_GRADE_LIMIT = new Set(['oyster-dome']);
 
 const FLIGHT_SECONDS = {
   'kendall-katwalk': 75,
+  // Red Top is short (~1.2km of flight); the length-based formula's minimum
+  // made it ~17s and far too slow (Scott).
+  'red-top-lookout': 12,
+};
+
+// Hikes shown with a static camera (see TerrainFlyover's camera.static): too
+// short to need the trailing camera following them. pitchDeg / orbitDeg as
+// Scott tuned them on localhost; measured with no part of the route hidden by
+// terrain through the sweep (sweeping the other way, toward Mt. Stuart, hid
+// the trail behind Red Top's own slope).
+const STATIC_CAMERA = {
+  'red-top-lookout': { pitchDeg: -20, orbitDeg: 75 },
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -424,8 +436,9 @@ export default function HikeMap({ gpxUrl, hikeName, hikeDistance, hikeGain, hike
             // was throwing away real resolution the drawn track needs.
             points,
             durationMs: FLIGHT_SECONDS[hikeId] ? FLIGHT_SECONDS[hikeId] * 1000 : flyoverDurationMs(total3d),
-            camera: TRAILING_CAMERA_TEST[hikeId] ? { trailing: TRAILING_CAMERA_TEST[hikeId] } : undefined,
+            camera: STATIC_CAMERA[hikeId] ? { static: true, ...STATIC_CAMERA[hikeId] } : TRAILING_CAMERA_TEST[hikeId] ? { trailing: TRAILING_CAMERA_TEST[hikeId] } : undefined,
             forceLoop: FORCE_LOOP.has(hikeId),
+            turnAtHighPoint: TURN_AT_HIGH_POINT.has(hikeId),
             imageryRelease: SATELLITE_RELEASE[hikeId],
             lineGradeLimit: LINE_GRADE_LIMIT.has(hikeId),
             onProgress: ({ frac, ele, distM }) => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { parseGPX, buildCumulative, positionAt, growTravelLine, decimate, trimToTrailStart, FORCE_LOOP } from '../lib/gpxFlyover';
+import { parseGPX, buildCumulative, positionAt, growTravelLine, decimate, trimToTrailStart, FORCE_LOOP, TURN_AT_HIGH_POINT } from '../lib/gpxFlyover';
 
 const PLAY_MS = 15210; // 9s base, slowed 30% then another 30% per feedback
 
@@ -61,6 +61,7 @@ export default function HikeMapCard({ gpxUrl, hikeId, onOpen }) {
             onProgress: () => {},
             topDownPreview: true,
             forceLoop: FORCE_LOOP.has(hikeId),
+            turnAtHighPoint: TURN_AT_HIGH_POINT.has(hikeId),
             topDownBottomInset: () => bodyRef.current?.offsetHeight ?? 0,
           });
           return; // skip the Leaflet setup below entirely
