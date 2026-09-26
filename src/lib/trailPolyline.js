@@ -65,7 +65,37 @@ export function withoutDepthWrite(collection, depthTest = true) {
 // depth-tested, the card's coarser terrain detail poked up through the line
 // in steep spots and cut it into pieces. The flyover keeps the depth test (a
 // ridge in front of the line should hide it there).
-export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.2, maxWidthPx = 8, liftM = LIFT_M, onTop = false } = {}) {
+// No cliffs in a trail. On a cliffy sidehill, GPS can place the track a few
+// meters over the edge: on Oyster Dome the line's ground fell 45m in 25m at
+// 0.37 mi (onto the cliff base) while the recorded elevation kept climbing
+// steadily, and the line visibly dropped off a cliff. So the line may rise or
+// fall no more steeply than MAX_GRADE between points; where the terrain drops
+// faster, the line eases down at that grade until it meets the ground again
+// (a forward pass for drops, a backward one for sudden rises). Far steeper
+// than any real trail (Mailbox's steepest quarter mile is 34%), so normal
+// trail is untouched. Only ever raised, never lowered, so it can't go under
+// the ground. The recorded elevation can't be used as the anchor instead: on
+// Oyster Dome it runs ~27m below the terrain before that spot and ~10m above
+// it after, so it can say there's no cliff but not how high the line is.
+// Opt-in per hike (LINE_GRADE_LIMIT in HikeMap.jsx): on Mailbox and Cascade
+// it would also have nudged the line up 2-3m in a few steep spots, harmless
+// but a change to hikes already live.
+const MAX_GRADE = 0.6;
+export function limitGrade(heights, points) {
+  const n = heights.length;
+  const ds = [0];
+  for (let i = 1; i < n; i++) {
+    const a = points[i - 1], b = points[i];
+    const dy = (b.lat - a.lat) * 111320, dx = (b.lon - a.lon) * 111320 * Math.cos((a.lat * Math.PI) / 180);
+    ds.push(Math.hypot(dx, dy));
+  }
+  const out = heights.slice();
+  for (let i = 1; i < n; i++) out[i] = Math.max(out[i], out[i - 1] - MAX_GRADE * ds[i]);
+  for (let i = n - 2; i >= 0; i--) out[i] = Math.max(out[i], out[i + 1] - MAX_GRADE * ds[i + 1]);
+  return out;
+}
+
+export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.2, maxWidthPx = 8, liftM = LIFT_M, onTop = false, gradeLimit = false } = {}) {
   const scene = viewer.scene;
   const chunks = [];
   const primitives = [];
@@ -100,7 +130,8 @@ export function createTerrainTrail(viewer, points, { widthM = 5, minWidthPx = 1.
   Cesium.sampleTerrain(viewer.terrainProvider, TERRARIUM_MAX_ZOOM, cartos)
     .then(() => {
       if (destroyed || viewer.isDestroyed()) return;
-      const heights = cartos.map((c, i) => c.height ?? points[i].ele ?? 0);
+      const sampled = cartos.map((c, i) => c.height ?? points[i].ele ?? 0);
+      const heights = gradeLimit ? limitGrade(sampled, points) : sampled;
       const positions = cartos.map((c, i) =>
         Cesium.Cartesian3.fromRadians(c.longitude, c.latitude, heights[i] + liftM)
       );
