@@ -3,7 +3,7 @@
 Replaces the current 2D `gpxFlyover.js` (flat Leaflet line-growth animation) with a
 true 3D terrain flyover, in the spirit of Strava's route animations.
 
-## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 28 of 33 hikes, plus Red Top's static camera
+## ✅ STATUS (updated 2026-09-25): Live on every hike; trailing camera on 29 of 33 hikes, plus Red Top's static camera
 
 **Start with `docs/handoff-2026-09-20.md` for open work.** This doc is the flyover's
 status and history. The 2026-09-18 and 2026-09-17 status blocks below and everything
@@ -12,11 +12,11 @@ under them are kept as history.
 - **3D flyover is on every hike.** The `terrain3dTestHikes.js` allowlist was removed
   on 2026-09-17 (`USE_TERRAIN_3D = true` in `HikeMap.jsx` and `HikeMapCard.jsx`).
 - **Trailing ("drone behind the hiker") camera is per hike**, via
-  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 28: Cascade Pass
+  `TRAILING_CAMERA_TEST` in `src/components/HikeMap.jsx`. Enabled on 29: Cascade Pass
   & Sahale Arm, Maple Pass Loop, Rattlesnake Ledge, Rachel & Rampart Lakes, Lake
   Serene, Hidden Lake, Colchuck Lake, Lake Ingalls, Kendall Katwalk, Blanca Lake, Granite Mountain,
   Melakwa Lake, Dirty Harry's Balcony, Garfield Ledges (+ Winter), Hex Mountain —
-  Winter, Lake Valhalla, Mt. Baldy, Annette Lake, Lake 22, Mailbox Peak — Old Trail, Snow Lake (+ Winter), Subway Cave, Manastash Ridge, Mt. Si — Winter, Bandera Mountain, Oyster Dome. Red Top Lookout uses a static camera (below). Remaining hikes are listed in the handoff.
+  Winter, Lake Valhalla, Mt. Baldy, Annette Lake, Lake 22, Mailbox Peak — Old Trail, Snow Lake (+ Winter), Subway Cave, Manastash Ridge, Mt. Si — Winter, Bandera Mountain, Oyster Dome, Silver Peak. Red Top Lookout uses a static camera (below). Remaining hikes are listed in the handoff.
   Out-and-backs use `{ range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 }`;
   loops drop `descentPitchDeg`. Kendall alone adds `maxAimOffset: 0.3` and a 64s
   flight (`FLIGHT_SECONDS`). The rig has no terrain-clearance check of its own, so
@@ -81,6 +81,11 @@ under them are kept as history.
   out-and-back at its highest point: Red Top's best-retrace turnaround fell 53 m short of the
   lookout. Its recording goes about 110 m past the lookout and back, and that side trip stays
   in (Scott).
+- **Silver Peak (PR #60, 2026-09-25):** its GPX was replaced through admin with Scott's
+  2024-07-27 recording, which runs trailhead to trailhead, has no gaps and measures 5.56 mi
+  (WTA 5.6). The 2022 track it replaced started 911 m from the trailhead, had a 481 m dropout
+  and ended with the drive out. Standard out-and-back trailing camera.
+- **Remaining:** Camelback, Little Si and Sourdough Ridge have no GPX, so they have no flyover yet.
 - **Known, deferred:** jumping the paused slider from 0% to roughly 4-20% can put the
   camera underground. Normal playback is fine.
 
