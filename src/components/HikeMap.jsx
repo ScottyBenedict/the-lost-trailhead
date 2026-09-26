@@ -56,6 +56,7 @@ const TRAILING_CAMERA_TEST = {
   'mt-si-winter': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
   'bandera-mountain': { range: 900, closeRange: 900, pitchDeg: -38, descentPitchDeg: -60, maxAimOffset: 0.3 },
   'oyster-dome': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
+  'silver-peak': { range: 900, closeRange: 400, pitchDeg: -38, descentPitchDeg: -60 },
 };
 
 // Per-hike flight length, in seconds, for a hike long enough that
