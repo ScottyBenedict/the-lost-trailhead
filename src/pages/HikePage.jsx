@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
 import HikeMap from '../components/HikeMap'
 import HikeMapCard from '../components/HikeMapCard'
+import ShareButton from '../components/ShareButton'
 
 // Deterministic seeded PRNG (mulberry32) so report-card placement below is a
 // pure function of (hike id, report count) instead of calling Math.random()
@@ -240,6 +241,11 @@ export default function HikePage() {
           <div className="hike-body-text">
             <h2 className="hike-section-heading">Description</h2>
             <p className="hike-description">{hike.description}</p>
+            <ShareButton
+              title={`${hike.name} · The Lost Trailhead`}
+              text={`${hike.name} — ${hike.distance}, ${hike.gain} gain`}
+              url={`${window.location.origin}/hikes/${hike.id}`}
+            />
           </div>
           <div className="hike-body-logo">
             <TLTLogo size={110} color="var(--forest)" />
