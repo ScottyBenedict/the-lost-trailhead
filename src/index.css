@@ -603,7 +603,7 @@ a   { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1.25rem;
-  background: var(--sage);
+  background: var(--stone-pale);
   border: none;
   border-radius: 999px;
   font-family: var(--font-sans);
@@ -611,12 +611,12 @@ a   { color: inherit; text-decoration: none; }
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--white);
+  color: var(--forest);
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.share-button:hover { background: var(--forest-light); }
+.share-button:hover { background: var(--sage-light); }
 
 .share-button svg { width: 14px; height: 14px; }
 
