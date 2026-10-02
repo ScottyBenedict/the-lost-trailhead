@@ -1112,6 +1112,11 @@ export class TerrainFlyover {
     }
     const applyTopDownView = () => {
       if (this.destroyed || !topDownExtent) return;
+      // Leaving the page detaches the card before destroy() runs, and the
+      // resize observer fires once more on the now 0x0 container. Fitting to
+      // zero size divides by zero (NaN aspect ratio) and Cesium throws, so
+      // there's nothing to fit until the container has a real size.
+      if (!containerEl.clientWidth || !containerEl.clientHeight) return;
       this.viewer.camera.frustum.aspectRatio = containerEl.clientWidth / containerEl.clientHeight;
       // `.fov` is Cesium's horizontal angle whenever aspectRatio > 1
       // (landscape — true for both this card and the lightbox), with `.fovy`
