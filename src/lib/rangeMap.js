@@ -194,6 +194,12 @@ export class RangeMap {
       const pin = pinAt(e.clientX, e.clientY);
       if (pin) onPinClick?.(pin);
     };
+    // Cesium swallows every wheel event over its canvas (its camera controller
+    // handles them even with inputs off), so the page wouldn't scroll while the
+    // pointer was on the map. Stopped in the capture phase, on the way down,
+    // before they reach the canvas; scrolling itself is left alone.
+    this.swallow = (e) => e.stopPropagation();
+    containerEl.addEventListener('wheel', this.swallow, { capture: true, passive: true });
     containerEl.addEventListener('mousemove', this.onMove);
     containerEl.addEventListener('mouseleave', this.onLeave);
     containerEl.addEventListener('click', this.onClick);
@@ -278,9 +284,7 @@ export class RangeMap {
   destroy() {
     this.destroyed = true;
     this.resizeObserver?.disconnect();
-    for (const type of ['wheel', 'touchmove']) {
-      this.container?.removeEventListener(type, this.swallow, { capture: true });
-    }
+    this.container?.removeEventListener('wheel', this.swallow, { capture: true });
     this.container?.removeEventListener('mousemove', this.onMove);
     this.container?.removeEventListener('mouseleave', this.onLeave);
     this.container?.removeEventListener('click', this.onClick);
