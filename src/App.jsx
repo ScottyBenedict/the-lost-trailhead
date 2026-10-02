@@ -9,6 +9,7 @@ import AdminLoginPage from './pages/AdminLoginPage'
 import AdminPage from './pages/AdminPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import GearPage from './pages/GearPage'
+import PageMeta from './components/PageMeta'
 import './App.css'
 
 function ScrollToTop() {
@@ -34,9 +35,13 @@ export default function App() {
       <ScrollToTop />
       <AuthRedirect />
       <Routes>
-        <Route path="/admin/login" element={<AdminLoginPage />} />
+        {/* Metadata sits outside ProtectedRoute so noindex is set even
+            before auth resolves or when it redirects to login. */}
+        <Route path="/admin/login" element={
+          <><PageMeta title="Admin" noindex /><AdminLoginPage /></>
+        } />
         <Route path="/admin" element={
-          <ProtectedRoute><AdminPage /></ProtectedRoute>
+          <><PageMeta title="Admin" noindex /><ProtectedRoute><AdminPage /></ProtectedRoute></>
         } />
         <Route path="*" element={
           <>

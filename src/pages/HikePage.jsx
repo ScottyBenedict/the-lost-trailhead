@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
 import HikeMap from '../components/HikeMap'
 import HikeMapCard from '../components/HikeMapCard'
+import PageMeta from '../components/PageMeta'
+import { SITE_NAME, firstSentence } from '../lib/meta'
 
 // Deterministic seeded PRNG (mulberry32) so report-card placement below is a
 // pure function of (hike id, report count) instead of calling Math.random()
@@ -198,6 +200,7 @@ export default function HikePage() {
   if (!hike) {
     return (
       <div className="not-found">
+        <PageMeta title={`Hike not found · ${SITE_NAME}`} noindex />
         <p>Hike not found.</p>
         <Link to="/">← Back to all hikes</Link>
       </div>
@@ -206,6 +209,7 @@ export default function HikePage() {
 
   return (
     <div className="hike-page">
+      <PageMeta title={`${hike.name} · ${SITE_NAME}`} description={firstSentence(hike.description)} />
       <div
         className="hike-hero"
         style={{ backgroundImage: `url(${hike.cover})`, backgroundPosition: hike.coverPosition || 'center' }}

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { hikes } from '../data/hikes'
 import { publicSupabase as supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
+import PageMeta from '../components/PageMeta'
+import { SITE_NAME } from '../lib/meta'
 import RangeMap from '../components/RangeMap'
 
 // Alan first, Scott second
@@ -26,6 +28,10 @@ export default function AboutPage() {
 
   return (
     <div className="about">
+      <PageMeta
+        title={`About · ${SITE_NAME}`}
+        description="Alan and Scott — thirty years of friendship, still chasing new trails. The story behind The Lost Trailhead."
+      />
       <section className="about-hero">
         <p className="hero-eyebrow">Who we are</p>
         <h1>The People</h1>
