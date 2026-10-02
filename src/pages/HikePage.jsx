@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import ShareButton from '../components/ShareButton'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
+import HikeNav from '../components/HikeNav'
 import TLTLogo from '../components/TLTLogo'
 import HikeMap from '../components/HikeMap'
 import HikeMapCard from '../components/HikeMapCard'
@@ -37,8 +38,21 @@ function thumbFor(url) {
   return url.replace(/\/([^/?#]+)(?=$|[?#])/, '/thumb_$1')
 }
 
+// Keyed by slug so moving hike-to-hike (prev/next links) mounts a fresh page,
+// same as arriving from the home page. Without the key, the previous hike's
+// photos, reports and GPX stayed on screen under the new hike's name until
+// the new fetch landed.
 export default function HikePage() {
   const { slug } = useParams()
+  return (
+    <>
+      <HikeContent key={slug} slug={slug} />
+      <HikeNav slug={slug} />
+    </>
+  )
+}
+
+function HikeContent({ slug }) {
   const hike = hikes.find((h) => h.id === slug)
   const [reports, setReports] = useState([])
   const [uploadedPhotos, setUploadedPhotos] = useState([])
