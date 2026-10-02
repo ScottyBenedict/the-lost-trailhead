@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { publicSupabase as supabase } from '../lib/supabase'
 import { brands } from '../data/gear'
 import TLTLogo from '../components/TLTLogo'
+import PageMeta from '../components/PageMeta'
+import { SITE_NAME } from '../lib/meta'
 
 const CATEGORY_ORDER = ['Footwear','Shell','Pack','Watch','Phone/Camera','Poles','Gaiters','Gloves','Headlamp','Sunglasses','Baselayer','Midlayer','Pants','Tent','Stove','Sleeping Bag','Pad','Navigation','Accessories']
 
@@ -63,6 +65,10 @@ export default function GearPage() {
 
   return (
     <div className="gear-page">
+      <PageMeta
+        title={`Gear · ${SITE_NAME}`}
+        description="What Scott and Alan carry on the trail — boots, shells, packs, and the rest of the kit, category by category."
+      />
       <section className="gear-hero">
         <div className="gear-hero-inner">
           <p className="hero-eyebrow">What we carry</p>

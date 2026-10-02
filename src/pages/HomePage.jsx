@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
 import HikeCard from '../components/HikeCard'
+import PageMeta from '../components/PageMeta'
+import { SITE_NAME } from '../lib/meta'
 
 export default function HomePage() {
   const [sortMode, setSortMode] = useState('az')
@@ -46,6 +48,10 @@ export default function HomePage() {
 
   return (
     <>
+      <PageMeta
+        title={`${SITE_NAME} — Scott & Alan in the PNW`}
+        description="Trail notes, photos, and 3D flyovers from Scott & Alan's hikes across the Pacific Northwest — the trails, the views, and the conversations in between."
+      />
       <section className="hero">
         <div className="hero-inner">
           <p className="hero-eyebrow">Based in the Pacific Northwest</p>
