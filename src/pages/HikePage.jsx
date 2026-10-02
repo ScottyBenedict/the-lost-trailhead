@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import TLTLogo from '../components/TLTLogo'
 import HikeMap from '../components/HikeMap'
 import HikeMapCard from '../components/HikeMapCard'
+import HikeNav from '../components/HikeNav'
 
 // Deterministic seeded PRNG (mulberry32) so report-card placement below is a
 // pure function of (hike id, report count) instead of calling Math.random()
@@ -34,8 +35,21 @@ function thumbFor(url) {
   return url.replace(/\/([^/?#]+)(?=$|[?#])/, '/thumb_$1')
 }
 
+// Keyed by slug so moving hike-to-hike (prev/next links) mounts a fresh page,
+// same as arriving from the home page. Without the key, the previous hike's
+// photos, reports and GPX stayed on screen under the new hike's name until
+// the new fetch landed.
 export default function HikePage() {
   const { slug } = useParams()
+  return (
+    <>
+      <HikeContent key={slug} slug={slug} />
+      <HikeNav slug={slug} />
+    </>
+  )
+}
+
+function HikeContent({ slug }) {
   const hike = hikes.find((h) => h.id === slug)
   const [reports, setReports] = useState([])
   const [uploadedPhotos, setUploadedPhotos] = useState([])
