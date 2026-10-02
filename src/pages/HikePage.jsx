@@ -2,10 +2,10 @@ import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
+import HikeNav from '../components/HikeNav'
 import TLTLogo from '../components/TLTLogo'
 import HikeMap from '../components/HikeMap'
 import HikeMapCard from '../components/HikeMapCard'
-import HikeNav from '../components/HikeNav'
 
 // Deterministic seeded PRNG (mulberry32) so report-card placement below is a
 // pure function of (hike id, report count) instead of calling Math.random()
