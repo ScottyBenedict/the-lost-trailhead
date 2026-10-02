@@ -43,13 +43,14 @@ export default function HikeNav({ slug }) {
   const next = ordered[i + 1]
 
   return (
-    <nav className="hike-nav" aria-label="More hikes">
-      {prev ? (
+    <nav className={`hike-nav${prev && next ? '' : ' hike-nav-solo'}`} aria-label="More hikes">
+      {prev && (
         <Link to={`/hikes/${prev.id}`} className="hike-nav-link hike-nav-prev">
           <span className="hike-nav-label">← Previous</span>
           <span className="hike-nav-name">{prev.name}</span>
         </Link>
-      ) : <span />}
+      )}
+      {prev && next && <span className="hike-nav-divider" aria-hidden="true" />}
       {next && (
         <Link to={`/hikes/${next.id}`} className="hike-nav-link hike-nav-next">
           <span className="hike-nav-label">Next →</span>

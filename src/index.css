@@ -673,9 +673,9 @@ a   { color: inherit; text-decoration: none; }
 
 .hike-nav {
   display: flex;
-  justify-content: space-between;
-  gap: 2rem;
-  max-width: var(--max-w);
+  justify-content: center;
+  align-items: stretch;
+  gap: 2.5rem;
   margin: -4rem auto 0;
   padding: 0 var(--pad) 5rem;
 }
@@ -683,14 +683,22 @@ a   { color: inherit; text-decoration: none; }
 .hike-nav-link {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
   min-width: 0;
+  flex: 0 1 260px;
 }
 
-.hike-nav-next { text-align: right; margin-left: auto; }
+.hike-nav-prev { text-align: right; align-items: flex-end; }
+.hike-nav-next { text-align: left; align-items: flex-start; }
+.hike-nav-solo .hike-nav-link { text-align: center; align-items: center; }
+
+.hike-nav-divider {
+  width: 1px;
+  background: var(--border);
+}
 
 .hike-nav-label {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -699,7 +707,7 @@ a   { color: inherit; text-decoration: none; }
 
 .hike-nav-name {
   font-family: var(--font-serif);
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   color: var(--forest);
   transition: color 0.2s;
 }
