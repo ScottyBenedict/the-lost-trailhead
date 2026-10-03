@@ -4,7 +4,6 @@ import ShareButton from '../components/ShareButton'
 import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
 import HikeNav from '../components/HikeNav'
-import NewsletterSignup from '../components/NewsletterSignup'
 import TLTLogo from '../components/TLTLogo'
 import HikeMap from '../components/HikeMap'
 import HikeMapCard from '../components/HikeMapCard'
@@ -48,7 +47,6 @@ export default function HikePage() {
   return (
     <>
       <HikeContent key={slug} slug={slug} />
-      {hikes.some(h => h.id === slug) && <NewsletterSignup variant="card" heading="Want the next one?" />}
       <HikeNav slug={slug} />
     </>
   )

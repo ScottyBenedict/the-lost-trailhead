@@ -1332,10 +1332,9 @@ a   { color: inherit; text-decoration: none; }
   text-align: center;
 }
 
-/* Newsletter signup. Band: full-width forest strip at the top of the footer.
-   Card: forest card above Previous/Next on hike pages, like the report cards.
-   Subscribe reuses the mint Share pill, which reads well on forest. */
-.newsletter-band {
+/* Newsletter signup: full-width forest band at the top of the footer, on
+   every page. Subscribe reuses the mint Share pill, which reads well on forest. */
+.newsletter {
   background: var(--forest);
 }
 
@@ -1344,18 +1343,6 @@ a   { color: inherit; text-decoration: none; }
   margin: 0 auto;
   padding: 2.75rem var(--pad) 2.25rem;
   text-align: center;
-}
-
-.newsletter-card {
-  max-width: 40rem;
-  margin: -3rem auto 3rem;
-  padding: 0 var(--pad);
-}
-
-.newsletter-card .newsletter-inner {
-  background: var(--forest);
-  border-radius: 16px;
-  padding: 2.25rem 2rem 1.75rem;
 }
 
 .newsletter-heading {
@@ -1413,10 +1400,6 @@ a   { color: inherit; text-decoration: none; }
 .newsletter-powered { margin-top: 0.5rem; }
 .newsletter-powered a { color: var(--sage-light); text-decoration: underline; }
 .newsletter-powered a:hover { color: var(--cream); }
-
-/* The card takes the gallery's bottom air, so Previous/Next sits under it
-   instead of tucking up into the gallery. */
-.newsletter-card + .hike-nav { margin-top: 0; }
 
 @media (max-width: 480px) {
   .newsletter-row { flex-direction: column; }

@@ -3,16 +3,13 @@ import { useId } from 'react'
 // Buttondown's own embed form, posted straight to Buttondown — no API key and
 // nothing stored here. target="_blank" opens Buttondown's confirmation page in
 // a new tab so the visitor stays on the site.
-//
-// Two looks: a full-width band at the top of the footer, and a card that sits
-// above Previous/Next on hike pages. Ids come from useId so the label still
-// points at the right input if both ever render on one page.
-export default function NewsletterSignup({ variant = 'band', heading = 'New hikes in your inbox' }) {
+// Ids come from useId so the label and heading stay unique on the page.
+export default function NewsletterSignup({ heading = 'New hikes in your inbox' }) {
   const id = useId()
   const inputId = `bd-email-${id}`
   const headingId = `newsletter-heading-${id}`
   return (
-    <section className={`newsletter newsletter-${variant}`} aria-labelledby={headingId}>
+    <section className="newsletter" aria-labelledby={headingId}>
       <div className="newsletter-inner">
         <h2 id={headingId} className="newsletter-heading">{heading}</h2>
         <form

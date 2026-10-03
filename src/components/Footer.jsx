@@ -15,12 +15,12 @@ const SOCIALS = [
 ]
 
 export default function Footer() {
-  // Hike pages have their own signup card just above Previous/Next; a second
-  // form right under it would just repeat itself.
+  // Same band on every page; on a hike page, right after Previous/Next, it
+  // speaks to someone who just finished reading one.
   const onHikePage = useLocation().pathname.startsWith('/hikes/')
   return (
     <footer className="footer">
-      {!onHikePage && <NewsletterSignup />}
+      <NewsletterSignup heading={onHikePage ? 'Want the next one?' : 'New hikes in your inbox'} />
       <div className="footer-social">
         {SOCIALS.map(({ name, icon, href }) => (
           <a
