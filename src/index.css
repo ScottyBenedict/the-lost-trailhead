@@ -1332,6 +1332,85 @@ a   { color: inherit; text-decoration: none; }
   text-align: center;
 }
 
+/* Newsletter signup, top of the footer. The button reuses the Share pill. */
+.newsletter {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 2.5rem var(--pad) 0.5rem;
+  text-align: center;
+}
+
+.newsletter-heading {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--forest);
+  margin-bottom: 1rem;
+}
+
+.newsletter-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.newsletter-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--body);
+}
+
+.newsletter-input::placeholder { color: var(--muted); }
+.newsletter-input:focus { outline: 2px solid var(--sage); outline-offset: 1px; }
+
+.newsletter-submit {
+  padding: 0.65rem 1.4rem;
+  background: var(--stone-pale);
+  border: none;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--forest);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.newsletter-submit:hover { background: var(--sage-light); }
+
+.newsletter-note,
+.newsletter-powered {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.6rem;
+}
+
+.newsletter-powered { margin-top: 0.5rem; }
+.newsletter-powered a { color: var(--muted); text-decoration: underline; }
+.newsletter-powered a:hover { color: var(--forest); }
+
+@media (max-width: 480px) {
+  .newsletter-row { flex-direction: column; }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ── Admin ───────────────────────────────────────────── */
 .admin-login-wrap {
   min-height: 100vh;
