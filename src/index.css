@@ -1350,7 +1350,14 @@ a   { color: inherit; text-decoration: none; }
   font-size: 1.6rem;
   font-weight: 500;
   color: var(--cream);
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.4rem;
+}
+
+.newsletter-sub {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--sage-light);
+  margin-bottom: 1.2rem;
 }
 
 .newsletter-row {

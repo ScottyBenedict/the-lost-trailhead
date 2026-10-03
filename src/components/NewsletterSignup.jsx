@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from 'react'
 // nothing stored here. target="_blank" opens Buttondown's confirmation page in
 // a new tab so the visitor stays on the site.
 // Ids come from useId so the label and heading stay unique on the page.
-export default function NewsletterSignup({ heading = 'New hikes in your inbox' }) {
+export default function NewsletterSignup({ heading = 'Trail notes from Scott & Alan' }) {
   const id = useId()
   const inputId = `bd-email-${id}`
   const headingId = `newsletter-heading-${id}`
@@ -32,6 +32,7 @@ export default function NewsletterSignup({ heading = 'New hikes in your inbox' }
     <section className="newsletter" aria-labelledby={headingId}>
       <div className="newsletter-inner">
         <h2 id={headingId} className="newsletter-heading">{heading}</h2>
+        <p className="newsletter-sub">A short note each month: where we've been, what's in season, what's worth the drive.</p>
         <form
           action="https://buttondown.com/api/emails/embed-subscribe/thelosttrailhead"
           method="post"
