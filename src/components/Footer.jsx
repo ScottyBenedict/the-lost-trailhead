@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom'
 import NewsletterSignup from './NewsletterSignup'
 
 // Brand glyphs from Simple Icons (CC0).
@@ -14,9 +15,12 @@ const SOCIALS = [
 ]
 
 export default function Footer() {
+  // Hike pages have their own signup card just above Previous/Next; a second
+  // form right under it would just repeat itself.
+  const onHikePage = useLocation().pathname.startsWith('/hikes/')
   return (
     <footer className="footer">
-      <NewsletterSignup />
+      {!onHikePage && <NewsletterSignup />}
       <div className="footer-social">
         {SOCIALS.map(({ name, icon, href }) => (
           <a
