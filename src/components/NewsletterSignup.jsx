@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 // Buttondown's own embed form, posted straight to Buttondown — no API key and
 // nothing stored here. target="_blank" opens Buttondown's confirmation page in
@@ -9,6 +9,14 @@ export default function NewsletterSignup({ heading = 'New hikes in your inbox' }
   const inputId = `bd-email-${id}`
   const headingId = `newsletter-heading-${id}`
   const [sent, setSent] = useState(false)
+
+  // The thank-you is a moment, not a state: the footer stays mounted while
+  // the visitor browses, so without this it would follow them page to page.
+  useEffect(() => {
+    if (!sent) return
+    const t = setTimeout(() => setSent(false), 8000)
+    return () => clearTimeout(t)
+  }, [sent])
 
   // The page doesn't reload (Buttondown opens in a new tab), so the email
   // would otherwise sit in the box. Clear it on the next tick: the browser
@@ -41,6 +49,7 @@ export default function NewsletterSignup({ heading = 'New hikes in your inbox' }
               placeholder="Enter your email"
               autoComplete="email"
               required
+              onInput={() => setSent(false)}
             />
             <input type="submit" value="Subscribe" className="newsletter-submit" />
           </div>
