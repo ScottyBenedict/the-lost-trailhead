@@ -680,7 +680,7 @@ a.share-button { text-decoration: none; }
 .share-button { line-height: 1.2; }   /* the link and the button render the same height */
 
 .gpx-note {
-  margin-top: 0.6rem;
+  margin-top: 1rem;
   font-size: 0.74rem;
   color: var(--muted);
 }
