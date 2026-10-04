@@ -5,12 +5,14 @@ separate, cleaned copy. The flyover keeps the raw recording (09-27 rule);
 nothing here touches Supabase, the site or the originals.
 
   1. original   read-only, via flyover-check's cache (common.gpx_file)
-  2. trim       to the trailhead pin, same rule as trimToTrailStart
+  2. trim       exactly where the flyover trims (trimToTrailStart): only
+                hikes in TRAIL_START are trimmed; the rest start and end
+                where the recording does
   3. cuts       only ranges listed in cuts.json (meters along the trimmed
                 track); side quests are detected and reported, never removed
   4. strip      lat, lon, ele only
-  5. simplify   Douglas-Peucker, largest of 5/4/3 m (then 2/1) that changes
-                the length by <= MAX_LENGTH_CHANGE
+  5. simplify   Douglas-Peucker at 3 m; checked against the smoothed length
+                (raw 1-point-per-second length is inflated by GPS jitter)
   6. write      GPX 1.1, one track, one segment, name/desc/link
   7. check      schema (xmllint), re-parse, table + staging/report.md
 
@@ -26,8 +28,9 @@ os.makedirs(STAGING, exist_ok=True); os.makedirs(CACHE, exist_ok=True)
 SITE = 'thelosttrailhead.com'
 MI = 1609.34; FT = 3.281
 DEFAULT_RADIUS_M = 60          # trimToTrailStart's default
-TOLERANCES = (5, 4, 3, 2, 1)   # meters, largest first
-MAX_LENGTH_CHANGE = 0.02       # 2% of the trimmed length
+TOLERANCE = 3                  # meters
+TOLERANCES = (5, 4, 3, 2, 1)   # also measured, for the report
+MAX_LENGTH_CHANGE = 0.02       # vs the smoothed length; flagged if exceeded
 MARK_EVERY = 0.25 * MI
 
 
@@ -187,7 +190,7 @@ def export(hike_id, H, cfg, cuts):
     s = start.get(hike_id)
     pin = {'lat': s['lat'], 'lon': s['lon']} if s else {'lat': hike['trailhead'][0], 'lon': hike['trailhead'][1]}
     radius = (s or {}).get('radiusM') or DEFAULT_RADIUS_M
-    first, last = trim(orig, pin, radius)
+    first, last = trim(orig, pin, radius) if s else (0, len(orig) - 1)   # flyover only trims TRAIL_START hikes
     tr = orig[first:last + 1]; tr_cum = cumulative(tr)
 
     removed = []   # explicit cuts only, meters along the trimmed track
@@ -200,18 +203,11 @@ def export(hike_id, H, cfg, cuts):
 
     sm_kept = smoothed(kept); sm_kept_len = sum(hav(sm_kept[i - 1], sm_kept[i]) for i in range(1, len(sm_kept)))
     tried = []   # (tol, points, change vs raw trimmed length, change vs smoothed length)
-    for tol in TOLERANCES:
-        idx = douglas_peucker(kept, tol); simp = [kept[i] for i in idx]
-        L = cumulative(simp)[-1]
-        tried.append((tol, len(simp), 1 - L / kept_cum[-1], 1 - L / sm_kept_len))
-        if abs(tried[-1][2]) <= MAX_LENGTH_CHANGE: break
-    # Every tolerance is tried even after the cap is met, for the report.
     for t in TOLERANCES:
-        if t not in [x[0] for x in tried]:
-            i2 = douglas_peucker(kept, t); L2 = cumulative([kept[i] for i in i2])[-1]
-            tried.append((t, len(i2), 1 - L2 / kept_cum[-1], 1 - L2 / sm_kept_len))
-    tried.sort(reverse=True)
-    tol, _, change, _ = next(x for x in tried if x[0] == tol)
+        i2 = douglas_peucker(kept, t); L2 = cumulative([kept[k] for k in i2])[-1]
+        tried.append((t, len(i2), 1 - L2 / kept_cum[-1], 1 - L2 / sm_kept_len))
+    simp = [kept[k] for k in douglas_peucker(kept, TOLERANCE)]
+    tol, _, _, change = next(x for x in tried if x[0] == TOLERANCE)
     cap_met = abs(change) <= MAX_LENGTH_CHANGE
     final = [{'lat': p['lat'], 'lon': p['lon'], 'ele': p['ele']} for p in simp]
     out = os.path.join(STAGING, f'{hike_id}.gpx'); write_gpx(out, hike, final)
@@ -231,7 +227,7 @@ def export(hike_id, H, cfg, cuts):
         orig_pts=len(orig), orig_mi=orig_cum[-1] / MI, orig_kb=os.path.getsize(src) / 1024,
         orig_start_to_pin=hav(orig[0], pin), orig_end_to_pin=hav(orig[-1], pin),
         trim_before_m=orig_cum[first], trim_after_m=orig_cum[-1] - orig_cum[last],
-        pin_src='TRAIL_START' if s else 'hikes.js trailhead', radius=radius,
+        pin_src='TRAIL_START (flyover trim)' if s else 'hikes.js trailhead (flyover does not trim this hike)', radius=radius,
         trim_pts=len(tr), trim_mi=tr_cum[-1] / MI, smooth_mi=sm_len / MI,
         start_to_pin=hav(final[0], pin), end_to_pin=hav(final[-1], pin),
         tol=tol, tried=tried, change=change, cap_met=cap_met,
@@ -308,14 +304,14 @@ def draw(hike, orig, first, last, tr, tr_cum, keep, final, pin, radius, r):
 
 def report(rows):
     def m(x): return f'{x:,.0f} m'
-    L = ['# GPX export: review\n', '| hike | original pts / mi / kB | download pts / mi / kB | start / end to pin | DP tol, length change | page mi | vs page | legs up / down | checks |', '|---|---|---|---|---|---|---|---|---|']
+    L = ['# GPX export: review\n', '| hike | original pts / mi / kB | download pts / mi / kB | start / end to pin | DP tol, change vs smoothed | page mi | vs page | legs up / down | checks |', '|---|---|---|---|---|---|---|---|---|']
     for r in rows:
         diff = (r['final_mi'] - r['page_mi']) / r['page_mi']
         legs = f"{r['up_mi']:.2f} / {r['down_mi']:.2f}" if r['up_mi'] is not None else 'loop'
         checks = ('schema ok' if r['schema'] else 'SCHEMA FAIL') + (', reparse ok' if r['reparse'] else ', REPARSE FAIL') + (', 1 trk/1 seg' if r['one_seg'] else ', SEG FAIL') + (', no time/ext' if r['no_time'] else ', HAS TIME')
         L.append(f"| {r['name']} | {r['orig_pts']:,} / {r['orig_mi']:.2f} / {r['orig_kb']:,.0f} | {r['final_pts']:,} / {r['final_mi']:.2f} / {r['final_kb']:,.0f} | {m(r['start_to_pin'])} / {m(r['end_to_pin'])} | {r['tol']} m, {r['change'] * 100:+.1f}%{'' if r['cap_met'] else ' **cap not met**'} | {r['page_mi']} | {diff * 100:+.0f}%{' **>10%**' if abs(diff) > .10 else ''} | {legs} | {checks} |")
     for r in rows:
-        L += [f"\n## {r['name']}", f"- Pin: {r['pin_src']}, trim radius {r['radius']:.0f} m. Recording starts {m(r['orig_start_to_pin'])} and ends {m(r['orig_end_to_pin'])} from the pin; trimmed off {m(r['trim_before_m'])} before and {m(r['trim_after_m'])} after.",
+        L += [f"\n## {r['name']}", f"- Pin: {r['pin_src']}" + (f", trim radius {r['radius']:.0f} m" if r['pin_src'].startswith('TRAIL_START') else '') + f". Recording starts {m(r['orig_start_to_pin'])} and ends {m(r['orig_end_to_pin'])} from the pin; trimmed off {m(r['trim_before_m'])} before and {m(r['trim_after_m'])} after.",
               f"- Shape: {r['shape']}" + (f" (retrace {r['retrace']:.0f} m)" if r['retrace'] else '') + f". Trimmed track {r['trim_mi']:.2f} mi raw, {r['smooth_mi']:.2f} mi smoothed (the README's distance).",
               f"- Simplify (length change vs raw / vs smoothed): " + ', '.join(f"{t} m → {n:,} pts, {c * 100:+.1f}% / {cs * 100:+.1f}%" for t, n, c, cs in r['tried']) + '.',
               f"- Schema: {r['schema_msg']}"]
