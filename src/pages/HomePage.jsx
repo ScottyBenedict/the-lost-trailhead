@@ -96,18 +96,6 @@ export default function HomePage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <div className="pill-group" role="group" aria-label="Difficulty">
-            {['All', ...LEVELS].map((l) => (
-              <button
-                key={l}
-                className={`pill-btn${level === l ? ' pill-btn-active' : ''}`}
-                aria-pressed={level === l}
-                onClick={() => setLevel(l)}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
           <div className="pill-group sort-toggle" role="group" aria-label="Sort">
           <button
             className={`pill-btn${sortMode === 'az' ? ' pill-btn-active' : ''}`}
@@ -125,6 +113,18 @@ export default function HomePage() {
           >
             Recent
           </button>
+          </div>
+          <div className="pill-group difficulty-group" role="group" aria-label="Difficulty">
+            {['All', ...LEVELS].map((l) => (
+              <button
+                key={l}
+                className={`pill-btn${level === l ? ' pill-btn-active' : ''}`}
+                aria-pressed={level === l}
+                onClick={() => setLevel(l)}
+              >
+                {l}
+              </button>
+            ))}
           </div>
         </div>
         {sorted.length === 0 ? (
