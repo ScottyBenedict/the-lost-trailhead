@@ -53,8 +53,7 @@ after a single-hike re-run, staging still has the others from the last
 - **Remove a download:** add the hike to `publish.json` → `skip` with a reason,
   then run `--publish`.
 
-## Open
+## Provenance (settled)
 
-- **Provenance:** 26 of the 30 tracks were uploaded by Alan. All but Silver
-  Peak are plain Apple Health exports with no device or owner. Scott is
-  checking with Alan.
+26 of the 30 tracks were uploaded by Alan. He is fine with all of them being
+downloadable (Scott, 2026-10-03). Settled; don't ask again.
