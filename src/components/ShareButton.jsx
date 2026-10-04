@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 // Native share sheet where the browser has one (phones, Safari, Chrome on
 // macOS); otherwise copies the link. Dismissing the share sheet throws an
 // AbortError, which is the user saying no — not a failure to fall back from.
-export default function ShareButton({ title, text, url }) {
+export default function ShareButton({ title, text, url, children }) {
   const [message, setMessage] = useState(null)
 
   useEffect(() => {
@@ -48,6 +48,7 @@ export default function ShareButton({ title, text, url }) {
         </svg>
         Share
       </button>
+      {children}
       <span className="share-message" role="status" aria-live="polite">{message}</span>
     </div>
   )

@@ -675,6 +675,20 @@ a   { color: inherit; text-decoration: none; }
   color: var(--muted);
 }
 
+.share-row { flex-wrap: wrap; }
+a.share-button { text-decoration: none; }
+.share-button { line-height: 1.2; }   /* the link and the button render the same height */
+
+.gpx-note {
+  margin-top: 0.6rem;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+@media (max-width: 480px) {
+  .share-row { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+}
+
 /* ── Gallery Report Cards ────────────────────────────── */
 .gallery-report-card {
   background: rgba(42, 58, 44, 0.75);

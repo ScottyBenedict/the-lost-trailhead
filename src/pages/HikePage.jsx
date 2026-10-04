@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import ShareButton from '../components/ShareButton'
 import { hikes } from '../data/hikes'
+import { GPX_DOWNLOADS } from '../data/gpxDownloads'
 import { supabase } from '../lib/supabase'
 import HikeNav from '../components/HikeNav'
 import TLTLogo from '../components/TLTLogo'
@@ -263,7 +264,19 @@ function HikeContent({ slug }) {
               title={`${hike.name} · The Lost Trailhead`}
               text={`${hike.name} — ${hike.distance}, ${hike.gain} gain`}
               url={`${window.location.origin}/hikes/${hike.id}`}
-            />
+            >
+              {GPX_DOWNLOADS.has(hike.id) && (
+                <a className="share-button" href={`/gpx/the-lost-trailhead-${hike.id}.gpx`} download={`the-lost-trailhead-${hike.id}.gpx`}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 14v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" />
+                    <polyline points="8 11 12 15 16 11" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                  Download GPX
+                </a>
+              )}
+            </ShareButton>
+            {GPX_DOWNLOADS.has(hike.id) && <p className="gpx-note">Conditions change. Use at your own risk.</p>}
           </div>
           <div className="hike-body-logo">
             <TLTLogo size={110} color="var(--forest)" />
