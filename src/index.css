@@ -2776,7 +2776,9 @@ a   { color: inherit; text-decoration: none; }
 
 .gear-section {
   padding: 4rem var(--pad) 4rem;
-  padding-top: 6rem;
+  /* Clears the TLT mark in the corner (top 2rem + 180px tall + 2rem air),
+     so the Alan / Scott headings start below it instead of running into it. */
+  padding-top: calc(4rem + 180px);
   position: relative;
 }
 
@@ -2923,6 +2925,10 @@ a   { color: inherit; text-decoration: none; }
   }
   .gear-section-logo {
     display: none;
+  }
+  /* No corner mark on phones, so no need to clear it. */
+  .gear-section {
+    padding-top: 6rem;
   }
   .gear-hero-logo {
     display: block;
