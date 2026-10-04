@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="The Lost Trailhead" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<metadata><name>Red Top Lookout</name><desc>The Lost Trailhead, thelosttrailhead.com/hikes/red-top-lookout. Conditions change. Use at your own risk.</desc><link href="https://thelosttrailhead.com/hikes/red-top-lookout"><text>Red Top Lookout on The Lost Trailhead</text></link></metadata>
+<trk><name>Red Top Lookout</name><link href="https://thelosttrailhead.com/hikes/red-top-lookout"><text>Red Top Lookout on The Lost Trailhead</text></link><trkseg>
+<trkpt lat="47.298294" lon="-120.760913"><ele>1549.8</ele></trkpt>
+<trkpt lat="47.299188" lon="-120.761181"><ele>1546.2</ele></trkpt>
+<trkpt lat="47.299392" lon="-120.761167"><ele>1548.2</ele></trkpt>
+<trkpt lat="47.299754" lon="-120.761359"><ele>1560.3</ele></trkpt>
+<trkpt lat="47.300038" lon="-120.761406"><ele>1567.0</ele></trkpt>
+<trkpt lat="47.300471" lon="-120.761827"><ele>1580.2</ele></trkpt>
+<trkpt lat="47.300578" lon="-120.761867"><ele>1582.2</ele></trkpt>
+<trkpt lat="47.300615" lon="-120.761813"><ele>1583.7</ele></trkpt>
+<trkpt lat="47.300640" lon="-120.761328"><ele>1593.4</ele></trkpt>
+<trkpt lat="47.301145" lon="-120.761496"><ele>1602.2</ele></trkpt>
+<trkpt lat="47.302041" lon="-120.761053"><ele>1624.3</ele></trkpt>
+<trkpt lat="47.302152" lon="-120.761119"><ele>1623.6</ele></trkpt>
+<trkpt lat="47.302641" lon="-120.761098"><ele>1622.4</ele></trkpt>
+<trkpt lat="47.302320" lon="-120.761071"><ele>1623.5</ele></trkpt>
+<trkpt lat="47.301838" lon="-120.761148"><ele>1626.0</ele></trkpt>
+<trkpt lat="47.301626" lon="-120.760853"><ele>1630.7</ele></trkpt>
+<trkpt lat="47.301627" lon="-120.760789"><ele>1631.8</ele></trkpt>
+<trkpt lat="47.301688" lon="-120.760802"><ele>1633.0</ele></trkpt>
+<trkpt lat="47.301569" lon="-120.760832"><ele>1632.5</ele></trkpt>
+<trkpt lat="47.301536" lon="-120.760776"><ele>1634.5</ele></trkpt>
+<trkpt lat="47.301569" lon="-120.760832"><ele>1632.5</ele></trkpt>
+<trkpt lat="47.301688" lon="-120.760802"><ele>1633.0</ele></trkpt>
+<trkpt lat="47.301627" lon="-120.760789"><ele>1631.8</ele></trkpt>
+<trkpt lat="47.301626" lon="-120.760853"><ele>1630.7</ele></trkpt>
+<trkpt lat="47.301838" lon="-120.761148"><ele>1626.0</ele></trkpt>
+<trkpt lat="47.302320" lon="-120.761071"><ele>1623.5</ele></trkpt>
+<trkpt lat="47.302641" lon="-120.761098"><ele>1622.4</ele></trkpt>
+<trkpt lat="47.302152" lon="-120.761119"><ele>1623.6</ele></trkpt>
+<trkpt lat="47.302041" lon="-120.761053"><ele>1624.3</ele></trkpt>
+<trkpt lat="47.301145" lon="-120.761496"><ele>1602.2</ele></trkpt>
+<trkpt lat="47.300640" lon="-120.761328"><ele>1593.4</ele></trkpt>
+<trkpt lat="47.300615" lon="-120.761813"><ele>1583.7</ele></trkpt>
+<trkpt lat="47.300578" lon="-120.761867"><ele>1582.2</ele></trkpt>
+<trkpt lat="47.300471" lon="-120.761827"><ele>1580.2</ele></trkpt>
+<trkpt lat="47.300038" lon="-120.761406"><ele>1567.0</ele></trkpt>
+<trkpt lat="47.299754" lon="-120.761359"><ele>1560.3</ele></trkpt>
+<trkpt lat="47.299392" lon="-120.761167"><ele>1548.2</ele></trkpt>
+<trkpt lat="47.299188" lon="-120.761181"><ele>1546.2</ele></trkpt>
+<trkpt lat="47.298294" lon="-120.760913"><ele>1549.8</ele></trkpt>
+</trkseg></trk>
+</gpx>
