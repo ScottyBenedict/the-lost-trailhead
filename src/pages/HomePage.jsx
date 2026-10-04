@@ -3,6 +3,13 @@ import { hikes } from '../data/hikes'
 import { supabase } from '../lib/supabase'
 import HikeCard from '../components/HikeCard'
 import PageMeta from '../components/PageMeta'
+
+const LEVELS = ['Easy', 'Moderate', 'Strenuous']
+
+// Case, accents and punctuation don't count: "dirty harrys" finds
+// "Dirty Harry's Balcony", "mt si" finds "Mt. Si — Winter".
+const normalize = (str) =>
+  str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['\u2019]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
 import { SITE_NAME } from '../lib/meta'
 
 export default function HomePage() {
@@ -34,8 +41,16 @@ export default function HomePage() {
     fetchData()
   }, [])
 
+  const [query, setQuery] = useState('')
+  const [level, setLevel] = useState('All')
+
   const sorted = useMemo(() => {
-    return [...hikes].sort((a, b) => {
+    const q = normalize(query)
+    return hikes
+      .filter((h) => !q || normalize(h.name).includes(q))
+      // A range like "Easy–Moderate" counts as both of its levels.
+      .filter((h) => level === 'All' || h.difficulty.split('–').includes(level))
+      .sort((a, b) => {
       if (sortMode === 'az') return a.name.localeCompare(b.name)
       const aDate = hikeDates.get(a.supabaseId || a.id)
       const bDate = hikeDates.get(b.supabaseId || b.id)
@@ -44,7 +59,7 @@ export default function HomePage() {
       if (bDate) return 1
       return a.name.localeCompare(b.name)
     })
-  }, [sortMode, hikeDates])
+  }, [sortMode, hikeDates, query, level])
 
   return (
     <>
@@ -72,27 +87,57 @@ export default function HomePage() {
       </section>
 
       <section className="hikes-section">
-        <div className="sort-toggle">
+        <div className="hike-toolbar">
+          <input
+            type="search"
+            className="hike-search"
+            placeholder="Search hikes"
+            aria-label="Search hikes by name"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <div className="pill-group sort-toggle" role="group" aria-label="Sort">
           <button
-            className={`sort-btn${sortMode === 'az' ? ' sort-btn-active' : ''}`}
+            className={`pill-btn${sortMode === 'az' ? ' pill-btn-active' : ''}`}
+            aria-pressed={sortMode === 'az'}
             onClick={() => setSortMode('az')}
           >
             A–Z
           </button>
           <button
-            className={`sort-btn${sortMode === 'recent' ? ' sort-btn-active' : ''}`}
+            className={`pill-btn${sortMode === 'recent' ? ' pill-btn-active' : ''}`}
+            aria-pressed={sortMode === 'recent'}
             onClick={() => setSortMode('recent')}
             disabled={!datesLoaded}
             title={datesLoaded ? undefined : 'Loading hike dates…'}
           >
             Recent
           </button>
+          </div>
+          <div className="pill-group difficulty-group" role="group" aria-label="Difficulty">
+            {['All', ...LEVELS].map((l) => (
+              <button
+                key={l}
+                className={`pill-btn${level === l ? ' pill-btn-active' : ''}`}
+                aria-pressed={level === l}
+                onClick={() => setLevel(l)}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="hike-grid">
-          {sorted.map((hike) => (
-            <HikeCard key={hike.id} hike={hike} />
-          ))}
-        </div>
+        {sorted.length === 0 ? (
+          <p className="hike-empty">
+            No hikes match. <button className="hike-empty-reset" onClick={() => { setQuery(''); setLevel('All') }}>Show all hikes</button>
+          </p>
+        ) : (
+          <div className="hike-grid">
+            {sorted.map((hike) => (
+              <HikeCard key={hike.id} hike={hike} />
+            ))}
+          </div>
+        )}
       </section>
     </>
   )
