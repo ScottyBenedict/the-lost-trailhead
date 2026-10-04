@@ -20,7 +20,7 @@ export default function Footer() {
   const onHikePage = useLocation().pathname.startsWith('/hikes/')
   return (
     <footer className="footer">
-      <NewsletterSignup heading={onHikePage ? 'Want the next one?' : 'New hikes in your inbox'} />
+      <NewsletterSignup heading={onHikePage ? 'Want the next one?' : 'Trail notes from Scott & Alan'} />
       <div className="footer-social">
         {SOCIALS.map(({ name, icon, href }) => (
           <a

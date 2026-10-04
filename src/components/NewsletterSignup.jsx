@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from 'react'
 // nothing stored here. target="_blank" opens Buttondown's confirmation page in
 // a new tab so the visitor stays on the site.
 // Ids come from useId so the label and heading stay unique on the page.
-export default function NewsletterSignup({ heading = 'New hikes in your inbox' }) {
+export default function NewsletterSignup({ heading = 'Trail notes from Scott & Alan' }) {
   const id = useId()
   const inputId = `bd-email-${id}`
   const headingId = `newsletter-heading-${id}`
@@ -32,6 +32,7 @@ export default function NewsletterSignup({ heading = 'New hikes in your inbox' }
     <section className="newsletter" aria-labelledby={headingId}>
       <div className="newsletter-inner">
         <h2 id={headingId} className="newsletter-heading">{heading}</h2>
+        <p className="newsletter-sub">A short note each month: where we've been, what's in season, what's worth the drive.</p>
         <form
           action="https://buttondown.com/api/emails/embed-subscribe/thelosttrailhead"
           method="post"
@@ -53,12 +54,11 @@ export default function NewsletterSignup({ heading = 'New hikes in your inbox' }
             />
             <input type="submit" value="Subscribe" className="newsletter-submit" />
           </div>
-          <p className="newsletter-powered">
-            <a href="https://buttondown.com/refer/thelosttrailhead" target="_blank">Powered by Buttondown.</a>
-          </p>
         </form>
-        <p className="newsletter-note" role="status">
-          {sent ? 'Thanks! Check your inbox to confirm.' : 'No spam. Unsubscribe anytime.'}
+        <p className="newsletter-fine">
+          <span role="status">{sent ? 'Thanks! Check your inbox to confirm.' : 'No spam. Unsubscribe anytime.'}</span>
+          <span className="newsletter-dot" aria-hidden="true">·</span>
+          <a href="https://buttondown.com/refer/thelosttrailhead" target="_blank">Powered by Buttondown.</a>
         </p>
       </div>
     </section>
