@@ -58,14 +58,14 @@ export const hikes = [
   {
     id: 'camelback-mountain',
     name: 'Camelback Mountain',
-    region: 'Echo Canyon · Phoenix, Arizona',
+    region: 'Cholla Trail · Phoenix, Arizona',
     trailhead: [33.5135, -111.9485],
-    distance: '3.1 mi',
-    gain: '1,280 ft',
+    distance: '3.0 mi',
+    gain: '1,420 ft',
     difficulty: 'Strenuous',
     season: 'Oct – Apr',
     description:
-      'Camelback Mountain rises 2,704 feet above the Phoenix metro — a desert climb that earns its reputation without apology. The Echo Canyon route is the direct line: red rock scrambles, iron handrails bolted into the upper face, and a sustained push that makes no concessions. The payoff is a 360-degree view over the entire Valley of the Sun, with Paradise Valley and Papago Park spread below and the Superstitions fading into the haze to the east. This is not a Cascades trail — no old-growth, no glaciers, no shoulder season rain. What it has is the clarity of the desert: a sharp summit, empty sky, and a city laid out beneath you like a map.',
+      'Camelback Mountain rises 2,704 feet above the Phoenix metro — a desert climb that earns its reputation without apology. We came up the Cholla Trail on the mountain\'s east end: a steady climb out of the neighborhood that turns into a steep, rocky scramble along the ridgeline for the final push, with no handrails and no shade to speak of. The payoff is a 360-degree view over the entire Valley of the Sun, with Paradise Valley and Papago Park spread below and the Superstitions fading into the haze to the east. This is not a Cascades trail — no old-growth, no glaciers, no shoulder season rain. What it has is the clarity of the desert: a sharp summit, empty sky, and a city laid out beneath you like a map.',
     cover: 'https://ikjgtsvauctfmxpqwmyd.supabase.co/storage/v1/object/public/hike-photos/camelback-mountain/4d781942-cee2-4a99-ba03-aeb06eef81d1/1778987844446_1.jpg',
     coverPosition: 'center 45%',
     photos: [],
