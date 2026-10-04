@@ -54,12 +54,11 @@ export default function NewsletterSignup({ heading = 'Trail notes from Scott & A
             />
             <input type="submit" value="Subscribe" className="newsletter-submit" />
           </div>
-          <p className="newsletter-powered">
-            <a href="https://buttondown.com/refer/thelosttrailhead" target="_blank">Powered by Buttondown.</a>
-          </p>
         </form>
-        <p className="newsletter-note" role="status">
-          {sent ? 'Thanks! Check your inbox to confirm.' : 'No spam. Unsubscribe anytime.'}
+        <p className="newsletter-fine">
+          <span role="status">{sent ? 'Thanks! Check your inbox to confirm.' : 'No spam. Unsubscribe anytime.'}</span>
+          <span className="newsletter-dot" aria-hidden="true">·</span>
+          <a href="https://buttondown.com/refer/thelosttrailhead" target="_blank">Powered by Buttondown.</a>
         </p>
       </div>
     </section>
