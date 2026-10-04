@@ -1,4 +1,4 @@
-"""Usage: python3 export.py <hike_id> ...
+"""Usage: python3 export.py <hike_id> ...   |   python3 export.py --all
 
 Builds the downloadable GPX for a hike from its original recording, as a
 separate, cleaned copy. The flyover keeps the raw recording (09-27 rule);
@@ -10,6 +10,9 @@ nothing here touches Supabase, the site or the originals.
                 where the recording does
   3. cuts       only ranges listed in cuts.json (meters along the trimmed
                 track); side quests are detected and reported, never removed
+  3b. route     the line the flyover flies: an out-and-back is its way up,
+                with gaps filled from the return leg (fillOutboundGaps),
+                then retraced back down; a loop is the whole recording
   4. strip      lat, lon, ele only
   5. simplify   Douglas-Peucker at 3 m; checked against the smoothed length
                 (raw 1-point-per-second length is inflated by GPS jitter)
@@ -21,7 +24,7 @@ import sys, os, re, json, math, bisect, subprocess, urllib.request
 from xml.sax.saxutils import escape, quoteattr
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'flyover-check'))
-from common import ROOT, points, hav, smoothed, gpx_file  # noqa: E402
+from common import ROOT, points, hav, smoothed, gpx_file, supa  # noqa: E402
 
 STAGING = os.path.join(HERE, 'staging'); CACHE = os.path.join(HERE, '.cache')
 os.makedirs(STAGING, exist_ok=True); os.makedirs(CACHE, exist_ok=True)
@@ -145,6 +148,30 @@ def leg_differences(pts, cum, apex, threshold=30, min_len=100):
     return out
 
 
+GAP_FILL = {'minGapM': 150, 'maxMatchM': 40}   # terrainFlyover.js
+
+
+def fill_outbound_gaps(outbound, return_leg):
+    """fillOutboundGaps from terrainFlyover.js: a jump of 150 m+ on the way
+    up is replaced by the stretch of the way down between its two ends."""
+    def nearest(p):
+        best, bd = -1, float('inf')
+        for k, q in enumerate(return_leg):
+            d = hav(p, q)
+            if d < bd: bd, best = d, k
+        return best if bd <= GAP_FILL['maxMatchM'] else -1
+    out, filled = [outbound[0]], []
+    for i in range(1, len(outbound)):
+        a, b = outbound[i - 1], outbound[i]
+        if hav(a, b) >= GAP_FILL['minGapM']:
+            ib, ia = nearest(b), nearest(a)
+            if ib >= 0 and ia > ib + 1:
+                fill = list(reversed(return_leg[ib + 1:ia])); out += fill
+                filled.append((hav(a, b), len(fill)))
+        out.append(b)
+    return out, filled
+
+
 def douglas_peucker(pts, tol):
     """Indices kept, on a local flat projection (fine at hike scale)."""
     lat0 = math.radians(sum(p['lat'] for p in pts) / len(pts))
@@ -201,6 +228,11 @@ def export(hike_id, H, cfg, cuts):
             if c['from_m'] < d < c['to_m']: keep[i] = False
     kept = [p for p, k in zip(tr, keep) if k]; kept_cum = cumulative(kept)
 
+    apex_k, _ = apex_index(kept, kept_cum, hike_id, force_loop, high_point)
+    gap_fills = []
+    if apex_k is not None:   # out-and-back: the flyover's line, up then retraced
+        kept, gap_fills = fill_outbound_gaps(kept[:apex_k + 1], kept[apex_k:])
+        kept_cum = cumulative(kept)
     sm_kept = smoothed(kept); sm_kept_len = sum(hav(sm_kept[i - 1], sm_kept[i]) for i in range(1, len(sm_kept)))
     tried = []   # (tol, points, change vs raw trimmed length, change vs smoothed length)
     for t in TOLERANCES:
@@ -209,6 +241,8 @@ def export(hike_id, H, cfg, cuts):
     simp = [kept[k] for k in douglas_peucker(kept, TOLERANCE)]
     tol, _, _, change = next(x for x in tried if x[0] == TOLERANCE)
     cap_met = abs(change) <= MAX_LENGTH_CHANGE
+    if apex_k is not None:
+        simp = simp + simp[-2::-1]   # same line back to the trailhead
     final = [{'lat': p['lat'], 'lon': p['lon'], 'ele': p['ele']} for p in simp]
     out = os.path.join(STAGING, f'{hike_id}.gpx'); write_gpx(out, hike, final)
 
@@ -236,6 +270,7 @@ def export(hike_id, H, cfg, cuts):
         up_mi=(tr_cum[apex] / MI) if apex is not None else None,
         down_mi=((tr_cum[-1] - tr_cum[apex]) / MI) if apex is not None else None,
         side_quests=side_quests(tr, tr_cum, apex), legs=leg_differences(tr, tr_cum, apex),
+        route='ascent, retraced' if apex_k is not None else 'whole recording', gap_fills=gap_fills,
         cuts=removed, schema=ok_schema, schema_msg=schema_msg, reparse=reparse_ok, one_seg=one_seg, no_time=not has_time)
     draw(hike, orig, first, last, tr, tr_cum, keep, final, pin, radius, r)
     return r
@@ -312,7 +347,7 @@ def report(rows):
         L.append(f"| {r['name']} | {r['orig_pts']:,} / {r['orig_mi']:.2f} / {r['orig_kb']:,.0f} | {r['final_pts']:,} / {r['final_mi']:.2f} / {r['final_kb']:,.0f} | {m(r['start_to_pin'])} / {m(r['end_to_pin'])} | {r['tol']} m, {r['change'] * 100:+.1f}%{'' if r['cap_met'] else ' **cap not met**'} | {r['page_mi']} | {diff * 100:+.0f}%{' **>10%**' if abs(diff) > .10 else ''} | {legs} | {checks} |")
     for r in rows:
         L += [f"\n## {r['name']}", f"- Pin: {r['pin_src']}" + (f", trim radius {r['radius']:.0f} m" if r['pin_src'].startswith('TRAIL_START') else '') + f". Recording starts {m(r['orig_start_to_pin'])} and ends {m(r['orig_end_to_pin'])} from the pin; trimmed off {m(r['trim_before_m'])} before and {m(r['trim_after_m'])} after.",
-              f"- Shape: {r['shape']}" + (f" (retrace {r['retrace']:.0f} m)" if r['retrace'] else '') + f". Trimmed track {r['trim_mi']:.2f} mi raw, {r['smooth_mi']:.2f} mi smoothed (the README's distance).",
+              f"- Shape: {r['shape']}" + (f" (retrace {r['retrace']:.0f} m)" if r['retrace'] else '') + f"; download = {r['route']}" + (''.join(f"; filled a {g:,.0f} m gap with {n} points from the way down" for g, n in r['gap_fills'])) + f". Trimmed track {r['trim_mi']:.2f} mi raw, {r['smooth_mi']:.2f} mi smoothed (the README's distance).",
               f"- Simplify (length change vs raw / vs smoothed): " + ', '.join(f"{t} m → {n:,} pts, {c * 100:+.1f}% / {cs * 100:+.1f}%" for t, n, c, cs in r['tried']) + '.',
               f"- Schema: {r['schema_msg']}"]
         if r['side_quests']:
@@ -331,4 +366,5 @@ if __name__ == '__main__':
     if len(sys.argv) < 2: raise SystemExit(__doc__)
     H = hikes(); cfg = flyover_config()
     cuts = json.load(open(os.path.join(HERE, 'cuts.json')))
-    report([export(h, H, cfg, cuts) for h in sys.argv[1:]])
+    ids = [r['hike_id'] for r in supa('hike_gpx?select=hike_id&order=hike_id')] if sys.argv[1:] == ['--all'] else sys.argv[1:]
+    report([export(h, H, cfg, cuts) for h in ids])
