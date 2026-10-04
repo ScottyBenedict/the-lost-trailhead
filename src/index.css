@@ -675,19 +675,26 @@ a   { color: inherit; text-decoration: none; }
   color: var(--muted);
 }
 
-.share-row { flex-wrap: wrap; }
+/* Share above Download GPX (and its note), one left edge, on every screen size. */
+.share-row { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+.share-line { display: flex; align-items: center; gap: 1rem; }   /* "Link copied" beside Share */
 a.share-button { text-decoration: none; }
 .share-button { line-height: 1.2; }   /* the link and the button render the same height */
 
-.gpx-note {
-  margin-top: 1rem;
-  font-size: 0.74rem;
-  color: var(--muted);
+.gpx-download {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
-@media (max-width: 480px) {
-  .share-row { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+/* Under the Download pill it belongs to, starting at the pill's left edge. */
+.gpx-note {
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-wrap: balance;   /* no lone "risk." on phones */
 }
+
 
 /* ── Gallery Report Cards ────────────────────────────── */
 .gallery-report-card {
