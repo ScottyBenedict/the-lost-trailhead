@@ -84,7 +84,7 @@ export default function GearPage() {
 
       <section className="gear-section">
         <div className="gear-section-logo">
-          <TLTLogo size={180} color="var(--forest)" />
+          <TLTLogo size={160} color="var(--forest)" />
         </div>
         <div className="gear-columns">
           {loading ? (
